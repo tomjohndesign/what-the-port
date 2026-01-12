@@ -1,1 +1,7 @@
-{  "scripts": {    "setup": "cp $CONDUCTOR_ROOT_PATH/.env.local .env.local && pnpm install",    "run": "pnpm run dev",    "archive": ""  }}
+{
+  "scripts": {
+    "setup": "cd WhatThePort && swift build",
+    "run": "cd WhatThePort && swift run",
+    "archive": ""
+  }
+}
