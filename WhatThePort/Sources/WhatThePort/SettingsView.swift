@@ -1,4 +1,5 @@
 import SwiftUI
+import ServiceManagement
 
 struct SettingsView: View {
     @ObservedObject var monitor: PortMonitor
@@ -7,6 +8,11 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
+            GeneralTab()
+                .tabItem {
+                    Label("General", systemImage: "gear")
+                }
+
             PortRangeTab(minPort: $minPort, maxPort: $maxPort, monitor: monitor)
                 .tabItem {
                     Label("Ports", systemImage: "number")
@@ -23,6 +29,34 @@ struct SettingsView: View {
                 }
         }
         .frame(width: 400, height: 350)
+    }
+}
+
+struct GeneralTab: View {
+    @State private var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
+
+    var body: some View {
+        Form {
+            Section("Startup") {
+                Toggle("Launch at login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, newValue in
+                        do {
+                            if newValue {
+                                try SMAppService.mainApp.register()
+                            } else {
+                                try SMAppService.mainApp.unregister()
+                            }
+                        } catch {
+                            print("Failed to \(newValue ? "enable" : "disable") launch at login: \(error)")
+                            launchAtLogin = !newValue
+                        }
+                    }
+                Text("Automatically start WhatThePort when you log in")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding()
     }
 }
 
@@ -145,9 +179,17 @@ struct AboutTab: View {
                     .multilineTextAlignment(.center)
                     .foregroundColor(.secondary)
 
-                Text("Created by Tom")
+                Text("Created by Tomjohn")
                     .font(.headline)
                     .padding(.top, 8)
+
+                HStack(spacing: 16) {
+                    Link("Website", destination: URL(string: "https://www.tomjohn.design")!)
+                    Link("LinkedIn", destination: URL(string: "https://www.linkedin.com/in/tomjohndesign")!)
+                    Link("X", destination: URL(string: "https://x.com/tomjohndesign")!)
+                }
+                .font(.subheadline)
+                .padding(.top, 4)
             }
             .padding(.horizontal)
 
