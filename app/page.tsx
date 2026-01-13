@@ -50,8 +50,8 @@ export default function Home() {
       <Image
         src="/screenshot.png"
         alt="WhatThePort screenshot showing ports 3000, 3001, and 8000 with node and Python processes"
-        width={634}
-        height={359}
+        width={631}
+        height={406}
         style={{
           borderRadius: '12px',
           boxShadow: '0 25px 50px -12px rgba(255, 255, 255, 0.1)',
