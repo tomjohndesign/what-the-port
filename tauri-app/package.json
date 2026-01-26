@@ -1,0 +1,24 @@
+{
+  "name": "what-the-port",
+  "version": "1.0.0",
+  "description": "See what's running on your ports - menu bar app for developers",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "keywords": [
+    "port",
+    "server",
+    "development",
+    "menubar",
+    "macos",
+    "devtools"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.6"
+  }
+}

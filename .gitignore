@@ -12,6 +12,10 @@ DerivedData/
 node_modules/
 .next/
 
+# Tauri
+tauri-app/src-tauri/target/
+tauri-app/dist/
+
 # Conductor
 .context/
 .vercel

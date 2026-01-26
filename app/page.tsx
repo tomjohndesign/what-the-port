@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 
 export default function Home() {
   const [stars, setStars] = useState<number | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetch('https://api.github.com/repos/tomjohndesign/what-the-port')
@@ -16,6 +17,12 @@ export default function Home() {
       })
       .catch(() => {})
   }, [])
+
+  const copyCommand = () => {
+    navigator.clipboard.writeText('npm install -g what-the-port')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <main style={{
@@ -77,6 +84,63 @@ export default function Home() {
         Download for macOS
       </a>
 
+      <p style={{
+        color: '#555',
+        fontSize: '0.875rem',
+        marginTop: '0.75rem',
+        marginBottom: '2rem',
+      }}>
+        Requires macOS 10.15 or later
+      </p>
+
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+        color: '#555',
+        fontSize: '0.875rem',
+        marginBottom: '1.5rem',
+      }}>
+        <span style={{ width: '60px', height: '1px', backgroundColor: '#333' }} />
+        <span>or install via npm</span>
+        <span style={{ width: '60px', height: '1px', backgroundColor: '#333' }} />
+      </div>
+
+      <div
+        onClick={copyCommand}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          backgroundColor: '#111',
+          border: '1px solid #333',
+          borderRadius: '8px',
+          padding: '0.875rem 1.25rem',
+          cursor: 'pointer',
+          transition: 'border-color 0.2s',
+        }}
+      >
+        <code style={{
+          color: '#4ade80',
+          fontSize: '0.9rem',
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace',
+        }}>
+          npm install -g what-the-port
+        </code>
+        <span style={{ color: '#666', fontSize: '0.8rem' }}>
+          {copied ? 'Copied!' : 'Click to copy'}
+        </span>
+      </div>
+
+      <p style={{
+        color: '#555',
+        fontSize: '0.8rem',
+        marginTop: '0.5rem',
+        marginBottom: '2rem',
+      }}>
+        Then run <code style={{ color: '#888', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace' }}>wtp</code> to launch
+      </p>
+
       <a
         href="https://github.com/tomjohndesign/what-the-port"
         target="_blank"
@@ -85,7 +149,6 @@ export default function Home() {
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem',
-          marginTop: '1rem',
           padding: '0.625rem 1.25rem',
           backgroundColor: 'transparent',
           border: '1px solid #333',
@@ -112,43 +175,6 @@ export default function Home() {
           </span>
         )}
       </a>
-
-      <p style={{
-        color: '#555',
-        fontSize: '0.875rem',
-        marginTop: '1rem',
-      }}>
-        Requires macOS 13.0 or later
-      </p>
-
-      <div style={{
-        marginTop: '2rem',
-        padding: '1.5rem',
-        backgroundColor: '#111',
-        borderRadius: '8px',
-        maxWidth: '500px',
-        textAlign: 'left',
-      }}>
-        <p style={{
-          color: '#888',
-          fontSize: '0.875rem',
-          marginBottom: '0.75rem',
-        }}>
-          After downloading, if macOS says the app is damaged, run this in Terminal:
-        </p>
-        <code style={{
-          display: 'block',
-          backgroundColor: '#000',
-          padding: '0.75rem 1rem',
-          borderRadius: '4px',
-          color: '#4ade80',
-          fontSize: '0.8rem',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace',
-          overflowX: 'auto',
-        }}>
-          xattr -cr ~/Downloads/WhatThePort.app
-        </code>
-      </div>
 
       <footer style={{
         marginTop: '4rem',

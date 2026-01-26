@@ -13,7 +13,7 @@ struct MenuBarView: View {
                     .foregroundColor(.secondary)
             } else {
                 ForEach(monitor.ports) { port in
-                    Menu("\(port.port) - \(port.process)") {
+                    Menu(portDisplayText(for: port)) {
                         Button("Open in Browser") {
                             openInBrowser(port: port.port)
                         }
@@ -57,6 +57,40 @@ struct MenuBarView: View {
             monitor.minPort = min > 0 ? min : 3000
             monitor.maxPort = max > 0 ? max : 9999
             monitor.start()
+        }
+    }
+
+    private func portDisplayText(for port: ListeningPort) -> String {
+        let name = port.projectName ?? port.process
+        let uptime = formatUptime(since: port.startTime)
+        return ":\(port.port) \(name) • \(uptime)"
+    }
+
+    private func formatUptime(since startTime: Date) -> String {
+        let elapsed = Date().timeIntervalSince(startTime)
+        let seconds = Int(elapsed)
+
+        if seconds < 60 {
+            return "\(seconds)s"
+        } else if seconds < 3600 {
+            let minutes = seconds / 60
+            return "\(minutes)m"
+        } else if seconds < 86400 {
+            let hours = seconds / 3600
+            let minutes = (seconds % 3600) / 60
+            if minutes > 0 {
+                return "\(hours)h \(minutes)m"
+            } else {
+                return "\(hours)h"
+            }
+        } else {
+            let days = seconds / 86400
+            let hours = (seconds % 86400) / 3600
+            if hours > 0 {
+                return "\(days)d \(hours)h"
+            } else {
+                return "\(days)d"
+            }
         }
     }
 
