@@ -4,7 +4,15 @@ import SwiftUI
 struct ServerDetailView: View {
     let server: Server
     @ObservedObject var monitor: ServerMonitor
+    @ObservedObject var github: GitHubLookup
     let back: () -> Void
+
+    init(server: Server, monitor: ServerMonitor, back: @escaping () -> Void) {
+        self.server = server
+        self.monitor = monitor
+        self.github = monitor.github
+        self.back = back
+    }
 
     @AppStorage("detail.infoExpanded") private var infoExpanded = false
     @AppStorage("detail.processesExpanded") private var processesExpanded = false
@@ -24,6 +32,7 @@ struct ServerDetailView: View {
             SectionDivider()
             footer
         }
+        .onAppear { github.refresh(server, maxAge: 30) }
     }
 
     // MARK: - Header
@@ -115,6 +124,18 @@ struct ServerDetailView: View {
         }
         if let started = server.startedAt {
             rows.append(InfoRow(label: "Started") { Text(Format.time(started)).font(Theme.mono).foregroundStyle(Theme.text2) })
+        }
+        if let pr = github.result(for: server)?.pullRequest {
+            rows.append(InfoRow(label: "Pull request", tooltip: "#\(pr.number) \(pr.title)") {
+                Link(destination: pr.url) {
+                    HStack(spacing: 6) {
+                        Text("#\(pr.number)").font(Theme.mono).foregroundStyle(Theme.text1)
+                        Text(pr.title).font(Theme.body).foregroundStyle(Theme.text2).lineLimit(1).truncationMode(.tail)
+                        Text(pr.state).font(Theme.caption).foregroundStyle(Theme.text3).fixedSize()
+                    }
+                }
+                .buttonStyle(.plain)
+            })
         }
         if let agent = server.agent {
             rows.append(InfoRow(label: "Session ID", tooltip: agent.id) { Text(agent.id).font(Theme.mono).foregroundStyle(Theme.text2) })
@@ -208,6 +229,20 @@ struct ServerDetailView: View {
             }
             .buttonStyle(PillButtonStyle(kind: .primary))
             .keyboardShortcut(.defaultAction)
+
+            if let preview = github.result(for: server)?.preview {
+                Button {
+                    NSWorkspace.shared.open(preview.url)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "triangle.fill").font(.system(size: 9))
+                        Text(preview.state == .building ? "Building" : "Preview")
+                    }
+                    .foregroundStyle(preview.state == .failed ? Theme.softRed : Theme.text1)
+                }
+                .buttonStyle(PillButtonStyle())
+                .help(preview.state == .failed ? "Preview build failed · \(preview.url.host ?? "")" : preview.url.absoluteString)
+            }
 
             Menu {
                 Button("Copy URL") { copy(server.url.absoluteString) }

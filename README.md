@@ -10,6 +10,10 @@ A macOS menu bar app that monitors your local development servers. See all runni
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
 - **Stop and restart** - Stops the whole process tree; restart reruns the original command in the same folder
+- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
+- **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
+- **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
+- **Global shortcut** - ⌥⌘P opens the popover
 
 ## Requirements
 
@@ -42,29 +46,13 @@ To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders eac
 
 ### Settings
 
-Access Settings from the menu bar to configure:
+Open Settings from the gear in the popover (⌘,):
 
-- **Port range** - Which ports to monitor (default: 3000-9999)
-- **Process allowlist** - Which processes to track
-
-### Default Allowlist
-
-WhatThePort monitors these processes by default:
-
-| Category | Processes |
-|----------|-----------|
-| JavaScript | node, npm, npx, deno, bun |
-| Python | python, python3, uvicorn, gunicorn, flask, django |
-| Ruby | ruby, rails, puma, unicorn |
-| Go | go, air |
-| Rust | cargo, rustc |
-| Java | java, gradle, mvn |
-| PHP | php, php-fpm |
-| .NET | dotnet |
-| Elixir | beam.smp, elixir, mix |
-| Servers | nginx, httpd, apache |
-| Databases | postgres, mysql, redis-server, mongod |
-| Docker | docker-proxy |
+- **General** - Launch at login, menu bar icon style, editor, global shortcut, scan interval
+- **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
+- **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
+- **Ports & processes** - Port range and which processes count as dev servers
+- **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
 
 ## How It Works
 

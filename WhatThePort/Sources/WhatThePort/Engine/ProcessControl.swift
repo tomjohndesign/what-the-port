@@ -2,7 +2,10 @@ import Darwin
 import Foundation
 
 enum ProcessControl {
-    static let forceQuitDelay: TimeInterval = 3
+    static var forceQuitDelay: TimeInterval {
+        let seconds = UserDefaults.standard.double(forKey: Preferences.forceQuitSeconds)
+        return seconds > 0 ? seconds : 3
+    }
 
     /// Sends SIGTERM to every process in the server's tree, then SIGKILL to
     /// anything still running after a grace period. Each pid is re-checked

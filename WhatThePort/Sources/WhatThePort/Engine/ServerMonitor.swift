@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 @MainActor
@@ -5,14 +6,11 @@ final class ServerMonitor: ObservableObject {
     @Published private(set) var servers: [Server] = []
     @Published private(set) var hasScanned = false
     @Published var allowlist: Set<String> = ServerMonitor.defaultAllowlist
+    /// Set from outside the popover (e.g. a notification's Details button).
+    @Published var pendingRoute: PopoverRoute?
 
     var minPort: Int = 3000
     var maxPort: Int = 9999
-
-    /// Memory above which a server needs attention.
-    var alertThreshold: UInt64 = 2_000_000_000
-    var idleThreshold: TimeInterval = 4 * 60 * 60
-    var longRunningThreshold: TimeInterval = 3 * 24 * 60 * 60
 
     static let defaultAllowlist: Set<String> = [
         "node", "npm", "npx", "deno", "bun",
@@ -29,10 +27,15 @@ final class ServerMonitor: ObservableObject {
         "docker-proxy",
     ]
 
+    let github = GitHubLookup()
     private let engine = ScanEngine()
     private let queue = DispatchQueue(label: "com.whattheport.scan", qos: .utility)
     private var timer: Timer?
+    private var timerInterval: TimeInterval = 0
     private var isScanning = false
+    private var defaultsObserver: AnyCancellable?
+    /// Servers we've already acted on in Clean up (notified or auto-stopped).
+    private var handledCleanUps = Set<String>()
 
     init() {
         let defaults = UserDefaults.standard
@@ -43,10 +46,52 @@ final class ServerMonitor: ObservableObject {
         if max > 0 { maxPort = max }
     }
 
+    // MARK: - Preferences
+
+    private var defaults: UserDefaults { .standard }
+
+    /// Memory above which a server needs attention.
+    var alertThreshold: UInt64 {
+        let gigabytes = defaults.double(forKey: Preferences.thresholdGB)
+        return UInt64((gigabytes > 0 ? gigabytes : 2) * 1_000_000_000)
+    }
+
+    var idleThreshold: TimeInterval { TimeInterval(max(defaults.integer(forKey: Preferences.cleanUpIdleHours), 1)) * 3600 }
+    var longRunningThreshold: TimeInterval { TimeInterval(max(defaults.integer(forKey: Preferences.cleanUpRunningDays), 1)) * 86400 }
+    var cleanUpMode: Preferences.CleanUpMode { Preferences.CleanUpMode(rawValue: defaults.string(forKey: Preferences.cleanUpMode) ?? "") ?? .ask }
+
+    private var scanConfig: ScanConfig {
+        ScanConfig(minPort: minPort, maxPort: maxPort, allowlist: allowlist,
+                   protected: Set(defaults.stringArray(forKey: Preferences.protectedProcesses) ?? Preferences.defaultProtected),
+                   linkClaude: defaults.bool(forKey: Preferences.linkClaude),
+                   linkCodex: defaults.bool(forKey: Preferences.linkCodex),
+                   linkConductor: defaults.bool(forKey: Preferences.linkConductor),
+                   showBranches: defaults.bool(forKey: Preferences.showBranches))
+    }
+
+    // MARK: - Scanning
+
     func start() {
         guard timer == nil else { return }
         scan()
-        timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+        scheduleTimer()
+        // Settings changes (scan interval, thresholds, integrations) apply on the next scan.
+        defaultsObserver = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                Task { @MainActor in
+                    self?.scheduleTimer()
+                    self?.objectWillChange.send()
+                }
+            }
+    }
+
+    private func scheduleTimer() {
+        let interval = max(defaults.double(forKey: Preferences.scanInterval), 1)
+        guard interval != timerInterval else { return }
+        timerInterval = interval
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.scan() }
         }
     }
@@ -54,20 +99,24 @@ final class ServerMonitor: ObservableObject {
     func scan() {
         guard !isScanning else { return }
         isScanning = true
-        let config = ScanConfig(minPort: minPort, maxPort: maxPort, allowlist: allowlist)
+        let config = scanConfig
         queue.async { [engine] in
             let result = engine.scan(config)
             Task { @MainActor in
                 self.servers = result
                 self.hasScanned = true
                 self.isScanning = false
+                AlertCenter.shared.evaluate(result, threshold: self.alertThreshold)
+                self.handleCleanUp()
+                // Keep previews and PRs roughly fresh in the background (no-op when disabled).
+                result.forEach { self.github.refresh($0, maxAge: 300) }
             }
         }
     }
 
     /// Runs a scan synchronously. Used by snapshot mode.
     func scanNow() {
-        let config = ScanConfig(minPort: minPort, maxPort: maxPort, allowlist: allowlist)
+        let config = scanConfig
         servers = queue.sync { engine.scan(config) }
         hasScanned = true
     }
@@ -83,8 +132,10 @@ final class ServerMonitor: ObservableObject {
     func status(of server: Server) -> ServerStatus { server.status(alertThreshold: alertThreshold) }
 
     func cleanUpReason(for server: Server) -> CleanUpReason? {
-        guard !server.isProtected else { return nil }
-        if !server.cwdExists { return .worktreeDeleted }
+        guard !server.isProtected, cleanUpMode != .off else { return nil }
+        if !server.cwdExists {
+            return defaults.bool(forKey: Preferences.cleanUpDeletedWorktree) ? .worktreeDeleted : nil
+        }
         if server.idleFor >= idleThreshold { return .idle(server.idleFor) }
         if let uptime = server.uptime, uptime >= longRunningThreshold { return .longRunning(uptime) }
         if server.isLeaking() { return .leaking(UInt64(max(server.memoryGrowth, 0))) }
@@ -98,25 +149,55 @@ final class ServerMonitor: ObservableObject {
     }
 
     var suggestedCleanUpCount: Int {
-        cleanUpCandidates.filter { if case .leaking = $0.reason { return false } else { return true } }.count
+        cleanUpCandidates.filter { !$0.reason.isLeak }.count
     }
+
+    // MARK: - Automatic clean up
+
+    /// In Ask mode, tells you once when servers start qualifying. In Automatic
+    /// mode, stops them. Leaking servers are never stopped automatically.
+    private func handleCleanUp() {
+        let candidates = cleanUpCandidates.filter { !$0.reason.isLeak }
+        let keys = Set(candidates.map { key(for: $0.server) })
+        let fresh = candidates.filter { !handledCleanUps.contains(key(for: $0.server)) }
+        handledCleanUps.formIntersection(keys)
+        guard !fresh.isEmpty else { return }
+        fresh.forEach { handledCleanUps.insert(key(for: $0.server)) }
+
+        let notify = defaults.bool(forKey: Preferences.cleanUpNotify)
+        switch cleanUpMode {
+        case .off:
+            return
+        case .ask:
+            if notify { AlertCenter.shared.announceCleanUp(fresh.map(\.server), stopped: false) }
+        case .automatic:
+            fresh.forEach { stop($0.server) }
+            if notify { AlertCenter.shared.announceCleanUp(fresh.map(\.server), stopped: true) }
+        }
+    }
+
+    private func key(for server: Server) -> String { "\(server.port)-\(server.rootPid)" }
 
     // MARK: - Actions
 
     func stop(_ server: Server) {
         ProcessControl.stop(server) { [weak self] in self?.scan() }
-        rescanSoon()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.scan() }
     }
 
     func restart(_ server: Server) {
         ProcessControl.restart(server) { [weak self] _ in self?.scan() }
     }
 
-    private func rescanSoon() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.scan() }
-    }
+    // MARK: - Ports and processes
 
-    // MARK: - Settings
+    func setPortRange(min: Int, max: Int) {
+        minPort = min
+        maxPort = max
+        defaults.set(min, forKey: "minPort")
+        defaults.set(max, forKey: "maxPort")
+        scan()
+    }
 
     func addToAllowlist(_ process: String) {
         allowlist.insert(process)
@@ -134,7 +215,7 @@ final class ServerMonitor: ObservableObject {
     }
 
     private func saveAllowlist() {
-        UserDefaults.standard.set(Array(allowlist), forKey: "allowlist")
+        defaults.set(Array(allowlist), forKey: "allowlist")
         scan()
     }
 }

@@ -14,6 +14,7 @@ mkdir -p "${CONTENTS_DIR}/MacOS" "${CONTENTS_DIR}/Resources"
 cp ".build/release/${APP_NAME}" "${CONTENTS_DIR}/MacOS/"
 cp "Info.plist" "${CONTENTS_DIR}/"
 cp -R "Resources/Fonts" "${CONTENTS_DIR}/Resources/"
+cp "Resources/AppIcon.icns" "${CONTENTS_DIR}/Resources/"
 
 # Ad-hoc signature until there's a Developer ID to sign and notarize with.
 codesign --force --sign - --timestamp=none "${APP_DIR}"

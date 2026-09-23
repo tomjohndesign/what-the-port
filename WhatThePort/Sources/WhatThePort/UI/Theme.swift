@@ -19,6 +19,8 @@ enum Theme {
 
     // Three sizes (28 display, 13 body, 11 caption) and two weights.
     static let display = Font.custom("GeistMono-Medium", fixedSize: 28)
+    /// Display size for names rather than numbers.
+    static let displaySans = Font.custom("Geist-Medium", fixedSize: 28)
     static let body = Font.custom("Geist-Regular", fixedSize: 13)
     static let bodyMedium = Font.custom("Geist-Medium", fixedSize: 13)
     static let caption = Font.custom("Geist-Regular", fixedSize: 11)
