@@ -4,11 +4,12 @@ A macOS menu bar app that monitors your local development servers. See all runni
 
 ## Features
 
-- **Menu bar access** - View all running development servers from your menu bar
-- **Auto-detection** - Scans for common dev tools (Node, Python, Ruby, Go, Rust, and more)
-- **Notifications** - Get notified when ports start or stop listening
-- **Quick actions** - Open in browser, copy URL, or stop the server with one click
-- **Configurable** - Customize port range and process allowlist
+- **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with a live memory share bar
+- **Knows what started it** - Links servers to the Claude Code, Codex or Conductor session that launched them
+- **Resource charts** - 10 minutes of memory and CPU history per server, summed across its whole process tree
+- **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
+- **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
+- **Stop and restart** - Stops the whole process tree; restart reruns the original command in the same folder
 
 ## Requirements
 
@@ -22,29 +23,22 @@ cd WhatThePort
 swift build
 ```
 
-To run:
+To build the app bundle:
 
 ```bash
-swift run
+./build-app.sh
+open .build/WhatThePort.app
 ```
-
-For a release build:
-
-```bash
-swift build -c release
-```
-
-The binary will be at `.build/release/WhatThePort`.
 
 ## Usage
 
-Once running, WhatThePort appears in your menu bar with a network icon. Click it to see:
+WhatThePort lives in the menu bar as a small dot grid. Click it to see every server:
 
-- List of active ports with process names
-- For each port:
-  - **Open in Browser** - Opens `http://localhost:<port>`
-  - **Copy URL** - Copies the URL to clipboard
-  - **Stop Server** - Terminates the process
+- Hover a row to open it in the browser or stop it
+- Click a row for details: session, branch, folder, command, charts and processes
+- Click **Clean up** to tick the servers you want gone and stop them together
+
+To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
 
 ### Settings
 
@@ -74,7 +68,7 @@ WhatThePort monitors these processes by default:
 
 ## How It Works
 
-WhatThePort uses `lsof` to scan for TCP ports in LISTEN state, then filters results by your configured port range and process allowlist. It rescans every 2 seconds to keep the list current.
+WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds.
 
 ## License
 
