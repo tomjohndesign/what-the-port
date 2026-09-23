@@ -4,6 +4,11 @@ struct ScanConfig {
     var minPort: Int
     var maxPort: Int
     var allowlist: Set<String>
+    var protected: Set<String> = Set(Preferences.defaultProtected)
+    var linkClaude = true
+    var linkCodex = true
+    var linkConductor = true
+    var showBranches = true
 }
 
 /// Builds the list of servers from sockets and the process table. Holds the
@@ -11,7 +16,6 @@ struct ScanConfig {
 /// must only be used from one serial queue.
 final class ScanEngine: @unchecked Sendable {
     static let historyWindow: TimeInterval = 10 * 60
-    static let protectedProcesses: Set<String> = ["postgres", "redis-server", "mongod", "mysqld", "mysql"]
 
     /// Processes that sit between a shell and the actual server, e.g. `npm run dev`.
     private static let runners: Set<String> = [
@@ -82,7 +86,8 @@ final class ScanEngine: @unchecked Sendable {
             }
             let environment = inheritedEnvironment(from: listener, root: root, in: processes)
             let command = rootArgs.map { Self.prettyCommand($0.arguments, comm: root.comm) }
-            let project = projects.resolve(cwd: cwd, command: command)
+            var project = projects.resolve(cwd: cwd, command: command)
+            if !config.showBranches { project.branch = nil }
 
             // Restart from the highest process whose argv wasn't overwritten by a
             // title; e.g. the `sh -c "next dev -p 3000"` that npm spawns.
@@ -113,8 +118,8 @@ final class ScanEngine: @unchecked Sendable {
                 launchDirectory: ProcessInspector.currentDirectory(launcher.pid) ?? cwd,
                 startedAt: root.startTime,
                 project: project,
-                conductorWorkspace: environment["CONDUCTOR_WORKSPACE_NAME"],
-                agent: agents.resolve(environment: environment, cwd: cwd),
+                conductorWorkspace: config.linkConductor ? environment["CONDUCTOR_WORKSPACE_NAME"] : nil,
+                agent: agents.resolve(environment: environment, cwd: cwd, claude: config.linkClaude, codex: config.linkCodex),
                 processes: nodes,
                 processStarts: starts,
                 memory: memory,
@@ -122,7 +127,7 @@ final class ScanEngine: @unchecked Sendable {
                 connections: connections,
                 history: history,
                 lastActive: lastActive[key] ?? now,
-                isProtected: Self.protectedProcesses.contains(socket.command)
+                isProtected: config.protected.contains(socket.command)
             ))
         }
 

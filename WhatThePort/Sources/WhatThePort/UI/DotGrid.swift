@@ -9,6 +9,28 @@ struct DotGlyph: Equatable {
     static let idle = DotGlyph(rows: [".....", ".....", ".....", ".....", "....."])
     static let alert = DotGlyph(rows: ["aaaaa", "aa.aa", "aaaaa", "aa.aa", "aaaaa"])
     static let question = DotGlyph(rows: [".###.", "#...#", "..##.", ".....", "..#.."])
+    static let prompt = DotGlyph(rows: ["#....", ".#...", "..#..", ".#...", "#.###"])
+    static let leak = DotGlyph(rows: ["....a", "...a.", "..#..", ".#...", "#...."])
+    static let burst = DotGlyph(rows: ["#.#.#", ".....", "#...#", ".....", "#.#.#"])
+    static let triangle = DotGlyph(rows: [".....", "..#..", ".###.", "#####", "....."])
+
+    private static let digits: [[String]] = [
+        [".###.", "#..##", "#.#.#", "##..#", ".###."],
+        ["..#..", ".##..", "..#..", "..#..", ".###."],
+        ["####.", "....#", ".###.", "#....", "#####"],
+        ["####.", "....#", ".###.", "....#", "####."],
+        ["#..#.", "#..#.", "#####", "...#.", "...#."],
+        ["#####", "#....", "####.", "....#", "####."],
+        [".###.", "#....", "####.", "#...#", ".###."],
+        ["#####", "....#", "...#.", "..#..", "..#.."],
+        [".###.", "#...#", ".###.", "#...#", ".###."],
+        [".###.", "#...#", ".####", "....#", ".###."],
+    ]
+
+    /// A single digit drawn in the grid, for the "Count" menu bar style.
+    static func digit(_ value: Int) -> DotGlyph? {
+        (0...9).contains(value) ? DotGlyph(rows: digits[value]) : nil
+    }
 
     func dot(row: Int, column: Int) -> Character {
         let line = Array(rows[row])
@@ -68,9 +90,11 @@ enum MenuBarIcon {
                     case "#":
                         color = .black
                     default:
+                        // Unlit dots only show when the grid is saying something (an alert);
+                        // at rest the icon is just its lit dots, like other menu bar icons.
+                        guard isAlert else { continue }
                         // Alert holes go dark so the colon reads against amber.
-                        color = isAlert ? (isDark ? NSColor(white: 0.25, alpha: 1) : .black)
-                                        : NSColor.black.withAlphaComponent(0.25)
+                        color = isDark ? NSColor(white: 0.25, alpha: 1) : .black
                     }
                     color.setFill()
                     NSBezierPath(ovalIn: rect).fill()

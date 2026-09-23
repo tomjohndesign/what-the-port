@@ -35,11 +35,12 @@ final class AgentSessionResolver {
     private var codexIndex: [String: AgentSession] = [:]
     private var codexIndexedAt: Date = .distantPast
 
-    func resolve(environment: [String: String], cwd: String?) -> AgentSession? {
-        if let id = environment["CLAUDE_CODE_SESSION_ID"], !id.isEmpty {
+    func resolve(environment: [String: String], cwd: String?, claude: Bool = true, codex: Bool = true) -> AgentSession? {
+        if claude, let id = environment["CLAUDE_CODE_SESSION_ID"], !id.isEmpty {
             return claudeSession(id: id)
         }
-        guard let cwd else { return nil }
+        // A server started by Claude Code shouldn't be claimed by a Codex session in the same folder.
+        guard codex, environment["CLAUDE_CODE_SESSION_ID"] == nil, let cwd else { return nil }
         refreshCodexIndexIfNeeded()
         // Walk up from the server's directory, but never match a session that was
         // started in the home folder or above; that would claim every server.
