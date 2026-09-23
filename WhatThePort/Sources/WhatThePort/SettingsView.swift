@@ -2,7 +2,7 @@ import SwiftUI
 import ServiceManagement
 
 struct SettingsView: View {
-    @ObservedObject var monitor: PortMonitor
+    @ObservedObject var monitor: ServerMonitor
     @AppStorage("minPort") private var minPort: Int = 3000
     @AppStorage("maxPort") private var maxPort: Int = 9999
 
@@ -63,7 +63,7 @@ struct GeneralTab: View {
 struct PortRangeTab: View {
     @Binding var minPort: Int
     @Binding var maxPort: Int
-    @ObservedObject var monitor: PortMonitor
+    @ObservedObject var monitor: ServerMonitor
 
     var body: some View {
         Form {
@@ -98,7 +98,7 @@ struct PortRangeTab: View {
 }
 
 struct ProcessesTab: View {
-    @ObservedObject var monitor: PortMonitor
+    @ObservedObject var monitor: ServerMonitor
     @State private var newProcess: String = ""
 
     var sortedAllowlist: [String] {
