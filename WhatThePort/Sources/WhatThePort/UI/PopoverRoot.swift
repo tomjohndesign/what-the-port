@@ -32,8 +32,17 @@ struct PopoverRoot: View {
             }
         }
         .frame(width: Theme.popoverWidth)
-        .environment(\.colorScheme, .dark)
-        .onAppear { monitor.start() }
+        .onAppear {
+            monitor.start()
+            consumePendingRoute()
+        }
+        .onChange(of: monitor.pendingRoute) { _, _ in consumePendingRoute() }
+    }
+
+    private func consumePendingRoute() {
+        guard let pending = monitor.pendingRoute else { return }
+        monitor.pendingRoute = nil
+        route = pending
     }
 
     private func navigate(to newRoute: PopoverRoute) {

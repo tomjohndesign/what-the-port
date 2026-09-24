@@ -6,15 +6,18 @@ struct WhatThePortApp: App {
 
     init() {
         FontLoader.registerBundledFonts()
-        // The design is dark-only; without this the popover's glass follows a
-        // light system appearance and washes out behind the dark content.
-        NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        Preferences.register()
+        // Initialize AppKit for snapshot mode without overriding its appearance.
+        _ = NSApplication.shared
         let monitor = ServerMonitor()
         _monitor = StateObject(wrappedValue: monitor)
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot") {
             let directory = CommandLine.arguments.dropFirst(index + 1).first ?? FileManager.default.currentDirectoryPath
             SnapshotRenderer.run(monitor: monitor, directory: directory)
         }
+        _ = AppUpdater.shared
+        AlertCenter.shared.start(monitor: monitor)
+        HotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: Preferences.hotkey))
         monitor.start()
     }
 
@@ -30,16 +33,49 @@ struct WhatThePortApp: App {
             SettingsView(monitor: monitor)
         }
         .windowResizability(.contentSize)
+
+        Window("Welcome to WhatThePort", id: "onboarding") {
+            OnboardingContainer(monitor: monitor)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+    }
+}
+
+struct OnboardingContainer: View {
+    @ObservedObject var monitor: ServerMonitor
+    @Environment(\.dismissWindow) private var dismissWindow
+
+    var body: some View {
+        OnboardingView(monitor: monitor, close: { dismissWindow(id: "onboarding") })
     }
 }
 
 struct MenuBarLabel: View {
     @ObservedObject var monitor: ServerMonitor
+    @AppStorage(Preferences.iconStyle) private var iconStyle = Preferences.IconStyle.colonCount.rawValue
+    @AppStorage(Preferences.onboarded) private var onboarded = false
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let count = monitor.servers.count
-        let glyph: DotGlyph = count == 0 ? .idle : (monitor.needsAttention ? .alert : .colon)
-        Image(nsImage: MenuBarIcon.image(glyph: glyph, count: count == 0 ? nil : count))
+        let style = Preferences.IconStyle(rawValue: iconStyle) ?? .colonCount
+        let (glyph, label): (DotGlyph, Int?) = {
+            if count == 0 { return (.idle, nil) }
+            if monitor.needsAttention { return (.alert, style == .colon ? nil : count) }
+            switch style {
+            case .colon: return (.colon, nil)
+            case .colonCount: return (.colon, count)
+            case .count: return DotGlyph.digit(count).map { ($0, nil) } ?? (.colon, count)
+            }
+        }()
+        Image(nsImage: MenuBarIcon.image(glyph: glyph, count: label))
             .accessibilityLabel(count == 0 ? "WhatThePort, no servers" : "WhatThePort, \(count) servers")
+            .task {
+                // First launch: show onboarding once.
+                guard !onboarded, Bundle.main.bundleURL.pathExtension == "app" else { return }
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "onboarding")
+            }
     }
 }

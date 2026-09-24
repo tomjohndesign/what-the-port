@@ -4,7 +4,15 @@ import SwiftUI
 struct ServerDetailView: View {
     let server: Server
     @ObservedObject var monitor: ServerMonitor
+    @ObservedObject var github: GitHubLookup
     let back: () -> Void
+
+    init(server: Server, monitor: ServerMonitor, back: @escaping () -> Void) {
+        self.server = server
+        self.monitor = monitor
+        self.github = monitor.github
+        self.back = back
+    }
 
     @AppStorage("detail.infoExpanded") private var infoExpanded = false
     @AppStorage("detail.processesExpanded") private var processesExpanded = false
@@ -24,6 +32,7 @@ struct ServerDetailView: View {
             SectionDivider()
             footer
         }
+        .onAppear { github.refresh(server, maxAge: 30) }
     }
 
     // MARK: - Header
@@ -32,7 +41,7 @@ struct ServerDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             PageHeader(title: server.project.name, back: back)
             HStack {
-                PortLabel(port: server.port, status: status, large: true)
+                PortLabel(port: server.port, status: status, color: Theme.portColor(at: monitor.colorIndex(for: server.port)), large: true)
                 Spacer()
                 HStack(spacing: 10) {
                     if let uptime = server.uptime {
@@ -115,6 +124,18 @@ struct ServerDetailView: View {
         }
         if let started = server.startedAt {
             rows.append(InfoRow(label: "Started") { Text(Format.time(started)).font(Theme.mono).foregroundStyle(Theme.text2) })
+        }
+        if let pr = github.result(for: server)?.pullRequest {
+            rows.append(InfoRow(label: "Pull request", tooltip: "#\(pr.number) \(pr.title)") {
+                Link(destination: pr.url) {
+                    HStack(spacing: 6) {
+                        Text("#\(pr.number)").font(Theme.mono).foregroundStyle(Theme.text1)
+                        Text(pr.title).font(Theme.body).foregroundStyle(Theme.text2).lineLimit(1).truncationMode(.tail)
+                        Text(pr.state).font(Theme.caption).foregroundStyle(Theme.text3).fixedSize()
+                    }
+                }
+                .buttonStyle(.plain)
+            })
         }
         if let agent = server.agent {
             rows.append(InfoRow(label: "Session ID", tooltip: agent.id) { Text(agent.id).font(Theme.mono).foregroundStyle(Theme.text2) })
@@ -209,6 +230,20 @@ struct ServerDetailView: View {
             .buttonStyle(PillButtonStyle(kind: .primary))
             .keyboardShortcut(.defaultAction)
 
+            if let preview = github.result(for: server)?.preview {
+                Button {
+                    NSWorkspace.shared.open(preview.url)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "triangle.fill").font(.system(size: 9))
+                        Text(preview.state == .building ? "Building" : "Preview")
+                    }
+                    .foregroundStyle(preview.state == .failed ? Theme.softRed : Theme.text1)
+                }
+                .buttonStyle(PillButtonStyle())
+                .help(preview.state == .failed ? "Preview build failed · \(preview.url.host ?? "")" : preview.url.absoluteString)
+            }
+
             Menu {
                 Button("Copy URL") { copy(server.url.absoluteString) }
                 if let command = server.command { Button("Copy command") { copy(command) } }
@@ -273,7 +308,7 @@ struct SessionValue: View {
                 if let workspace = server.conductorWorkspace {
                     Button("Reveal \(workspace) workspace") { reveal(server.project.root ?? server.cwd) }
                 }
-                Button("Resume in Terminal") { SessionLauncher.resume(session, fallbackDirectory: server.cwd) }
+                Button("Resume in \(TerminalLauncher.current.name)") { SessionLauncher.resume(session, fallbackDirectory: server.cwd) }
                 if let transcript = session.transcript {
                     Button("Show transcript") { NSWorkspace.shared.selectFile(transcript.path, inFileViewerRootedAtPath: "") }
                 }
@@ -317,9 +352,9 @@ struct MemoryChart: View {
     @Binding var hoverTime: Date?
 
     var body: some View {
-        let values = server.history.map { (time: $0.time, gb: Double($0.memory) / 1_000_000_000) }
-        let top = max(Double(threshold) / 1_000_000_000, (values.map(\.gb).max() ?? 0) * 1.1)
-        let thresholdGB = Double(threshold) / 1_000_000_000
+        let values = server.history.map { (time: $0.time, gb: Double($0.memory) / Format.gigabyte) }
+        let top = max(Double(threshold) / Format.gigabyte, (values.map(\.gb).max() ?? 0) * 1.1)
+        let thresholdGB = Double(threshold) / Format.gigabyte
         let hovered = ChartHover.sample(in: server.history, near: hoverTime)
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
@@ -344,7 +379,7 @@ struct MemoryChart: View {
                     RuleMark(x: .value("Time", hovered.time))
                         .foregroundStyle(Theme.text1.opacity(0.25))
                         .lineStyle(StrokeStyle(lineWidth: 1))
-                    PointMark(x: .value("Time", hovered.time), y: .value("GB", Double(hovered.memory) / 1_000_000_000))
+                    PointMark(x: .value("Time", hovered.time), y: .value("GB", Double(hovered.memory) / Format.gigabyte))
                         .foregroundStyle(Theme.text1)
                         .symbolSize(30)
                 } else if let last = values.last {

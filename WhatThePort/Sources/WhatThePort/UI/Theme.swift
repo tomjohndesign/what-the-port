@@ -3,22 +3,57 @@ import CoreText
 import SwiftUI
 
 enum Theme {
-    static let text1 = Color(red: 245 / 255, green: 245 / 255, blue: 247 / 255)
-    static let text2 = Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.6)
-    static let text3 = Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.4)
-    static let separator = Color.white.opacity(0.08)
-    static let fill = Color.white.opacity(0.08)
-    static let hover = Color.white.opacity(0.08)
-    static let amber = Color(red: 1, green: 178 / 255, blue: 36 / 255)
-    static let red = Color(red: 1, green: 69 / 255, blue: 58 / 255)
-    static let softRed = Color(red: 1, green: 105 / 255, blue: 97 / 255)
-    static let ink = Color(red: 11 / 255, green: 13 / 255, blue: 18 / 255)
+    static let text1 = adaptive(light: 0x1D1D22, dark: 0xF5F5F7)
+    static let text2 = adaptive(light: 0x1D1D22, dark: 0xEBEBF5, lightAlpha: 0.72, darkAlpha: 0.6)
+    static let text3 = adaptive(light: 0x1D1D22, dark: 0xEBEBF5, lightAlpha: 0.62, darkAlpha: 0.4)
+    static let separator = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.12, darkAlpha: 0.08)
+    static let fill = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.06, darkAlpha: 0.08)
+    static let hover = fill
+    static let subtleFill = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.04, darkAlpha: 0.04)
+    static let memoryTrack = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.06, darkAlpha: 0.05)
+    static let amber = adaptive(light: 0x966000, dark: 0xFFB224)
+    static let red = adaptive(light: 0xC52D24, dark: 0xFF453A)
+    static let softRed = adaptive(light: 0xBA3028, dark: 0xFF6961)
+    /// Text on solid primary buttons and selected checkboxes.
+    static let onPrimary = adaptive(light: 0xFAFAFC, dark: 0x0B0D12)
+    static let windowBackground = adaptive(light: 0xF5F5F7, dark: 0x1E1E21)
+    static let popoverBackground = adaptive(light: 0xF5F5F7, dark: 0x202024)
+    static let snapshotBackground = adaptive(light: 0xE5E7EB, dark: 0x0B0D12)
+
+    /// Port identity colors avoid the red, amber, and green status families.
+    private static let portColors: [Color] = [
+        adaptive(light: 0x126B8D, dark: 0x6EC7ED), // sky
+        adaptive(light: 0x704CB0, dark: 0xB599F0), // lavender
+        adaptive(light: 0xA23682, dark: 0xEB9CD4), // pink
+        adaptive(light: 0x405CBC, dark: 0x7D9CF2), // periwinkle
+        adaptive(light: 0x096D75, dark: 0x7DDBE0), // cyan
+        adaptive(light: 0x87449E, dark: 0xD9A3F2), // lilac
+        adaptive(light: 0x4C627D, dark: 0xABC2E0), // slate
+    ]
+
+    static func portColor(at index: Int) -> Color {
+        portColors[index % portColors.count]
+    }
+
+    /// Resolve at drawing time so open windows follow macOS appearance changes.
+    private static func adaptive(light: UInt32, dark: UInt32, lightAlpha: CGFloat = 1, darkAlpha: CGFloat = 1) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let rgb = isDark ? dark : light
+            return NSColor(srgbRed: CGFloat((rgb >> 16) & 0xFF) / 255,
+                           green: CGFloat((rgb >> 8) & 0xFF) / 255,
+                           blue: CGFloat(rgb & 0xFF) / 255,
+                           alpha: isDark ? darkAlpha : lightAlpha)
+        })
+    }
 
     static let popoverWidth: CGFloat = 400
     static let inset: CGFloat = 16
 
     // Three sizes (28 display, 13 body, 11 caption) and two weights.
     static let display = Font.custom("GeistMono-Medium", fixedSize: 28)
+    /// Display size for names rather than numbers.
+    static let displaySans = Font.custom("Geist-Medium", fixedSize: 28)
     static let body = Font.custom("Geist-Regular", fixedSize: 13)
     static let bodyMedium = Font.custom("Geist-Medium", fixedSize: 13)
     static let caption = Font.custom("Geist-Regular", fixedSize: 11)
@@ -60,9 +95,13 @@ enum FontLoader {
 }
 
 enum Format {
+    /// Binary units, matching Activity Monitor and "16 GB" on a 16 GB Mac.
+    static let megabyte: Double = 1_048_576
+    static let gigabyte: Double = 1_073_741_824
+
     static func bytes(_ value: UInt64) -> (number: String, unit: String) {
-        let mb = Double(value) / 1_000_000
-        if mb >= 1000 { return (String(format: "%.2f", mb / 1000), "GB") }
+        let mb = Double(value) / Format.megabyte
+        if mb >= 1024 { return (String(format: "%.2f", mb / 1024), "GB") }
         return (String(format: "%.0f", mb), "MB")
     }
 
@@ -73,8 +112,13 @@ enum Format {
 
     /// Compact total for the header: "4.9 GB" or "612 MB".
     static func total(_ value: UInt64) -> (number: String, unit: String) {
-        let mb = Double(value) / 1_000_000
-        if mb >= 1000 { return (String(format: "%.1f", mb / 1000), "GB") }
+        let mb = Double(value) / Format.megabyte
+        if mb >= 1024 {
+            let gb = mb / 1024
+            // Whole numbers read cleaner for capacities like "16 GB".
+            let text = String(format: "%.1f", gb)
+            return (text.hasSuffix(".0") ? String(text.dropLast(2)) : text, "GB")
+        }
         return (String(format: "%.0f", mb), "MB")
     }
 
@@ -97,8 +141,13 @@ enum Format {
         return hours < 24 ? "\(hours)h" : "\(hours / 24)d"
     }
 
+    /// Whole numbers from 10% up; one decimal below that, so an idle-but-alive
+    /// server reads "0.3%" rather than a flat "0%".
     static func percent(_ value: Double) -> String {
-        "\(Int(value.rounded()))%"
+        if value <= 0 { return "0%" }
+        if value < 0.1 { return "<0.1%" }
+        if value < 10 { return String(format: "%.1f%%", value) }
+        return "\(Int(value.rounded()))%"
     }
 
     static func time(_ date: Date) -> String {

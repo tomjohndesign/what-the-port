@@ -10,6 +10,12 @@ A macOS menu bar app that monitors your local development servers. See all runni
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
 - **Stop and restart** - Stops the whole process tree; restart reruns the original command in the same folder
+- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
+- **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
+- **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
+- **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
+- **Global shortcut** - ⌥⌘P opens the popover
+- **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 
 ## Requirements
 
@@ -30,6 +36,38 @@ To build the app bundle:
 open .build/WhatThePort.app
 ```
 
+For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app and generates a signed update feed for the website.
+
+## Automatic deployment
+
+Every push to `main`, including a merged pull request, runs
+[Rebuild and deploy site and app](.github/workflows/deploy.yml). It builds the
+Apple Silicon Mac app on macOS, verifies its ad-hoc signature, and packages it as
+`WhatThePort.zip`. A Linux job then replaces `public/WhatThePort.zip` with that
+artifact, builds the Next.js site, and deploys both together to production on
+Vercel. A failed app or site build stops deployment.
+
+Configure these GitHub Actions **repository secrets** under
+**Settings → Secrets and variables → Actions** before merging this workflow:
+
+- `VERCEL_TOKEN`: a Vercel access token with access to the production project.
+- `VERCEL_ORG_ID`: the production project's `orgId` from `.vercel/project.json`.
+- `VERCEL_PROJECT_ID`: its `projectId` from `.vercel/project.json`.
+
+Run `vercel link` locally to obtain the project IDs. Keep tokens and the generated
+`.vercel` directory out of Git.
+
+`vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
+workflow publishes production with the freshly built app. Other branches retain
+Vercel's normal preview deployments using the checked-in ZIP. To retry production,
+use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
+selected. Production runs are serialized; GitHub may replace a pending run with
+a newer one when several merges arrive during an active deployment.
+
+The workflow uses ad-hoc signing and builds without Sparkle release configuration.
+Developer ID signing, notarization, and publishing a signed update feed require
+the [release setup](WhatThePort/UPDATES.md) described above.
+
 ## Usage
 
 WhatThePort lives in the menu bar as a small dot grid. Click it to see every server:
@@ -39,32 +77,17 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 - Click **Clean up** to tick the servers you want gone and stop them together
 
 To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
+Add `--appearance light` or `--appearance dark` to check a specific appearance without changing your Mac’s settings.
 
 ### Settings
 
-Access Settings from the menu bar to configure:
+Open Settings from the gear in the popover (⌘,):
 
-- **Port range** - Which ports to monitor (default: 3000-9999)
-- **Process allowlist** - Which processes to track
-
-### Default Allowlist
-
-WhatThePort monitors these processes by default:
-
-| Category | Processes |
-|----------|-----------|
-| JavaScript | node, npm, npx, deno, bun |
-| Python | python, python3, uvicorn, gunicorn, flask, django |
-| Ruby | ruby, rails, puma, unicorn |
-| Go | go, air |
-| Rust | cargo, rustc |
-| Java | java, gradle, mvn |
-| PHP | php, php-fpm |
-| .NET | dotnet |
-| Elixir | beam.smp, elixir, mix |
-| Servers | nginx, httpd, apache |
-| Databases | postgres, mysql, redis-server, mongod |
-| Docker | docker-proxy |
+- **General** - Launch at login, menu bar icon style, editor, global shortcut, scan interval
+- **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
+- **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
+- **Ports & processes** - Port range and which processes count as dev servers
+- **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
 
 ## How It Works
 
