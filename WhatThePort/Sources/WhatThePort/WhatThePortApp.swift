@@ -23,6 +23,7 @@ struct WhatThePortApp: App {
         AlertCenter.shared.start(monitor: monitor)
         HotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: Preferences.hotkey))
         monitor.start()
+        Usage.start()
     }
 
     var body: some Scene {
@@ -50,8 +51,12 @@ struct OnboardingContainer: View {
     @ObservedObject var monitor: ServerMonitor
     @Environment(\.dismissWindow) private var dismissWindow
 
+    @AppStorage(Preferences.onboarded) private var onboarded = false
+
     var body: some View {
-        OnboardingView(monitor: monitor, close: { dismissWindow(id: "onboarding") })
+        // People updating from before usage sharing only see that step.
+        OnboardingView(monitor: monitor, step: onboarded ? .usage : .welcome, usageOnly: onboarded,
+                       close: { dismissWindow(id: "onboarding") })
     }
 }
 
@@ -59,6 +64,7 @@ struct MenuBarLabel: View {
     @ObservedObject var monitor: ServerMonitor
     @AppStorage(Preferences.iconStyle) private var iconStyle = Preferences.IconStyle.colonCount.rawValue
     @AppStorage(Preferences.onboarded) private var onboarded = false
+    @AppStorage(Preferences.usageAsked) private var usageAsked = false
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -76,8 +82,8 @@ struct MenuBarLabel: View {
         Image(nsImage: MenuBarIcon.image(glyph: glyph, count: label))
             .accessibilityLabel(count == 0 ? "WhatThePort, no servers" : "WhatThePort, \(count) servers")
             .task {
-                // First launch: show onboarding once.
-                guard !onboarded, Bundle.main.bundleURL.pathExtension == "app" else { return }
+                // First launch: show onboarding once. After updating, ask about usage once.
+                guard !onboarded || !usageAsked, Bundle.main.bundleURL.pathExtension == "app" else { return }
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "onboarding")
             }

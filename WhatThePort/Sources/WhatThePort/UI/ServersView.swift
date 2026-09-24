@@ -184,6 +184,7 @@ struct ServersView: View {
                     .buttonStyle(PillButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Button {
+                    Usage.record(.cleanUp)
                     for server in selectedServers { monitor.stop(server) }
                     setCleaning(false)
                 } label: {
@@ -335,9 +336,11 @@ struct ServerRow: View {
                 if isHovered && cleaning == nil {
                     HStack(spacing: 2) {
                         IconButton(systemName: "arrow.up.right", size: 22, help: "Open in browser") {
+                            Usage.record(.openBrowser)
                             NSWorkspace.shared.open(server.url)
                         }
                         IconButton(systemName: "stop.fill", tint: Theme.text1.opacity(0.8), background: .clear, size: 22, help: "Stop") {
+                            Usage.record(.stop)
                             monitor.stop(server)
                         }
                     }

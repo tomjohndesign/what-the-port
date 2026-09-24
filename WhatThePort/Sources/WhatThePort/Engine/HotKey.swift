@@ -18,7 +18,10 @@ final class HotKey {
         guard hotKeyRef == nil else { return }
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
-            DispatchQueue.main.async { StatusItemOpener.open() }
+            DispatchQueue.main.async {
+                Usage.record(.shortcut)
+                StatusItemOpener.open()
+            }
             return noErr
         }, 1, &eventType, nil, &handlerRef)
         let id = EventHotKeyID(signature: OSType(0x5754_5050), id: 1) // "WTPP"

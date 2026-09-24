@@ -69,6 +69,7 @@ private struct GeneralPane: View {
     @AppStorage(Preferences.terminal) private var terminal = "com.apple.Terminal"
     @AppStorage(Preferences.hotkey) private var hotkey = true
     @AppStorage(Preferences.scanInterval) private var scanInterval = 2.0
+    @AppStorage(Preferences.shareUsage) private var shareUsage = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -112,6 +113,17 @@ private struct GeneralPane: View {
                     Text("5 seconds").tag(5.0)
                     Text("10 seconds").tag(10.0)
                 }
+            }
+            Section {
+                Toggle(isOn: Binding(get: { shareUsage }, set: Usage.setSharing)) {
+                    SettingLabel("Share anonymous usage", caption: "Once a day: that the app ran and which features you used")
+                }
+            } header: {
+                Text("Privacy")
+            } footer: {
+                Text("Feature names only, like Clean up or Stop. Never your servers, projects, files or anything about your Mac.")
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -389,26 +401,105 @@ private struct AboutPane: View {
                     }
                 }
             }
+            Section {
+                ExternalLinkRow(label: "Report a bug", value: "GitHub Issues", url: FeedbackLink.issue(.bug))
+                ExternalLinkRow(label: "Suggest a feature", value: "GitHub Issues", url: FeedbackLink.issue(.feature))
+            } header: {
+                Text("Feedback")
+            } footer: {
+                Text("Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it.")
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Made by Tomjohn") {
                 ForEach(links, id: \.label) { link in
-                    Link(destination: URL(string: link.url)!) {
-                        LabeledContent(link.label) {
-                            HStack(spacing: 8) {
-                                Text(link.value).font(Theme.mono)
-                                Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold))
-                            }
-                            .foregroundStyle(.secondary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    ExternalLinkRow(label: link.label, value: link.value, url: URL(string: link.url)!)
                 }
             }
         }
     }
 }
 
+/// Prefilled GitHub issue links, so reports arrive with the details needed to reproduce them.
+enum FeedbackLink {
+    enum Kind { case bug, feature }
+
+    static let repository = "https://github.com/tomjohndesign/what-the-port"
+
+    static func issue(_ kind: Kind) -> URL {
+        let body: String
+        let label: String
+        switch kind {
+        case .bug:
+            label = "bug"
+            body = """
+            **What happened?**
+
+
+            **What did you expect?**
+
+
+            **Steps to reproduce**
+            1.
+
+            ---
+            \(environment)
+            """
+        case .feature:
+            label = "enhancement"
+            body = """
+            **What would you like WhatThePort to do?**
+
+
+            **Why would it help?**
+
+
+            ---
+            \(environment)
+            """
+        }
+        var components = URLComponents(string: repository + "/issues/new")!
+        components.queryItems = [URLQueryItem(name: "labels", value: label), URLQueryItem(name: "body", value: body)]
+        return components.url!
+    }
+
+    /// App version, build, macOS version and chip. No server, project or path details.
+    static var environment: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "dev"
+        let build = info?["CFBundleVersion"] as? String ?? "dev"
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        #if arch(arm64)
+        let chip = "Apple silicon"
+        #else
+        let chip = "Intel"
+        #endif
+        return "WhatThePort \(short) (\(build)) · macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion) · \(chip)"
+    }
+}
+
 // MARK: - Shared
+
+/// Form row that opens a URL, with a secondary value and an outward arrow.
+struct ExternalLinkRow: View {
+    let label: String
+    let value: String
+    let url: URL
+
+    var body: some View {
+        Link(destination: url) {
+            LabeledContent(label) {
+                HStack(spacing: 8) {
+                    Text(value).font(Theme.mono)
+                    Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
 
 /// Title with an optional caption underneath, for form rows.
 struct SettingLabel: View {

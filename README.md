@@ -76,15 +76,26 @@ To render the onboarding loading, success, missing-tool, and approval states wit
 
 Open Settings from the gear in the popover (⌘,):
 
-- **General** - Launch at login, menu bar icon style, editor, global shortcut, scan interval
+- **General** - Launch at login, menu bar icon style, editor, global shortcut, scan interval, anonymous usage sharing
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
 - **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
+- **About** - Version, update controls, and bug reports or feature requests as GitHub issues with your app and macOS versions filled in
 
 ## How It Works
 
 WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds.
+
+## Privacy
+
+There's no account and no analytics SDK. Everything the app shows comes from your Mac and stays there. It only goes online to:
+
+- **Check for updates** - Sparkle fetches the update feed from whattheport.dev about once a day.
+- **Share anonymous usage** - Once a day, the app requests `whattheport.dev/usage/<feature>` for each feature you used, such as `/usage/stop` or `/usage/clean-up`, plus `/usage/active` to say it ran. That's the whole report: no body, cookies or identifier, and nothing about your servers, projects, files or Mac. The app's user agent is just `WhatThePort/<version>`. The site only counts these requests. Like any web request, the host (Vercel) sees the connection's IP address in its standard logs; the counts don't use it. Onboarding asks before anything is sent, and you can turn it off in **Settings → General → Privacy**. See [`Usage.swift`](WhatThePort/Sources/WhatThePort/Engine/Usage.swift) for the full list.
+- **Look up previews and pull requests (off by default)** - Uses the GitHub CLI you're already signed in to.
+
+The website uses cookieless [Vercel Web Analytics](https://vercel.com/docs/analytics) to count visits and download clicks.
 
 ## Building
 
@@ -107,9 +118,15 @@ For updater-enabled releases, see [Automatic updates and release setup](WhatTheP
 Every push to `main`, including a merged pull request, runs
 [Rebuild and deploy site and app](.github/workflows/deploy.yml). It builds the
 Apple Silicon Mac app on macOS, verifies its ad-hoc signature, and packages it as
-`WhatThePort.zip`. A Linux job then replaces `public/WhatThePort.zip` with that
-artifact, builds the Next.js site, and deploys both together to production on
-Vercel. A failed app or site build stops deployment.
+`WhatThePort.zip`. A Linux job then puts that artifact at `public/WhatThePort.zip`,
+builds the Next.js site, and deploys both together to production on Vercel. A
+failed app or site build stops deployment.
+
+The download is never checked in, so the site always serves the latest release.
+Production builds fail unless `public/WhatThePort.zip` is this commit's release
+archive ([`scripts/check-download.mjs`](scripts/check-download.mjs)). Local dev
+and preview deployments don't have the file, so they redirect downloads to
+production.
 
 Configure these GitHub Actions **repository secrets** under
 **Settings → Secrets and variables → Actions** before merging this workflow:
@@ -123,7 +140,7 @@ Run `vercel link` locally to obtain the project IDs. Keep tokens and the generat
 
 `vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
 workflow publishes production with the freshly built app. Other branches retain
-Vercel's normal preview deployments using the checked-in ZIP. To retry production,
+Vercel's normal preview deployments. To retry production,
 use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
 selected. Production runs are serialized; GitHub may replace a pending run with
 a newer one when several merges arrive during an active deployment.

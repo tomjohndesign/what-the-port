@@ -49,10 +49,12 @@ struct ServerDetailView: View {
                     }
                     HStack(spacing: 6) {
                         IconButton(systemName: "arrow.clockwise", help: restartHelp) {
+                            Usage.record(.restart)
                             monitor.restart(server)
                         }
                         .disabled(server.launch == nil || !server.cwdExists)
                         IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: "Stop \(server.processes.count) processes") {
+                            Usage.record(.stop)
                             monitor.stop(server)
                             back()
                         }
@@ -135,6 +137,7 @@ struct ServerDetailView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .simultaneousGesture(TapGesture().onEnded { Usage.record(.pullRequest) })
             })
         }
         if let agent = server.agent {
@@ -223,6 +226,7 @@ struct ServerDetailView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             Button {
+                Usage.record(.openBrowser)
                 NSWorkspace.shared.open(server.url)
             } label: {
                 Text("Open localhost:\(String(server.port))").frame(maxWidth: .infinity)
@@ -232,6 +236,7 @@ struct ServerDetailView: View {
 
             if let preview = github.result(for: server)?.preview {
                 Button {
+                    Usage.record(.vercelPreview)
                     NSWorkspace.shared.open(preview.url)
                 } label: {
                     HStack(spacing: 6) {
@@ -249,7 +254,10 @@ struct ServerDetailView: View {
                 if let command = server.command { Button("Copy command") { copy(command) } }
                 Divider()
                 if let root = server.project.root ?? server.cwd, server.cwdExists {
-                    Button("Open in editor") { EditorLauncher.open(root) }
+                    Button("Open in editor") {
+                        Usage.record(.openEditor)
+                        EditorLauncher.open(root)
+                    }
                     Button("Reveal in Finder") { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: root) }
                 }
             } label: {
@@ -308,7 +316,10 @@ struct SessionValue: View {
                 if let workspace = server.conductorWorkspace {
                     Button("Reveal \(workspace) workspace") { reveal(server.project.root ?? server.cwd) }
                 }
-                Button("Resume in \(TerminalLauncher.current.name)") { SessionLauncher.resume(session, fallbackDirectory: server.cwd) }
+                Button("Resume in \(TerminalLauncher.current.name)") {
+                    Usage.record(.resumeSession)
+                    SessionLauncher.resume(session, fallbackDirectory: server.cwd)
+                }
                 if let transcript = session.transcript {
                     Button("Show transcript") { NSWorkspace.shared.selectFile(transcript.path, inFileViewerRootedAtPath: "") }
                 }

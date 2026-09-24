@@ -31,7 +31,7 @@ struct DotMatrixView: View {
 }
 
 enum OnboardingStep: Int, CaseIterable {
-    case welcome, leaks, tools, vercel, done
+    case welcome, leaks, tools, vercel, usage, done
 }
 
 struct OnboardingView: View {
@@ -40,10 +40,14 @@ struct OnboardingView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
     @State var step: OnboardingStep = .welcome
+    /// Shows only the usage step, for people who onboarded before it existed.
+    var usageOnly = false
     var close: () -> Void = {}
 
     @AppStorage(Preferences.onboarded) private var onboarded = false
     @AppStorage(Preferences.vercelPreviews) private var previews = false
+    @AppStorage(Preferences.shareUsage) private var shareUsage = true
+    @AppStorage(Preferences.usageAsked) private var usageAsked = false
     @AppStorage(Preferences.thresholdGB) private var thresholdGB = 2.0
     @AppStorage(Preferences.cleanUpIdleHours) private var idleHours = 4
     @State private var heroGlyph: DotGlyph = .colon
@@ -69,9 +73,11 @@ struct OnboardingView: View {
 
             SectionDivider()
             HStack {
-                HStack(spacing: 6) {
-                    ForEach(OnboardingStep.allCases, id: \.rawValue) { item in
-                        Circle().fill(Theme.text1.opacity(item == step ? 1 : 0.2)).frame(width: 6, height: 6)
+                if !usageOnly {
+                    HStack(spacing: 6) {
+                        ForEach(OnboardingStep.allCases, id: \.rawValue) { item in
+                            Circle().fill(Theme.text1.opacity(item == step ? 1 : 0.2)).frame(width: 6, height: 6)
+                        }
                     }
                 }
                 Spacer()
@@ -96,6 +102,7 @@ struct OnboardingView: View {
         case .leaks: return "Stay ahead of leaks"
         case .tools: return "Your tools, at a glance."
         case .vercel: return "Vercel previews"
+        case .usage: return "Help shape WhatThePort"
         case .done: return "You’re set"
         }
     }
@@ -103,9 +110,10 @@ struct OnboardingView: View {
     private var message: String {
         switch step {
         case .welcome: return "Every dev server on your Mac, in the menu bar. What it is, what branch it’s on, and what it’s costing you."
-        case .leaks: return "WhatThePort warns you when a server starts eating memory. It never sends anything off your Mac."
+        case .leaks: return "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac."
         case .tools: return "WhatThePort reads local session files and process info to put your servers in context."
         case .vercel: return "See the preview deployment for whatever branch each server is running. Optional."
+        case .usage: return "Share which features you use, once a day. Nothing about your servers, projects or Mac is included."
         case .done: return "The dots settle into the colon in your menu bar. Press ⌥⌘P any time to open it."
         }
     }
@@ -161,6 +169,18 @@ struct OnboardingView: View {
                     Toggle("", isOn: $previews).labelsHidden().toggleStyle(.switch)
                 }
                 .disabled(!GitHubLookup.isAvailable)
+            }
+        case .usage:
+            VStack(spacing: 18) {
+                OnboardingCard {
+                    OnboardingRow(title: "Share anonymous usage", caption: "Feature names only, like Clean up or Stop") {
+                        Toggle("", isOn: Binding(get: { shareUsage }, set: Usage.setSharing)).labelsHidden().toggleStyle(.switch)
+                    }
+                }
+                Button("See exactly what’s sent. You can change this in Settings.") {
+                    NSWorkspace.shared.open(URL(string: FeedbackLink.repository + "#privacy")!)
+                }
+                .buttonStyle(.plain).font(OnboardingStyle.label).foregroundStyle(OnboardingStyle.secondary)
             }
         case .done:
             OnboardingCard {
@@ -226,8 +246,10 @@ struct OnboardingView: View {
             Button("Get started") { go(.leaks) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .vercel:
             Button("Back") { go(.tools) }.buttonStyle(PillButtonStyle())
-            Button("Skip") { previews = false; go(.done) }.buttonStyle(PillButtonStyle())
-            Button("Continue") { go(.done) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button("Skip") { previews = false; go(.usage) }.buttonStyle(PillButtonStyle())
+            Button("Continue") { go(.usage) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+        case .usage where usageOnly:
+            Button("Done") { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .done:
             Button("Open WhatThePort") { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         default:
@@ -242,8 +264,9 @@ struct OnboardingView: View {
 
     private func finish() {
         onboarded = true
+        usageAsked = true
         close()
-        StatusItemOpener.open()
+        if !usageOnly { StatusItemOpener.open() }
     }
 
     private func updateHero(animated: Bool) {
@@ -252,6 +275,7 @@ struct OnboardingView: View {
         case .leaks: heroGlyph = .leak
         case .tools: heroGlyph = .prompt
         case .vercel: heroGlyph = .triangle
+        case .usage: heroGlyph = .bars
         case .done:
             // The celebration: spark, burst, fade, then settle into the colon.
             let frames: [DotGlyph] = [
