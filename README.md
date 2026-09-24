@@ -128,9 +128,10 @@ use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
 selected. Production runs are serialized; GitHub may replace a pending run with
 a newer one when several merges arrive during an active deployment.
 
-The workflow uses ad-hoc signing and builds without Sparkle release configuration.
-Developer ID signing, notarization, and publishing a signed update feed require
-the [release setup](WhatThePort/UPDATES.md) described above.
+Until its signing secrets are configured, the workflow uses ad-hoc signing and
+builds without an update feed. Once they are, it signs with Developer ID,
+notarizes the app, and publishes a signed Sparkle feed under `/updates/`. See
+[Release from GitHub Actions](WhatThePort/UPDATES.md#release-from-github-actions).
 
 ## About
 
