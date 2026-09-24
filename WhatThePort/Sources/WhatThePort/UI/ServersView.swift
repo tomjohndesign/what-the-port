@@ -225,15 +225,15 @@ struct ServerRow: View {
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
 
-            PortLabel(port: server.port, status: status)
+            PortLabel(port: server.port, status: status, color: Theme.portColor(at: monitor.colorIndex(for: server.port)))
                 .frame(width: 58, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(server.project.name)
+                Text(primaryName.replacingOccurrences(of: "-", with: " "))
                     .font(Theme.bodyMedium)
                     .foregroundStyle(Theme.text1)
                     .lineLimit(1)
-                    .help(server.project.name)
+                    .help(primaryName)
                 if let reason = cleaning?.reason {
                     HStack(spacing: 5) {
                         Image(systemName: reason.symbol).font(.system(size: 9, weight: .medium))
@@ -294,10 +294,10 @@ struct ServerRow: View {
         } else {
             HStack(spacing: 5) {
                 if let agent = server.agent { AgentGlyph(kind: agent.kind, size: 10) }
-                if server.cwdExists, let branch = server.project.branch {
-                    Image(systemName: "arrow.triangle.branch").font(.system(size: 8, weight: .medium))
+                if server.cwdExists, server.project.branch != nil {
                     HStack(spacing: 3) {
-                        Text(branch).lineLimit(1).truncationMode(.tail).help(branch)
+                        Text(server.project.name.replacingOccurrences(of: "-", with: " "))
+                            .lineLimit(1).truncationMode(.tail).help(server.project.name)
                         Text("· " + contextText).fixedSize()
                     }
                 } else {
@@ -307,6 +307,10 @@ struct ServerRow: View {
             .font(Theme.caption)
             .foregroundStyle(Theme.text2)
         }
+    }
+
+    private var primaryName: String {
+        server.project.branch ?? server.project.name
     }
 
     /// Uptime or idle time, prefixed with the location when there's no branch.
@@ -383,12 +387,12 @@ struct MemoryShareBar: View {
             let spacing: CGFloat = 2
             let available = geometry.size.width - spacing * CGFloat(max(servers.count - 1, 0))
             HStack(spacing: spacing) {
-                ForEach(Array(servers.enumerated()), id: \.element.id) { index, server in
+                ForEach(servers) { server in
                     let isFocused = focusedPort == server.port
                     let isSelected = selection?.contains(server.port) ?? false
                     let isDimmed = (focusedPort != nil && !isFocused) || (selection != nil && !isSelected && !isFocused)
                     RoundedRectangle(cornerRadius: 1.5)
-                        .fill(color(for: server, index: index, highlighted: isFocused || isSelected))
+                        .fill(Theme.portColor(at: monitor.colorIndex(for: server.port)))
                         .frame(height: isFocused ? 8 : 6)
                         .opacity(isDimmed ? 0.35 : 1)
                         // A tall, invisible hit area so thin segments are easy to hover.
@@ -408,10 +412,4 @@ struct MemoryShareBar: View {
         }
     }
 
-    private func color(for server: Server, index: Int, highlighted: Bool) -> Color {
-        if monitor.status(of: server) == .attention { return Theme.amber }
-        if highlighted { return Theme.text1.opacity(0.95) }
-        let opacities: [Double] = [0.82, 0.55, 0.4, 0.3, 0.22]
-        return Theme.text1.opacity(opacities[min(index, opacities.count - 1)])
-    }
 }

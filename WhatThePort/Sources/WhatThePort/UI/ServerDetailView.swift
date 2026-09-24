@@ -41,7 +41,7 @@ struct ServerDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             PageHeader(title: server.project.name, back: back)
             HStack {
-                PortLabel(port: server.port, status: status, large: true)
+                PortLabel(port: server.port, status: status, color: Theme.portColor(at: monitor.colorIndex(for: server.port)), large: true)
                 Spacer()
                 HStack(spacing: 10) {
                     if let uptime = server.uptime {
