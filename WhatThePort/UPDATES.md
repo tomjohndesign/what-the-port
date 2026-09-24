@@ -24,10 +24,10 @@ No production key or feed is included in this repository. Ordinary `./build-app.
 
 ## Prepare and publish each release
 
-Use a new, increasing build number every time (the previous bundled release was version 2.3.1, build 6):
+Use a new, increasing build number every time (the previous bundled release was version 2.4, build 7):
 
 ```bash
-./release.sh 2.4 7
+./release.sh 2.4.1 8
 ```
 
 The script embeds the public configuration, builds the app, signs its bundled framework and helpers, optionally notarizes and staples it, packages it as a disk image (notarized the same way), verifies that the Keychain signing key matches the embedded public key, and creates:
