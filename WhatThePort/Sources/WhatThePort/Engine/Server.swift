@@ -67,7 +67,7 @@ struct Server: Identifiable {
         return Int64(last.memory) - Int64(first.memory)
     }
 
-    func isLeaking(threshold: UInt64 = 500 * 1_000_000) -> Bool {
+    func isLeaking(threshold: UInt64 = 500 * 1_048_576) -> Bool {
         memoryGrowth >= Int64(threshold)
     }
 

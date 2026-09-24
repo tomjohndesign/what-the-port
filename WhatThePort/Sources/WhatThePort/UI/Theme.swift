@@ -62,9 +62,13 @@ enum FontLoader {
 }
 
 enum Format {
+    /// Binary units, matching Activity Monitor and "16 GB" on a 16 GB Mac.
+    static let megabyte: Double = 1_048_576
+    static let gigabyte: Double = 1_073_741_824
+
     static func bytes(_ value: UInt64) -> (number: String, unit: String) {
-        let mb = Double(value) / 1_000_000
-        if mb >= 1000 { return (String(format: "%.2f", mb / 1000), "GB") }
+        let mb = Double(value) / Format.megabyte
+        if mb >= 1024 { return (String(format: "%.2f", mb / 1024), "GB") }
         return (String(format: "%.0f", mb), "MB")
     }
 
@@ -75,8 +79,13 @@ enum Format {
 
     /// Compact total for the header: "4.9 GB" or "612 MB".
     static func total(_ value: UInt64) -> (number: String, unit: String) {
-        let mb = Double(value) / 1_000_000
-        if mb >= 1000 { return (String(format: "%.1f", mb / 1000), "GB") }
+        let mb = Double(value) / Format.megabyte
+        if mb >= 1024 {
+            let gb = mb / 1024
+            // Whole numbers read cleaner for capacities like "16 GB".
+            let text = String(format: "%.1f", gb)
+            return (text.hasSuffix(".0") ? String(text.dropLast(2)) : text, "GB")
+        }
         return (String(format: "%.0f", mb), "MB")
     }
 
@@ -99,8 +108,13 @@ enum Format {
         return hours < 24 ? "\(hours)h" : "\(hours / 24)d"
     }
 
+    /// Whole numbers from 10% up; one decimal below that, so an idle-but-alive
+    /// server reads "0.3%" rather than a flat "0%".
     static func percent(_ value: Double) -> String {
-        "\(Int(value.rounded()))%"
+        if value <= 0 { return "0%" }
+        if value < 0.1 { return "<0.1%" }
+        if value < 10 { return String(format: "%.1f%%", value) }
+        return "\(Int(value.rounded()))%"
     }
 
     static func time(_ date: Date) -> String {

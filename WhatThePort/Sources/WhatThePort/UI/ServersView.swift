@@ -6,8 +6,11 @@ struct ServersView: View {
     let openSettings: () -> Void
 
     private let maxVisibleRows = 7
-    /// Port whose memory-bar segment is under the pointer.
-    @State private var focusedPort: Int?
+    /// The memory-bar segment under the pointer.
+    @State private var focus: BarFocus?
+    /// Row under the pointer; lights up its bar segment without changing the header.
+    @State private var hoveredRow: Int?
+    private var focusedPort: Int? { if case .server(let port) = focus { return port } else { return nil } }
     /// Clean up is a mode of this page: checkboxes slide in and the footer
     /// turns into Cancel / Stop.
     @State private var isCleaning: Bool
@@ -49,44 +52,96 @@ struct ServersView: View {
     // MARK: - Summary
 
     private var summary: some View {
-        let focused = focusedPort.flatMap { monitor.server(port: $0) }
-        let freed = selectedServers.reduce(UInt64(0)) { $0 + $1.memory }
-        let total: (number: String, unit: String) = {
-            if let focused { return Format.bytes(focused.memory) }
-            if isCleaning { return Format.total(freed) }
-            return Format.total(monitor.totalMemory)
-        }()
-        return VStack(alignment: .leading, spacing: 10) {
-            PageHeader(title: isCleaning ? "Clean up" : "Servers")
+        VStack(alignment: .leading, spacing: 10) {
+            summaryTitle
             HStack(alignment: .center) {
+                let amount = summaryAmount
                 HStack(alignment: .lastTextBaseline, spacing: 4) {
-                    Text(total.number).font(Theme.display).foregroundStyle(Theme.text1)
+                    Text(amount.number).font(Theme.display).foregroundStyle(Theme.text1)
                         .contentTransition(.numericText())
-                    Text(total.unit).font(Theme.mono).foregroundStyle(Theme.text3)
+                    Text(amount.unit).font(Theme.mono).foregroundStyle(Theme.text3)
                 }
                 Spacer()
-                if let focused {
-                    let share = Double(focused.memory) / Double(max(monitor.totalMemory, 1)) * 100
-                    Text(":\(String(focused.port)) · \(Format.percent(share)) of total · CPU \(Format.percent(focused.cpu))")
-                        .font(Theme.mono)
-                        .foregroundStyle(Theme.text2)
-                } else if isCleaning {
-                    Text(selection.isEmpty ? "Pick servers to stop" : "freed by stopping \(selectedServers.count)")
-                        .font(Theme.body)
-                        .foregroundStyle(Theme.text2)
-                } else {
-                    Text("CPU \(Format.percent(monitor.totalCPU))")
-                        .font(Theme.mono)
-                        .foregroundStyle(Theme.text3)
-                }
+                summaryDetail
             }
-            MemoryShareBar(servers: visibleServers, monitor: monitor, focusedPort: $focusedPort,
+            MemoryShareBar(servers: visibleServers, monitor: monitor, focus: $focus, highlightedPort: hoveredRow,
                            selection: isCleaning ? selection : nil) { server in
                 if isCleaning { toggle(server.port) } else { openServer(server) }
             }
             .frame(height: 16)
+            MemoryLegend(monitor: monitor)
         }
         .padding(EdgeInsets(top: 12, leading: Theme.inset, bottom: 16, trailing: Theme.inset))
+    }
+
+    /// Title row: the page name, or whatever bar segment is under the pointer.
+    @ViewBuilder private var summaryTitle: some View {
+        switch focus {
+        case .server(let port):
+            PageHeader(title: monitor.server(port: port).map { "\($0.project.name) :\(String($0.port))" } ?? "Servers")
+        case .app(let id):
+            let app = monitor.otherApps.first { $0.id == id }
+            HStack(spacing: 6) {
+                if let path = app?.bundlePath {
+                    Image(nsImage: AppIcons.icon(for: path)).resizable().frame(width: 16, height: 16)
+                } else if let agent = app?.agent {
+                    AgentGlyph(kind: agent, size: 12, color: Theme.text1)
+                } else {
+                    Image(systemName: "terminal").font(.system(size: 11)).foregroundStyle(Theme.text2)
+                }
+                Text(app?.name ?? "App").font(Theme.bodyMedium).foregroundStyle(Theme.text1).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 20)
+        case .rest:
+            HStack(spacing: 6) {
+                Image(systemName: "macbook").font(.system(size: 12)).foregroundStyle(Theme.text2)
+                Text("Everything else").font(Theme.bodyMedium).foregroundStyle(Theme.text1)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 20)
+        case nil:
+            PageHeader(title: isCleaning ? "Clean up" : "Servers")
+        }
+    }
+
+    private var summaryAmount: (number: String, unit: String) {
+        switch focus {
+        case .server(let port): return Format.bytes(monitor.server(port: port)?.memory ?? 0)
+        case .app(let id): return Format.bytes(monitor.otherApps.first { $0.id == id }?.memory ?? 0)
+        case .rest: return Format.total(MemoryBreakdown(monitor: monitor).everythingElse)
+        case nil:
+            if isCleaning { return Format.total(selectedServers.reduce(0) { $0 + $1.memory }) }
+            return Format.total(monitor.totalMemory)
+        }
+    }
+
+    @ViewBuilder private var summaryDetail: some View {
+        let ram = monitor.systemMemory?.total ?? 0
+        switch focus {
+        case .server(let port):
+            if let server = monitor.server(port: port) {
+                Text("\(share(server.memory, of: ram)) of RAM · CPU \(Format.percent(server.cpu))")
+                    .font(Theme.mono).foregroundStyle(Theme.text2)
+            }
+        case .app(let id):
+            if let app = monitor.otherApps.first(where: { $0.id == id }) {
+                Text("\(share(app.memory, of: ram)) of RAM").font(Theme.mono).foregroundStyle(Theme.text2)
+            }
+        case .rest:
+            Text("System and smaller apps").font(Theme.body).foregroundStyle(Theme.text2)
+        case nil:
+            if isCleaning {
+                Text(selection.isEmpty ? "Pick servers to stop" : "freed by stopping \(selectedServers.count)")
+                    .font(Theme.body).foregroundStyle(Theme.text2)
+            } else {
+                CPUToggle(monitor: monitor)
+            }
+        }
+    }
+
+    private func share(_ bytes: UInt64, of total: UInt64) -> String {
+        Format.percent(Double(bytes) / Double(max(total, 1)) * 100)
     }
 
     private var rows: some View {
@@ -94,9 +149,12 @@ struct ServersView: View {
             ForEach(visibleServers) { server in
                 ServerRow(server: server, monitor: monitor,
                           isFocused: focusedPort == server.port,
-                          isDimmed: focusedPort != nil && focusedPort != server.port,
+                          isDimmed: focus != nil && focusedPort != server.port,
                           cleaning: isCleaning ? CleaningState(isSelected: selection.contains(server.port),
                                                                reason: monitor.cleanUpReason(for: server)) : nil,
+                          onHover: { hovering in
+                              if hovering { hoveredRow = server.port } else if hoveredRow == server.port { hoveredRow = nil }
+                          },
                           open: { isCleaning ? toggle(server.port) : openServer(server) })
             }
         }
@@ -198,6 +256,29 @@ struct ServersView: View {
     }
 }
 
+/// One CPU reading at a time; click to switch between servers and the whole Mac.
+private struct CPUToggle: View {
+    @ObservedObject var monitor: ServerMonitor
+    @AppStorage("servers.cpuShowsAll") private var showsAll = false
+
+    var body: some View {
+        Button {
+            showsAll.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                Text(showsAll ? "CPU (all)" : "CPU (servers)").font(Theme.body).foregroundStyle(Theme.text3)
+                Text(Format.percent(showsAll ? (monitor.systemCPU ?? 0) : monitor.serversShareOfCPU))
+                    .font(Theme.mono)
+                    .foregroundStyle(Theme.text2)
+                    .contentTransition(.numericText())
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(showsAll ? "Whole Mac. Click for servers only." : "Dev servers, as a share of the whole Mac. Click for all.")
+    }
+}
+
 // MARK: - Row
 
 struct CleaningState {
@@ -212,6 +293,7 @@ struct ServerRow: View {
     var isDimmed = false
     /// Non-nil while the page is in Clean up mode.
     var cleaning: CleaningState?
+    var onHover: (Bool) -> Void = { _ in }
     let open: () -> Void
     @State private var isHovered = false
 
@@ -278,7 +360,10 @@ struct ServerRow: View {
         .hoverHighlight(isHovered || isFocused)
         .animation(.easeOut(duration: 0.12), value: isDimmed)
         .contentShape(Rectangle())
-        .onHover { isHovered = $0 }
+        .onHover { hovering in
+            isHovered = hovering
+            onHover(hovering)
+        }
         .onTapGesture(perform: open)
     }
 
@@ -288,7 +373,7 @@ struct ServerRow: View {
                 .font(Theme.caption)
                 .foregroundStyle(Theme.amber)
         } else if status == .attention {
-            Text("Over \(MemoryChart.trim(Double(monitor.alertThreshold) / 1_000_000_000)) GB")
+            Text("Over \(MemoryChart.trim(Double(monitor.alertThreshold) / Format.gigabyte)) GB")
                 .font(Theme.caption)
                 .foregroundStyle(Theme.amber)
         } else {
@@ -367,51 +452,164 @@ extension CleanUpReason {
     }
 }
 
-// MARK: - Memory share bar
+// MARK: - Memory bar
 
+enum BarFocus: Equatable {
+    case server(Int)
+    case app(String)
+    case rest
+}
+
+/// The Mac's whole memory: each dev server as a raised segment, then the
+/// biggest other apps and "everything else" as a thin baseline, with free
+/// memory as the empty track. Every segment is hoverable.
 struct MemoryShareBar: View {
     let servers: [Server]
     @ObservedObject var monitor: ServerMonitor
-    @Binding var focusedPort: Int?
+    @Binding var focus: BarFocus?
+    /// A server whose row is hovered in the list.
+    var highlightedPort: Int?
     /// In Clean up mode, selected servers stay bright and the rest dim.
     var selection: Set<Int>?
     let activate: (Server) -> Void
 
+    private let spacing: CGFloat = 2
+
     var body: some View {
         GeometryReader { geometry in
-            let total = max(servers.reduce(0) { $0 + $1.memory }, 1)
-            let spacing: CGFloat = 2
-            let available = geometry.size.width - spacing * CGFloat(max(servers.count - 1, 0))
-            HStack(spacing: spacing) {
-                ForEach(Array(servers.enumerated()), id: \.element.id) { index, server in
-                    let isFocused = focusedPort == server.port
-                    let isSelected = selection?.contains(server.port) ?? false
-                    let isDimmed = (focusedPort != nil && !isFocused) || (selection != nil && !isSelected && !isFocused)
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(color(for: server, index: index, highlighted: isFocused || isSelected))
-                        .frame(height: isFocused ? 8 : 6)
-                        .opacity(isDimmed ? 0.35 : 1)
-                        // A tall, invisible hit area so thin segments are easy to hover.
-                        .frame(width: max(available * CGFloat(server.memory) / CGFloat(total), 2), height: geometry.size.height)
-                        .contentShape(Rectangle())
-                        .onHover { hovering in
-                            if hovering { focusedPort = server.port } else if focusedPort == server.port { focusedPort = nil }
-                        }
-                        .onTapGesture {
-                            if selection == nil { focusedPort = nil }
-                            activate(server)
-                        }
-                        .help("\(server.project.name) :\(String(server.port)) · \(Format.bytesString(server.memory))")
+            let breakdown = MemoryBreakdown(monitor: monitor)
+            let apps = breakdown.topApps
+            let segmentCount = servers.count + apps.count + (breakdown.everythingElse > 0 ? 1 : 0)
+            let filled = breakdown.devServers + apps.reduce(0) { $0 + $1.memory } + breakdown.everythingElse
+            let capacity = max(breakdown.total ?? filled, filled, 1)
+            let unit = max(geometry.size.width - CGFloat(max(segmentCount - 1, 0)) * spacing, 0) / CGFloat(capacity)
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(height: 4)
+                    .help("Free · \(Format.bytesString(breakdown.free))")
+                HStack(spacing: spacing) {
+                    ForEach(Array(servers.enumerated()), id: \.element.id) { index, server in
+                        serverSegment(server, index: index, width: max(unit * CGFloat(server.memory), 2), height: geometry.size.height)
+                    }
+                    ForEach(apps) { app in
+                        baselineSegment(focus: .app(app.id), width: unit * CGFloat(app.memory), height: geometry.size.height,
+                                        help: "\(app.name) · \(Format.bytesString(app.memory))")
+                    }
+                    if breakdown.everythingElse > 0 {
+                        baselineSegment(focus: .rest, width: unit * CGFloat(breakdown.everythingElse), height: geometry.size.height,
+                                        help: "Everything else · \(Format.bytesString(breakdown.everythingElse))")
+                    }
                 }
             }
-            .animation(.easeOut(duration: 0.12), value: focusedPort)
+            .frame(maxHeight: .infinity)
+            .animation(.easeOut(duration: 0.12), value: focus)
+            .animation(.easeOut(duration: 0.12), value: highlightedPort)
         }
+    }
+
+    private func serverSegment(_ server: Server, index: Int, width: CGFloat, height: CGFloat) -> some View {
+        let isFocused = focus == .server(server.port) || (focus == nil && highlightedPort == server.port)
+        let isSelected = selection?.contains(server.port) ?? false
+        let someoneFocused = focus != nil || highlightedPort != nil
+        let isDimmed = (someoneFocused && !isFocused) || (selection != nil && !isSelected && !isFocused)
+        return RoundedRectangle(cornerRadius: 1.5)
+            .fill(color(for: server, index: index, highlighted: isFocused || isSelected))
+            .frame(height: isFocused ? 10 : 8)
+            .opacity(isDimmed ? 0.35 : 1)
+            // A tall, invisible hit area so thin segments are easy to hover.
+            .frame(width: width, height: height)
+            .contentShape(Rectangle())
+            .onHover { hovering in setFocus(.server(server.port), hovering) }
+            .onTapGesture {
+                if selection == nil { focus = nil }
+                activate(server)
+            }
+            .help("\(server.project.name) :\(String(server.port)) · \(Format.bytesString(server.memory))")
+    }
+
+    /// Other apps sit on the thin baseline; hovering one lifts and brightens it.
+    private func baselineSegment(focus target: BarFocus, width: CGFloat, height: CGFloat, help: String) -> some View {
+        let isFocused = focus == target
+        return RoundedRectangle(cornerRadius: 1)
+            .fill(Theme.text1.opacity(isFocused ? 0.7 : 0.12))
+            .frame(height: isFocused ? 8 : 4)
+            .opacity((focus != nil || highlightedPort != nil) && !isFocused ? 0.6 : 1)
+            .frame(width: max(width, 1), height: height)
+            .contentShape(Rectangle())
+            .onHover { hovering in setFocus(target, hovering) }
+            .help(help)
+    }
+
+    private func setFocus(_ target: BarFocus, _ hovering: Bool) {
+        if hovering { focus = target } else if focus == target { focus = nil }
     }
 
     private func color(for server: Server, index: Int, highlighted: Bool) -> Color {
         if monitor.status(of: server) == .attention { return Theme.amber }
-        if highlighted { return Theme.text1.opacity(0.95) }
-        let opacities: [Double] = [0.82, 0.55, 0.4, 0.3, 0.22]
+        if highlighted { return Theme.text1 }
+        // Bright enough to stand clear of the dim baseline of other apps.
+        let opacities: [Double] = [0.95, 0.8, 0.68, 0.58, 0.5]
         return Theme.text1.opacity(opacities[min(index, opacities.count - 1)])
+    }
+}
+
+struct MemoryBreakdown {
+    let devServers: UInt64
+    let otherApps: UInt64
+    let free: UInt64
+    let total: UInt64?
+    /// Apps big enough to get their own segment (≥2% of RAM, at most eight).
+    let topApps: [AppMemory]
+    /// Used memory not covered by dev servers or top apps: system and small apps.
+    let everythingElse: UInt64
+
+    @MainActor
+    init(monitor: ServerMonitor) {
+        devServers = monitor.totalMemory
+        let used = monitor.systemMemory?.used ?? devServers
+        otherApps = used > devServers ? used - devServers : 0
+        free = monitor.systemMemory?.free ?? 0
+        total = monitor.systemMemory?.total
+        let minimum = UInt64(Double(total ?? 0) * 0.02)
+        var budget = otherApps
+        var picked: [AppMemory] = []
+        for app in monitor.otherApps.prefix(8) where app.memory >= minimum && app.memory <= budget {
+            picked.append(app)
+            budget -= app.memory
+        }
+        topApps = picked
+        everythingElse = budget
+    }
+}
+
+/// Servers · Other apps · Free of the Mac's total.
+struct MemoryLegend: View {
+    @ObservedObject var monitor: ServerMonitor
+
+    var body: some View {
+        let breakdown = MemoryBreakdown(monitor: monitor)
+        HStack(spacing: 10) {
+            item(swatch: Theme.text1.opacity(0.95), label: "Servers", value: amount(breakdown.devServers))
+            item(swatch: Theme.text1.opacity(0.12), label: "Other apps", value: amount(breakdown.otherApps))
+            if let total = breakdown.total {
+                item(swatch: Color.white.opacity(0.05), label: "Free", value: "\(Format.total(breakdown.free).number) of \(amount(total))")
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func amount(_ bytes: UInt64) -> String {
+        let value = Format.total(bytes)
+        return "\(value.number) \(value.unit)"
+    }
+
+    private func item(swatch: Color, label: String, value: String) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 1.5).fill(swatch).frame(width: 8, height: label == "Servers" ? 8 : 4)
+            Text(label).font(Theme.caption).foregroundStyle(Theme.text2)
+            Text(value).font(Theme.monoCaption).foregroundStyle(Theme.text3)
+        }
+        .fixedSize()
     }
 }
