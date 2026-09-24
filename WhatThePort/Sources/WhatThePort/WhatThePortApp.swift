@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct WhatThePortApp: App {
+    @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
     @StateObject private var monitor: ServerMonitor
 
     init() {
@@ -47,6 +48,24 @@ struct WhatThePortApp: App {
     }
 }
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Set once the menu bar icon appears, since only views can open windows.
+    @MainActor static var openSettings: (() -> Void)?
+
+    /// Opening the app again (from Finder, Spotlight or Launchpad) opens the
+    /// popover, or Settings when the menu bar is hiding the icon, so people
+    /// who can't see it still reach the app.
+    @MainActor
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if StatusItemOpener.isShowing {
+            StatusItemOpener.open()
+        } else if let openSettings = Self.openSettings {
+            openSettings()
+        }
+        return false
+    }
+}
+
 struct OnboardingContainer: View {
     @ObservedObject var monitor: ServerMonitor
     @Environment(\.dismissWindow) private var dismissWindow
@@ -82,10 +101,12 @@ struct MenuBarLabel: View {
         Image(nsImage: MenuBarIcon.image(glyph: glyph, count: label))
             .accessibilityLabel(count == 0 ? "WhatThePort, no servers" : "WhatThePort, \(count) servers")
             .task {
-                StatusItemMenu.install(monitor: monitor) {
+                let openSettings = {
                     NSApp.activate(ignoringOtherApps: true)
                     openWindow(id: "settings")
                 }
+                AppDelegate.openSettings = openSettings
+                StatusItemMenu.install(monitor: monitor, openSettings: openSettings)
                 // First launch: show onboarding once. After updating, ask about usage once.
                 guard !onboarded || !usageAsked, Bundle.main.bundleURL.pathExtension == "app" else { return }
                 NSApp.activate(ignoringOtherApps: true)
