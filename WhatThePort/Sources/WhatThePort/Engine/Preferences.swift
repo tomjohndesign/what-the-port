@@ -6,6 +6,7 @@ enum Preferences {
     // General
     static let iconStyle = "general.iconStyle"
     static let editor = "general.editor"
+    static let terminal = "general.terminal"
     static let hotkey = "general.hotkey"
     static let scanInterval = "general.scanInterval"
     static let onboarded = "general.onboarded"
@@ -55,6 +56,7 @@ enum Preferences {
         UserDefaults.standard.register(defaults: [
             iconStyle: IconStyle.colonCount.rawValue,
             editor: "auto",
+            terminal: "com.apple.Terminal",
             hotkey: true,
             scanInterval: 2.0,
             thresholdGB: 2.0,
