@@ -182,46 +182,6 @@
   background: linear-gradient(90deg, #05080ca8 0%, #05080c88 42%, #05080c22 70%);
 }
 
-.about {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 32px 64px;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 96px 24px;
-}
-
-.aboutLabel {
-  margin: 0 0 20px;
-  font-family: 'Geist Mono', ui-monospace, monospace;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #a8b0ba;
-}
-
-.about h2 {
-  margin: 0;
-  font-size: clamp(32px, 4vw, 48px);
-  line-height: 1.15;
-  font-weight: 500;
-  letter-spacing: -0.035em;
-}
-
-.aboutCopy {
-  flex: 0 1 520px;
-  min-width: 0;
-}
-
-.aboutCopy p {
-  margin: 0 0 24px;
-  font-size: 18px;
-  line-height: 1.6;
-  color: #e3e5e9;
-}
-
 .mono {
   font-family: 'Geist Mono', ui-monospace, monospace;
 }
@@ -358,39 +318,6 @@
 .clock {
   font-weight: 500;
   color: #ffffffeb;
-}
-
-/* Desktop */
-
-.desktopIcons {
-  position: absolute;
-  right: 20px;
-  bottom: 16px;
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.desktopIcon {
-  width: 92px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  line-height: 13px;
-  font-weight: 500;
-  text-align: center;
-  text-shadow: 0 1px 2px #00000080;
-}
-
-.screenshotThumb {
-  width: 56px;
-  height: 37px;
-  border: 2px solid #ffffffe6;
-  border-radius: 3px;
-  background-image: linear-gradient(135deg, #2a3142 0%, #16181f 60%, #3a2e22 100%);
-  box-shadow: 0 2px 6px #00000066;
 }
 
 /* Scrolling headlines */

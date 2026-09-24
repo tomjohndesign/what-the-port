@@ -199,24 +199,6 @@ function StackedPage({ stars }: { stars: number | null }) {
   )
 }
 
-function About() {
-  return (
-    <section className={styles.about} id="about" aria-labelledby="about-heading">
-      <div>
-        <p className={styles.aboutLabel}>About the creator</p>
-        <h2 id="about-heading">Made by Tomjohn.</h2>
-      </div>
-      <div className={styles.aboutCopy}>
-        <p>I’m the creator of WhatThePort—a small, open-source Mac app for keeping track of local development servers.</p>
-        <div className={styles.footerLinks}>
-          <a href="https://tomjohn.design" target="_blank" rel="noopener noreferrer">More of my work ↗</a>
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">View the source ↗</a>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 // Slides up over the page once you reach the bottom, without adding any height.
 function Footer() {
   const [visible, setVisible] = useState(false)
@@ -269,7 +251,6 @@ export default function Landing() {
       <div className={styles.small}>
         <StackedPage stars={stars} />
       </div>
-      <About />
       <Footer />
     </main>
   )
