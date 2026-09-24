@@ -16,7 +16,9 @@ cp update-config.env.example update-config.env
 
 `generate_keys` creates a signing key in your login Keychain (or reuses an existing Sparkle key) and prints the **public** key. Put that public key in `SPARKLE_PUBLIC_KEY` in `update-config.env`. Set `SPARKLE_FEED_URL` to your permanent HTTPS feed URL, for example `https://your-website.com/updates/appcast.xml`. The local config file is gitignored. Back up the signing key securely using Sparkle's documented key export procedure; losing it can prevent future updates.
 
-To sign and notarize through Apple, set `CODE_SIGN_IDENTITY` to your Developer ID Application identity and `NOTARYTOOL_PROFILE` to a profile you have already stored with `xcrun notarytool store-credentials`. Without these, the script retains the project's existing ad-hoc signing behavior; Sparkle signatures still authenticate updates, but this does not remove Gatekeeper warnings for first-time downloads. Notarization requires Xcode's tools.
+To sign and notarize through Apple, set `CODE_SIGN_IDENTITY` to your Developer ID Application identity and `NOTARYTOOL_PROFILE` to a profile you have already stored with `xcrun notarytool store-credentials`. Alternatively, set `NOTARY_API_KEY_PATH`, `NOTARY_API_KEY_ID` and `NOTARY_API_ISSUER_ID` to use an App Store Connect API key directly. Without these, the script retains the project's existing ad-hoc signing behavior; Sparkle signatures still authenticate updates, but this does not remove Gatekeeper warnings for first-time downloads. Notarization requires Xcode's tools.
+
+To sign updates with an exported key file instead of the Keychain, set `SPARKLE_PRIVATE_KEY_FILE`. Either way, the script checks each update signature against `SPARKLE_PUBLIC_KEY` before writing the feed.
 
 No production key or feed is included in this repository. Ordinary `./build-app.sh` builds work without configuration and show an unavailable message in update settings. `./build-app.sh --release` requires valid update configuration. Snapshot and bare `swift run` sessions never start the updater.
 
@@ -47,6 +49,33 @@ cp WhatThePort/.build/WhatThePort.zip public/WhatThePort.zip
 Review and deploy those website files together through your normal release process. If uploading separately, upload archives before the feed. Keep old archive URLs available, and never edit a signed feed by hand. The release script only prepares artifacts locally; it does not publish or deploy.
 
 Existing installations from before this feature must download and install the first updater-enabled release once. Later releases can update in place.
+
+## Release from GitHub Actions
+
+[Rebuild and deploy site and app](../.github/workflows/deploy.yml) builds the app on every push to `main`. It builds ad-hoc without an update feed until every secret below exists, then switches to Developer ID signing, notarization and a signed Sparkle feed at `https://whattheport.dev/updates/appcast.xml`. If only some are set, the workflow stops rather than shipping an unsigned build by mistake.
+
+The version comes from `Info.plist`. Increase `CFBundleVersion` (and usually `CFBundleShortVersionString`) in the same change as anything you want installed copies to receive. Merges that leave the build number unchanged republish the same version, so installed copies do not update. Each deployment publishes a feed containing only the current build.
+
+### One-time setup once the Apple Developer membership is active
+
+1. **Developer ID certificate.** In Xcode → Settings → Accounts → Manage Certificates, add a **Developer ID Application** certificate (only the Account Holder can create one). Alternatively, upload a Certificate Signing Request in the Apple Developer certificates portal and select **Developer ID Application → G2 Sub-CA**. Export the certificate with its matching private key as a `.p12` with a strong password.
+2. **Notary API key.** In App Store Connect → Users and Access → Integrations → App Store Connect API, request API access if it is not enabled, then create a team key with the **Developer** role. Download the `.p8` (available once) and note its Key ID and the Issuer ID.
+3. **Sparkle key.** Run `.build/artifacts/sparkle/Sparkle/bin/generate_keys` once, then `generate_keys -x sparkle-private-key` to export it. Back up the export somewhere safe, then delete the file.
+4. **GitHub.** Under Settings → Secrets and variables → Actions, add:
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `DEVELOPER_ID_P12` | Secret | `base64 -i DeveloperID.p12 \| pbcopy` |
+| `DEVELOPER_ID_P12_PASSWORD` | Secret | The export password |
+| `NOTARY_API_KEY` | Secret | Contents of the `.p8` file |
+| `NOTARY_API_KEY_ID` | Secret | The key's ID |
+| `NOTARY_API_ISSUER_ID` | Secret | Your team's issuer ID |
+| `SPARKLE_PRIVATE_KEY` | Secret | Contents of the exported Sparkle key |
+| `SPARKLE_PUBLIC_KEY` | Variable | Output of `generate_keys -p` |
+
+Then run **Actions → Rebuild and deploy site and app → Run workflow** on `main`. Download `https://whattheport.dev/WhatThePort.zip` on another Mac: it should open without a Gatekeeper warning and `spctl --assess --verbose=2 /Applications/WhatThePort.app` should report `source=Notarized Developer ID`.
+
+Keep the Sparkle key and Developer ID certificate stable. Installed copies only accept updates signed with the Sparkle key they shipped with, and changing both the Sparkle key and signing identity in one release breaks updates.
 
 ## Verify a release
 

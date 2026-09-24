@@ -17,24 +17,109 @@ jobs:
   build-app:
     if: github.ref == 'refs/heads/main'
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and sign the Mac app
-        run: ./WhatThePort/build-app.sh
-
-      - name: Package the download
+      # Release signing turns on once every signing secret exists. Until then, build ad-hoc.
+      - name: Choose signing mode
+        id: mode
+        env:
+          DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
         run: |
+          missing=()
+          for name in DEVELOPER_ID_P12 DEVELOPER_ID_P12_PASSWORD NOTARY_API_KEY NOTARY_API_KEY_ID \
+                      NOTARY_API_ISSUER_ID SPARKLE_PRIVATE_KEY SPARKLE_PUBLIC_KEY; do
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
+          done
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+          elif [ ${#missing[@]} -eq 7 ]; then
+            echo "::notice::No signing secrets configured. Building an ad-hoc signed app without updates."
+            echo "mode=adhoc" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Release signing is partly configured. Missing: ${missing[*]}. See WhatThePort/UPDATES.md."
+            exit 1
+          fi
+
+      - name: Build the ad-hoc signed Mac app
+        if: steps.mode.outputs.mode == 'adhoc'
+        run: |
+          ./WhatThePort/build-app.sh
           codesign --verify --strict WhatThePort/.build/WhatThePort.app
           mkdir -p dist
           ditto -c -k --sequesterRsrc --keepParent WhatThePort/.build/WhatThePort.app dist/WhatThePort.zip
-          unzip -t dist/WhatThePort.zip
+
+      - name: Install signing credentials
+        if: steps.mode.outputs.mode == 'release'
+        env:
+          DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -base64 24)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          echo "$DEVELOPER_ID_P12" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$keychain" -f pkcs12 \
+            -P "$DEVELOPER_ID_P12_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/developer-id.p12"
+          curl -fsSL https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer -o "$RUNNER_TEMP/DeveloperIDG2CA.cer"
+          security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$keychain" || true
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | xargs)
+
+          identity="$(security find-identity -v -p codesigning "$keychain" | awk '/Developer ID Application/ { print $2; exit }')"
+          if [ -z "$identity" ]; then
+            echo "::error::DEVELOPER_ID_P12 does not contain a Developer ID Application certificate and private key."
+            exit 1
+          fi
+          echo "CODE_SIGN_IDENTITY=$identity" >> "$GITHUB_ENV"
+
+          (umask 077
+           printf '%s\n' "$NOTARY_API_KEY" > "$RUNNER_TEMP/notary-key.p8"
+           printf '%s\n' "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle-key")
+
+      # Info.plist sets the version. Bump CFBundleVersion to offer an update to installed copies.
+      - name: Build, notarize and sign the update
+        if: steps.mode.outputs.mode == 'release'
+        env:
+          SPARKLE_FEED_URL: https://whattheport.dev/updates/appcast.xml
+          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
+          SPARKLE_PRIVATE_KEY_FILE: ${{ runner.temp }}/sparkle-key
+          NOTARY_API_KEY_PATH: ${{ runner.temp }}/notary-key.p8
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          version="$(plutil -extract CFBundleShortVersionString raw WhatThePort/Info.plist)"
+          build="$(plutil -extract CFBundleVersion raw WhatThePort/Info.plist)"
+          ./WhatThePort/release.sh "$version" "$build"
+          mkdir -p dist
+          cp WhatThePort/.build/WhatThePort.zip dist/WhatThePort.zip
+          ditto WhatThePort/.build/updates dist/updates
+
+      - name: Remove signing credentials
+        if: always() && steps.mode.outputs.mode == 'release'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/notary-key.p8" "$RUNNER_TEMP/sparkle-key"
+
+      - name: Verify the download
+        run: unzip -t dist/WhatThePort.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: mac-app
-          path: dist/WhatThePort.zip
+          path: dist/
           if-no-files-found: error
           retention-days: 14
 
@@ -71,8 +156,14 @@ jobs:
           name: mac-app
           path: public
 
+      # Signed builds also bring public/updates/ with the Sparkle feed and archive.
       - name: Verify the rebuilt download
-        run: unzip -t public/WhatThePort.zip
+        run: |
+          unzip -t public/WhatThePort.zip
+          if [ -d public/updates ]; then
+            test -f public/updates/appcast.xml
+            ls public/updates
+          fi
 
       - name: Install dependencies and Vercel CLI
         run: |
