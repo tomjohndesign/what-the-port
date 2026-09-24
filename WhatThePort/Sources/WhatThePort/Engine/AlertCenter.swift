@@ -198,7 +198,7 @@ enum StatusItemOpener {
         }
     }
 
-    private static func findButton(in view: NSView?) -> NSStatusBarButton? {
+    static func findButton(in view: NSView?) -> NSStatusBarButton? {
         guard let view else { return nil }
         if let button = view as? NSStatusBarButton { return button }
         for subview in view.subviews {
