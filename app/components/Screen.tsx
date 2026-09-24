@@ -68,20 +68,6 @@ export function Screen({ active, stars, onNavigate }: Props) {
           />
         ))}
       </div>
-      <div className={styles.desktopIcons} aria-hidden>
-        <div className={styles.desktopIcon}>
-          <span className={styles.screenshotThumb} />
-          <span>Screenshot 2026-09-23 at 1.24.12</span>
-        </div>
-        <div className={styles.desktopIcon}>
-          <svg width="52" height="42" viewBox="0 0 60 48">
-            <path d="M4 4a3 3 0 0 1 3-3h15l5 5h26a3 3 0 0 1 3 3v3H4Z" fill="#6E8FB5" />
-            <rect x="2" y="10" width="56" height="37" rx="3" fill="#86A7CC" />
-          </svg>
-          <span>what-the-port</span>
-        </div>
-      </div>
-
       <div className={styles.scrollViewport}>
         <div className={styles.headlines}>
           {SECTIONS.map((section, index) => (

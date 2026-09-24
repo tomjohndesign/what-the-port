@@ -8,11 +8,15 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/icon-light.svg',
+        url: '/icon-light.svg?v=2',
+        type: 'image/svg+xml',
+        sizes: 'any',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/icon-dark.svg',
+        url: '/icon-dark.svg?v=2',
+        type: 'image/svg+xml',
+        sizes: 'any',
         media: '(prefers-color-scheme: dark)',
       },
     ],

@@ -149,8 +149,7 @@ function DeskStage({ stars }: { stars: number | null }) {
           </div>
         </div>
         <div className={styles.brandSlot}>
-          {/* The corporate office has bright windows behind the logo, so it goes black there. */}
-          <Brand dark={active === GET_IT} />
+          <Brand dark={SECTIONS[active].logo === 'dark'} />
         </div>
       </div>
     </div>
@@ -199,24 +198,6 @@ function StackedPage({ stars }: { stars: number | null }) {
   )
 }
 
-function About() {
-  return (
-    <section className={styles.about} id="about" aria-labelledby="about-heading">
-      <div>
-        <p className={styles.aboutLabel}>About the creator</p>
-        <h2 id="about-heading">Made by Tomjohn.</h2>
-      </div>
-      <div className={styles.aboutCopy}>
-        <p>I’m the creator of WhatThePort—a small, open-source Mac app for keeping track of local development servers.</p>
-        <div className={styles.footerLinks}>
-          <a href="https://tomjohn.design" target="_blank" rel="noopener noreferrer">More of my work ↗</a>
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">View the source ↗</a>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 // Slides up over the page once you reach the bottom, without adding any height.
 function Footer() {
   const [visible, setVisible] = useState(false)
@@ -239,19 +220,19 @@ function Footer() {
     <footer className={styles.footer} data-visible={visible}>
       <div className={styles.footerInner}>
         <span className={styles.footerBrand}>
-          <DotGrid size={16} />
+          <DotGrid size={22} />
           WhatThePort
         </span>
-        <span className={styles.footerMeta}>Free and open source · MIT licensed · Made by Tomjohn</span>
-        <nav className={styles.footerLinks}>
+        <span className={styles.footerMeta}>Free and open source · Made by Tomjohn</span>
+        <nav className={styles.footerLinks} aria-label="Footer">
           <a href={DOWNLOAD_URL} download>
-            Download
+            Download <span aria-hidden="true">↗</span>
           </a>
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-            GitHub
+            GitHub <span aria-hidden="true">↗</span>
           </a>
           <a href="https://tomjohn.design" target="_blank" rel="noopener noreferrer">
-            tomjohn.design
+            tomjohn.design <span aria-hidden="true">↗</span>
           </a>
         </nav>
       </div>
@@ -269,7 +250,6 @@ export default function Landing() {
       <div className={styles.small}>
         <StackedPage stars={stars} />
       </div>
-      <About />
       <Footer />
     </main>
   )
