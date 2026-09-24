@@ -14,6 +14,8 @@ import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS } from './sections'
 const SCENE = { width: 2560, height: 1600 }
 const SCREEN = { x: 624.2, y: 210.02, width: 1310.4, height: 819 }
 const LID_TOP = 190
+const LID_WIDTH = 1346.8
+const LID_GUTTER = 32
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
@@ -22,10 +24,12 @@ const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2
 const HOLD = 0.3
 const transition = (fraction: number) => easeInOutCubic(clamp((fraction - HOLD) / (1 - 2 * HOLD), 0, 1))
 
-// Zoom so the laptop screen is comfortable to read while the room still frames it,
-// then pan to keep the screen centred without exposing the scene's edges.
+// Zoom from the viewport's height so narrowing the window crops the room instead of shrinking
+// the laptop; only shrink once the lid itself would no longer fit across. Then pan to keep the
+// screen centred without exposing the scene's edges.
 function camera(vw: number, vh: number) {
-  const target = Math.min(vw * 0.66, vh * 0.72 * (SCREEN.width / SCREEN.height), 1500)
+  const fitsAcross = (vw - LID_GUTTER * 2) * (SCREEN.width / LID_WIDTH)
+  const target = Math.min(vh * 0.72 * (SCREEN.width / SCREEN.height), 1500, fitsAcross)
   const scale = Math.max(target / SCREEN.width, vw / SCENE.width, vh / SCENE.height)
   const x = clamp(vw / 2 - (SCREEN.x + SCREEN.width / 2) * scale, vw - SCENE.width * scale, 0)
   const y = clamp(vh * 0.49 - (SCREEN.y + SCREEN.height / 2) * scale, vh - SCENE.height * scale, 0)
