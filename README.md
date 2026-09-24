@@ -1,6 +1,48 @@
 # WhatThePort
 
-A macOS menu bar app that monitors your local development servers. See all running ports at a glance, get notifications when servers start or stop, and quickly open them in your browser.
+**Every dev server on your Mac, in the menu bar.**
+
+What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you forgot about in one click.
+
+[**Download for macOS**](https://whattheport.dev/WhatThePort.zip) · [Try the interactive demo](https://whattheport.dev) · [Build from source](#building)
+
+Free and open source · macOS 14 or later · No account
+
+[![WhatThePort marketing demo showing the server list, ports, branches, memory use, and CPU in a Mac menu bar popover](docs/images/servers.jpg)](https://whattheport.dev)
+
+## Know what’s running
+
+WhatThePort is a native Swift app that lives in your menu bar, with no Dock icon. Press **⌥⌘P** to see your local development servers: project names, ports, git branches, uptime, and resource use. Open a server in your browser, inspect its processes, or stop and restart it without hunting through terminals.
+
+### Knows which agent started it
+
+Servers launched by Claude Code, Codex, or Conductor link back to the session that started them. Pick up the conversation, check the branch, or open a Vercel preview. Optional pull request links use the GitHub CLI you’re already signed in to.
+
+![Marketing demo of a server’s detail view with its agent session, git branch, memory and CPU charts, and preview link](docs/images/sessions.jpg)
+
+### Notices before your fans do
+
+When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its indicators amber and sends a notification. Ten minutes of memory and CPU history show what’s happening across the whole process tree. Adjust thresholds and snooze alerts in Settings.
+
+![Marketing demo showing an amber memory warning and a rising memory chart for a development server](docs/images/leaks.jpg)
+
+### Stops the ones you forgot
+
+Servers from deleted worktrees, or idle for hours, collect under **Clean up**. Tick the ones to go and WhatThePort stops each whole process tree. Database processes such as Postgres and Redis are protected by default.
+
+Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Leaking servers are never stopped automatically.
+
+![Marketing demo of Clean up with idle and deleted-worktree servers selected for removal](docs/images/clean-up.jpg)
+
+*Screenshots from the [marketing site’s interactive demo](https://whattheport.dev), using sample server data.*
+
+## Get started
+
+1. [Download WhatThePort](https://whattheport.dev/WhatThePort.zip) and unzip it.
+2. Move **WhatThePort.app** to **Applications** and open it.
+3. Start a development server, then click the dot grid in your menu bar or press **⌥⌘P**.
+
+The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. To compile the app yourself, you’ll also need **Swift 5.9+**.
 
 ## Features
 
@@ -13,26 +55,9 @@ A macOS menu bar app that monitors your local development servers. See all runni
 - **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
 - **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
+- **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
 - **Global shortcut** - ⌥⌘P opens the popover
-
-## Requirements
-
-- macOS 14.0 or later
-- Swift 5.9+
-
-## Building
-
-```bash
-cd WhatThePort
-swift build
-```
-
-To build the app bundle:
-
-```bash
-./build-app.sh
-open .build/WhatThePort.app
-```
+- **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 
 ## Usage
 
@@ -43,6 +68,7 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 - Click **Clean up** to tick the servers you want gone and stop them together
 
 To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
+Add `--appearance light` or `--appearance dark` to check a specific appearance without changing your Mac’s settings.
 
 To render the onboarding loading, success, missing-tool, and approval states without changing macOS permissions or login items, run `WhatThePort --snapshot-onboarding <dir>`.
 
@@ -59,6 +85,56 @@ Open Settings from the gear in the popover (⌘,):
 ## How It Works
 
 WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds.
+
+## Building
+
+```bash
+cd WhatThePort
+swift build
+```
+
+To build the app bundle:
+
+```bash
+./build-app.sh
+open .build/WhatThePort.app
+```
+
+For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app and generates a signed update feed for the website.
+
+## Automatic deployment
+
+Every push to `main`, including a merged pull request, runs
+[Rebuild and deploy site and app](.github/workflows/deploy.yml). It builds the
+Apple Silicon Mac app on macOS, verifies its ad-hoc signature, and packages it as
+`WhatThePort.zip`. A Linux job then replaces `public/WhatThePort.zip` with that
+artifact, builds the Next.js site, and deploys both together to production on
+Vercel. A failed app or site build stops deployment.
+
+Configure these GitHub Actions **repository secrets** under
+**Settings → Secrets and variables → Actions** before merging this workflow:
+
+- `VERCEL_TOKEN`: a Vercel access token with access to the production project.
+- `VERCEL_ORG_ID`: the production project's `orgId` from `.vercel/project.json`.
+- `VERCEL_PROJECT_ID`: its `projectId` from `.vercel/project.json`.
+
+Run `vercel link` locally to obtain the project IDs. Keep tokens and the generated
+`.vercel` directory out of Git.
+
+`vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
+workflow publishes production with the freshly built app. Other branches retain
+Vercel's normal preview deployments using the checked-in ZIP. To retry production,
+use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
+selected. Production runs are serialized; GitHub may replace a pending run with
+a newer one when several merges arrive during an active deployment.
+
+The workflow uses ad-hoc signing and builds without Sparkle release configuration.
+Developer ID signing, notarization, and publishing a signed update feed require
+the [release setup](WhatThePort/UPDATES.md) described above.
+
+## About
+
+Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev) or browse the source to see how it works.
 
 ## License
 

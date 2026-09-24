@@ -3,8 +3,21 @@ import Foundation
 
 @MainActor
 final class ServerMonitor: ObservableObject {
-    @Published private(set) var servers: [Server] = []
+    @Published private(set) var servers: [Server] = [] {
+        didSet {
+            for port in servers.map(\.port).sorted() where portColorIndices[port] == nil {
+                portColorIndices[port] = portColorIndices.count
+            }
+        }
+    }
+    /// Keep port identities stable across reordering, filtering, and restarts.
+    private var portColorIndices: [Int: Int] = [:]
     @Published private(set) var hasScanned = false
+    @Published private(set) var systemMemory: SystemMemory?
+    /// Whole-Mac CPU, as a share of all cores.
+    @Published private(set) var systemCPU: Double?
+    /// Memory by app for everything that isn't a dev server, largest first.
+    @Published private(set) var otherApps: [AppMemory] = []
     @Published var allowlist: Set<String> = ServerMonitor.defaultAllowlist
     /// Set from outside the popover (e.g. a notification's Details button).
     @Published var pendingRoute: PopoverRoute?
@@ -29,6 +42,8 @@ final class ServerMonitor: ObservableObject {
 
     let github = GitHubLookup()
     private let engine = ScanEngine()
+    private let appUsage = AppUsageScanner()
+    private let cpuSampler = SystemCPUSampler()
     private let queue = DispatchQueue(label: "com.whattheport.scan", qos: .utility)
     private var timer: Timer?
     private var timerInterval: TimeInterval = 0
@@ -53,7 +68,7 @@ final class ServerMonitor: ObservableObject {
     /// Memory above which a server needs attention.
     var alertThreshold: UInt64 {
         let gigabytes = defaults.double(forKey: Preferences.thresholdGB)
-        return UInt64((gigabytes > 0 ? gigabytes : 2) * 1_000_000_000)
+        return UInt64((gigabytes > 0 ? gigabytes : 2) * Format.gigabyte)
     }
 
     var idleThreshold: TimeInterval { TimeInterval(max(defaults.integer(forKey: Preferences.cleanUpIdleHours), 1)) * 3600 }
@@ -100,10 +115,16 @@ final class ServerMonitor: ObservableObject {
         guard !isScanning else { return }
         isScanning = true
         let config = scanConfig
-        queue.async { [engine] in
+        queue.async { [engine, appUsage, cpuSampler] in
             let result = engine.scan(config)
+            let system = ProcessInspector.systemMemory()
+            let cpu = cpuSampler.sample()
+            let apps = appUsage.scan(excluding: Set(result.flatMap { $0.processStarts.keys }))
             Task { @MainActor in
                 self.servers = result
+                self.systemMemory = system
+                if let cpu { self.systemCPU = cpu }
+                self.otherApps = apps
                 self.hasScanned = true
                 self.isScanning = false
                 AlertCenter.shared.evaluate(result, threshold: self.alertThreshold)
@@ -118,6 +139,10 @@ final class ServerMonitor: ObservableObject {
     func scanNow() {
         let config = scanConfig
         servers = queue.sync { engine.scan(config) }
+        systemMemory = ProcessInspector.systemMemory()
+        if let cpu = queue.sync(execute: { cpuSampler.sample() }) { systemCPU = cpu }
+        let excluded = Set(servers.flatMap { $0.processStarts.keys })
+        otherApps = queue.sync { appUsage.scan(excluding: excluded) }
         hasScanned = true
     }
 
@@ -125,9 +150,13 @@ final class ServerMonitor: ObservableObject {
 
     var totalMemory: UInt64 { servers.reduce(0) { $0 + $1.memory } }
     var totalCPU: Double { servers.reduce(0) { $0 + $1.cpu } }
+    /// Servers' CPU as a share of the whole Mac, comparable with `systemCPU`.
+    var serversShareOfCPU: Double { totalCPU / Double(max(ProcessInfo.processInfo.activeProcessorCount, 1)) }
     var needsAttention: Bool { servers.contains { $0.status(alertThreshold: alertThreshold) == .attention } }
 
     func server(port: Int) -> Server? { servers.first { $0.port == port } }
+
+    func colorIndex(for port: Int) -> Int { portColorIndices[port] ?? 0 }
 
     func status(of server: Server) -> ServerStatus { server.status(alertThreshold: alertThreshold) }
 

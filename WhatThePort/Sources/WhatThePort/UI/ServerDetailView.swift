@@ -41,7 +41,7 @@ struct ServerDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             PageHeader(title: server.project.name, back: back)
             HStack {
-                PortLabel(port: server.port, status: status, large: true)
+                PortLabel(port: server.port, status: status, color: Theme.portColor(at: monitor.colorIndex(for: server.port)), large: true)
                 Spacer()
                 HStack(spacing: 10) {
                     if let uptime = server.uptime {
@@ -308,7 +308,7 @@ struct SessionValue: View {
                 if let workspace = server.conductorWorkspace {
                     Button("Reveal \(workspace) workspace") { reveal(server.project.root ?? server.cwd) }
                 }
-                Button("Resume in Terminal") { SessionLauncher.resume(session, fallbackDirectory: server.cwd) }
+                Button("Resume in \(TerminalLauncher.current.name)") { SessionLauncher.resume(session, fallbackDirectory: server.cwd) }
                 if let transcript = session.transcript {
                     Button("Show transcript") { NSWorkspace.shared.selectFile(transcript.path, inFileViewerRootedAtPath: "") }
                 }
@@ -352,9 +352,9 @@ struct MemoryChart: View {
     @Binding var hoverTime: Date?
 
     var body: some View {
-        let values = server.history.map { (time: $0.time, gb: Double($0.memory) / 1_000_000_000) }
-        let top = max(Double(threshold) / 1_000_000_000, (values.map(\.gb).max() ?? 0) * 1.1)
-        let thresholdGB = Double(threshold) / 1_000_000_000
+        let values = server.history.map { (time: $0.time, gb: Double($0.memory) / Format.gigabyte) }
+        let top = max(Double(threshold) / Format.gigabyte, (values.map(\.gb).max() ?? 0) * 1.1)
+        let thresholdGB = Double(threshold) / Format.gigabyte
         let hovered = ChartHover.sample(in: server.history, near: hoverTime)
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
@@ -379,7 +379,7 @@ struct MemoryChart: View {
                     RuleMark(x: .value("Time", hovered.time))
                         .foregroundStyle(Theme.text1.opacity(0.25))
                         .lineStyle(StrokeStyle(lineWidth: 1))
-                    PointMark(x: .value("Time", hovered.time), y: .value("GB", Double(hovered.memory) / 1_000_000_000))
+                    PointMark(x: .value("Time", hovered.time), y: .value("GB", Double(hovered.memory) / Format.gigabyte))
                         .foregroundStyle(Theme.text1)
                         .symbolSize(30)
                 } else if let last = values.last {

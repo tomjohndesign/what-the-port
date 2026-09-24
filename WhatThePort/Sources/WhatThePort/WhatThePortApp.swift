@@ -7,9 +7,8 @@ struct WhatThePortApp: App {
     init() {
         FontLoader.registerBundledFonts()
         Preferences.register()
-        // The design is dark-only; without this the popover's glass follows a
-        // light system appearance and washes out behind the dark content.
-        NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        // Initialize AppKit for snapshot mode without overriding its appearance.
+        _ = NSApplication.shared
         let monitor = ServerMonitor()
         _monitor = StateObject(wrappedValue: monitor)
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-onboarding") {
@@ -20,6 +19,7 @@ struct WhatThePortApp: App {
             let directory = CommandLine.arguments.dropFirst(index + 1).first ?? FileManager.default.currentDirectoryPath
             SnapshotRenderer.run(monitor: monitor, directory: directory)
         }
+        _ = AppUpdater.shared
         AlertCenter.shared.start(monitor: monitor)
         HotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: Preferences.hotkey))
         monitor.start()

@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The two status dots that prefix every port: white running, amber attention,
-/// hollow idle.
+/// Port-colored dots; a glow marks attention and an outline marks idle.
 struct ColonStatus: View {
     let status: ServerStatus
+    let color: Color
     var dot: CGFloat = 4
     var gap: CGFloat = 3
 
@@ -17,12 +17,12 @@ struct ColonStatus: View {
     @ViewBuilder private var dotView: some View {
         switch status {
         case .running:
-            Circle().fill(Theme.text1).frame(width: dot, height: dot)
+            Circle().fill(color).frame(width: dot, height: dot)
         case .attention:
-            Circle().fill(Theme.amber).frame(width: dot, height: dot)
-                .shadow(color: Theme.amber.opacity(0.7), radius: 2.5)
+            Circle().fill(color).frame(width: dot, height: dot)
+                .shadow(color: color.opacity(0.7), radius: 2.5)
         case .idle:
-            Circle().strokeBorder(Theme.text2, lineWidth: 1.1).frame(width: dot, height: dot)
+            Circle().strokeBorder(color, lineWidth: 1.1).frame(width: dot, height: dot)
         }
     }
 }
@@ -30,14 +30,15 @@ struct ColonStatus: View {
 struct PortLabel: View {
     let port: Int
     let status: ServerStatus
+    let color: Color
     var large = false
 
     var body: some View {
         HStack(spacing: large ? 6 : 5) {
-            ColonStatus(status: status, dot: large ? 6 : 4, gap: large ? 6 : 3)
+            ColonStatus(status: status, color: color, dot: large ? 6 : 4, gap: large ? 6 : 3)
             Text(String(port))
                 .font(large ? Theme.display : Theme.monoMedium)
-                .foregroundStyle(Theme.text1)
+                .foregroundStyle(color)
         }
     }
 }
@@ -148,7 +149,7 @@ struct PillButtonStyle: ButtonStyle {
 
     private var foreground: Color {
         switch kind {
-        case .primary: return Theme.ink
+        case .primary: return Theme.onPrimary
         case .secondary: return Theme.text1
         case .destructive: return .white
         }

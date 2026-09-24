@@ -1,0 +1,6 @@
+.context/
+.git
+.next/
+.env*
+node_modules/
+WhatThePort/

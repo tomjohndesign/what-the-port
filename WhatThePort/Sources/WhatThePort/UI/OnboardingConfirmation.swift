@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Values exported from the approved Paper confirmation design.
+/// Preserve the approved Paper palette in dark mode and adapt it for light mode.
 enum OnboardingStyle {
-    static let secondary = Color(red: 165 / 255, green: 165 / 255, blue: 173 / 255)
-    static let success = Color(red: 155 / 255, green: 198 / 255, blue: 170 / 255)
-    static let surface = Color(red: 40 / 255, green: 40 / 255, blue: 43 / 255)
-    static let divider = Color(red: 56 / 255, green: 56 / 255, blue: 59 / 255)
+    static let secondary = Theme.adaptive(light: 0x64646C, dark: 0xA5A5AD)
+    static let success = Theme.adaptive(light: 0x37704A, dark: 0x9BC6AA)
+    static let surface = Theme.adaptive(light: 0xEBEBED, dark: 0x28282B)
+    static let divider = Theme.adaptive(light: 0xD4D4D7, dark: 0x38383B)
     static let label = Font.custom("Geist-Regular", fixedSize: 12)
     static let evidence = Font.custom("GeistMono-Regular", fixedSize: 12)
 }

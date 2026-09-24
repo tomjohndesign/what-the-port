@@ -66,6 +66,7 @@ struct SettingsView: View {
 private struct GeneralPane: View {
     @AppStorage(Preferences.iconStyle) private var iconStyle = Preferences.IconStyle.colonCount.rawValue
     @AppStorage(Preferences.editor) private var editor = "auto"
+    @AppStorage(Preferences.terminal) private var terminal = "com.apple.Terminal"
     @AppStorage(Preferences.hotkey) private var hotkey = true
     @AppStorage(Preferences.scanInterval) private var scanInterval = 2.0
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -93,6 +94,11 @@ private struct GeneralPane: View {
                     Text("Automatic").tag("auto")
                     ForEach(EditorLauncher.installedEditors, id: \.id) { Text($0.name).tag($0.id) }
                     Text("Finder").tag("finder")
+                }
+                Picker(selection: $terminal) {
+                    ForEach(TerminalLauncher.installed, id: \.id) { Text($0.name).tag($0.id) }
+                } label: {
+                    SettingLabel("Resume sessions in", caption: "Terminal used by “Resume in Terminal”")
                 }
                 Toggle(isOn: $hotkey) {
                     SettingLabel("Show popover with ⌥⌘P", caption: "Global shortcut")
@@ -309,7 +315,7 @@ private struct IntegrationsPane: View {
             }
             .disabled(!GitHubLookup.isAvailable)
             Section {
-                Text("Agent and Git details come from local files only. The GitHub options above are the only ones that use the network.")
+                Text("Agent and Git details come from local files only. The GitHub options above and app update checks use the network.")
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
@@ -328,6 +334,7 @@ enum ToolDetection {
 // MARK: - About
 
 private struct AboutPane: View {
+    @ObservedObject private var updater = AppUpdater.shared
     private let links: [(label: String, value: String, url: String)] = [
         ("Website", "tomjohn.design", "https://www.tomjohn.design"),
         ("LinkedIn", "in/tomjohndesign", "https://www.linkedin.com/in/tomjohndesign"),
@@ -355,6 +362,32 @@ private struct AboutPane: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
+            }
+            Section("Updates") {
+                if let reason = updater.unavailableReason {
+                    Text(reason).foregroundStyle(.secondary)
+                } else {
+                    Toggle("Automatically check for updates", isOn: Binding(
+                        get: { updater.automaticallyChecksForUpdates },
+                        set: updater.setAutomaticallyChecksForUpdates
+                    ))
+                    Toggle(isOn: Binding(
+                        get: { updater.automaticallyDownloadsUpdates },
+                        set: updater.setAutomaticallyDownloadsUpdates
+                    )) {
+                        SettingLabel("Download and install updates automatically", caption: "Installs when you quit. Some updates may ask to restart the app.")
+                    }
+                    .disabled(!updater.automaticallyChecksForUpdates)
+                }
+                HStack {
+                    Button("Check for Updates…", action: updater.checkForUpdates)
+                        .disabled(!updater.canCheckForUpdates)
+                    Spacer()
+                    if let date = updater.lastUpdateCheckDate {
+                        Text("Last checked \(date.formatted(date: .abbreviated, time: .shortened))")
+                            .font(Theme.caption).foregroundStyle(.secondary)
+                    }
+                }
             }
             Section("Made by Tomjohn") {
                 ForEach(links, id: \.label) { link in
@@ -407,6 +440,8 @@ struct AppIconView: View {
                                  startPoint: .top, endPoint: .bottom))
             .overlay(RoundedRectangle(cornerRadius: size * 0.2237, style: .continuous).strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
             .overlay(DotGridView(glyph: .colon, size: size * 0.68))
+            // The app icon remains the same artwork in both appearances.
+            .environment(\.colorScheme, .dark)
             .frame(width: size, height: size)
             .shadow(color: .black.opacity(0.4), radius: 10, y: 6)
     }
@@ -431,7 +466,7 @@ struct TokenEditor: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(Theme.fill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
             TextField("Add…", text: $draft)
                 .textFieldStyle(.roundedBorder)
