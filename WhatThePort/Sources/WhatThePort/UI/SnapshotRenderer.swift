@@ -1,5 +1,7 @@
 import AppKit
 import SwiftUI
+import ServiceManagement
+import UserNotifications
 
 /// `WhatThePort --snapshot <dir>` scans for a few seconds, renders each popover
 /// page with live data to PNG, and exits. Useful for checking the UI without
@@ -7,15 +9,7 @@ import SwiftUI
 @MainActor
 enum SnapshotRenderer {
     static func run(monitor: ServerMonitor, directory: String) {
-        // Override only this snapshot process; never change the Mac's appearance.
-        if let index = CommandLine.arguments.firstIndex(of: "--appearance"),
-           let value = CommandLine.arguments.dropFirst(index + 1).first {
-            guard value == "light" || value == "dark" else {
-                fputs("--appearance must be light or dark\n", stderr)
-                exit(1)
-            }
-            NSApp.appearance = NSAppearance(named: value == "dark" ? .darkAqua : .aqua)
-        }
+        configureAppearance()
         let scheme: ColorScheme = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .dark : .light
         for _ in 0..<5 {
             monitor.scanNow()
@@ -73,6 +67,60 @@ enum SnapshotRenderer {
         }
         print("apps: " + monitor.otherApps.prefix(8).map { "\($0.name) \(Format.bytesString($0.memory))" }.joined(separator: ", "))
         exit(0)
+    }
+
+    /// Deterministic onboarding samples. These services never request real
+    /// notification permission, alter login items, or change preferences.
+    static func runOnboarding(monitor: ServerMonitor, directory: String) {
+        configureAppearance()
+        let output = URL(fileURLWithPath: directory, isDirectory: true)
+        try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        let samples: [(String, OnboardingStep, UNAuthorizationStatus, SMAppService.Status)] = [
+            ("tools-loading", .tools, .authorized, .enabled),
+            ("tools-confirmed", .tools, .authorized, .enabled),
+            ("tools-missing", .tools, .authorized, .enabled),
+            ("setup-actions", .leaks, .notDetermined, .notRegistered),
+            ("setup-pending", .leaks, .notDetermined, .notRegistered),
+            ("setup-confirmed", .leaks, .authorized, .enabled),
+            ("setup-approval", .leaks, .denied, .requiresApproval),
+        ]
+        for (name, step, authorization, login) in samples {
+            let services = OnboardingServices(
+                detect: { tool in
+                    if name == "tools-loading", tool != .claude { try? await Task.sleep(for: .seconds(5)) }
+                    return name != "tools-missing" || tool != .github
+                },
+                notifications: { authorization },
+                requestNotifications: { try await Task.sleep(for: .seconds(5)) },
+                login: { login },
+                registerLogin: { try await Task.sleep(for: .seconds(5)) }
+            )
+            let status = OnboardingStatus(services: services)
+            if name == "setup-pending" {
+                Task {
+                    await status.refreshSetup()
+                    async let notification: Void = status.allowNotifications()
+                    async let registration: Void = status.addLoginItem()
+                    _ = await (notification, registration)
+                }
+            }
+            renderWindow(OnboardingView(monitor: monitor, status: status, step: step),
+                         size: CGSize(width: 480, height: 620),
+                         to: output.appendingPathComponent("\(name).png"))
+        }
+        exit(0)
+    }
+
+    private static func configureAppearance() {
+        // Override only this snapshot process; never change the Mac's appearance.
+        if let index = CommandLine.arguments.firstIndex(of: "--appearance"),
+           let value = CommandLine.arguments.dropFirst(index + 1).first {
+            guard value == "light" || value == "dark" else {
+                fputs("--appearance must be light or dark\n", stderr)
+                exit(1)
+            }
+            NSApp.appearance = NSAppearance(named: value == "dark" ? .darkAqua : .aqua)
+        }
     }
 
     /// AppKit-backed controls (toggles, pickers, forms) don't draw in

@@ -11,6 +11,10 @@ struct WhatThePortApp: App {
         _ = NSApplication.shared
         let monitor = ServerMonitor()
         _monitor = StateObject(wrappedValue: monitor)
+        if let index = CommandLine.arguments.firstIndex(of: "--snapshot-onboarding") {
+            let directory = CommandLine.arguments.dropFirst(index + 1).first ?? FileManager.default.currentDirectoryPath
+            SnapshotRenderer.runOnboarding(monitor: monitor, directory: directory)
+        }
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot") {
             let directory = CommandLine.arguments.dropFirst(index + 1).first ?? FileManager.default.currentDirectoryPath
             SnapshotRenderer.run(monitor: monitor, directory: directory)
