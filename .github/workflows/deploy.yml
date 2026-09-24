@@ -55,8 +55,9 @@ jobs:
         run: |
           ./WhatThePort/build-app.sh
           codesign --verify --strict WhatThePort/.build/WhatThePort.app
+          ./WhatThePort/make-dmg.sh
           mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent WhatThePort/.build/WhatThePort.app dist/WhatThePort.zip
+          cp WhatThePort/.build/WhatThePort.dmg dist/WhatThePort.dmg
 
       - name: Install signing credentials
         if: steps.mode.outputs.mode == 'release'
@@ -106,7 +107,7 @@ jobs:
           build="$(plutil -extract CFBundleVersion raw WhatThePort/Info.plist)"
           ./WhatThePort/release.sh "$version" "$build"
           mkdir -p dist
-          cp WhatThePort/.build/WhatThePort.zip dist/WhatThePort.zip
+          cp WhatThePort/.build/WhatThePort.dmg dist/WhatThePort.dmg
           ditto WhatThePort/.build/updates dist/updates
 
       - name: Remove signing credentials
@@ -116,7 +117,13 @@ jobs:
           rm -f "$RUNNER_TEMP/notary-key.p8" "$RUNNER_TEMP/sparkle-key"
 
       - name: Verify the download
-        run: unzip -t dist/WhatThePort.zip
+        run: |
+          hdiutil verify dist/WhatThePort.dmg
+          mount="$(mktemp -d)"
+          hdiutil attach -nobrowse -readonly -mountpoint "$mount" dist/WhatThePort.dmg
+          codesign --verify --strict "$mount/WhatThePort.app"
+          test "$(readlink "$mount/Applications")" = /Applications
+          hdiutil detach "$mount"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -159,7 +166,6 @@ jobs:
       # Signed builds also bring public/updates/ with the Sparkle feed and archive.
       - name: Verify the rebuilt download
         run: |
-          unzip -t public/WhatThePort.zip
           if [ -d public/updates ]; then
             test -f public/updates/appcast.xml
             ls public/updates
