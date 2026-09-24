@@ -7,6 +7,16 @@ import SwiftUI
 @MainActor
 enum SnapshotRenderer {
     static func run(monitor: ServerMonitor, directory: String) {
+        // Override only this snapshot process; never change the Mac's appearance.
+        if let index = CommandLine.arguments.firstIndex(of: "--appearance"),
+           let value = CommandLine.arguments.dropFirst(index + 1).first {
+            guard value == "light" || value == "dark" else {
+                fputs("--appearance must be light or dark\n", stderr)
+                exit(1)
+            }
+            NSApp.appearance = NSAppearance(named: value == "dark" ? .darkAqua : .aqua)
+        }
+        let scheme: ColorScheme = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .dark : .light
         for _ in 0..<5 {
             monitor.scanNow()
             RunLoop.current.run(until: Date().addingTimeInterval(1))
@@ -22,10 +32,11 @@ enum SnapshotRenderer {
         }
         for (name, route, cleaning) in pages {
             let view = PopoverRoot(monitor: monitor, route: route, startCleaning: cleaning)
-                .background(Color(red: 0.125, green: 0.125, blue: 0.14))
+                .background(Theme.popoverBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(20)
-                .background(Color(red: 0.043, green: 0.051, blue: 0.07))
+                .background(Theme.snapshotBackground)
+                .environment(\.colorScheme, scheme)
             let renderer = ImageRenderer(content: view)
             renderer.scale = 2
             if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
@@ -69,7 +80,7 @@ enum SnapshotRenderer {
     static func renderWindow<V: View>(_ view: V, size: CGSize, to url: URL) {
         let host = NSHostingView(rootView: view)
         let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
-        window.appearance = NSAppearance(named: .darkAqua)
+        window.appearance = NSApp.effectiveAppearance
         window.contentView = host
         window.setFrameOrigin(CGPoint(x: -10_000, y: -10_000))
         window.orderFrontRegardless()

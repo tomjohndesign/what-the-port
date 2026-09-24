@@ -3,30 +3,48 @@ import CoreText
 import SwiftUI
 
 enum Theme {
-    static let text1 = Color(red: 245 / 255, green: 245 / 255, blue: 247 / 255)
-    static let text2 = Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.6)
-    static let text3 = Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.4)
-    static let separator = Color.white.opacity(0.08)
-    static let fill = Color.white.opacity(0.08)
-    static let hover = Color.white.opacity(0.08)
-    static let amber = Color(red: 1, green: 178 / 255, blue: 36 / 255)
-    static let red = Color(red: 1, green: 69 / 255, blue: 58 / 255)
-    static let softRed = Color(red: 1, green: 105 / 255, blue: 97 / 255)
-    static let ink = Color(red: 11 / 255, green: 13 / 255, blue: 18 / 255)
+    static let text1 = adaptive(light: 0x1D1D22, dark: 0xF5F5F7)
+    static let text2 = adaptive(light: 0x1D1D22, dark: 0xEBEBF5, lightAlpha: 0.72, darkAlpha: 0.6)
+    static let text3 = adaptive(light: 0x1D1D22, dark: 0xEBEBF5, lightAlpha: 0.62, darkAlpha: 0.4)
+    static let separator = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.12, darkAlpha: 0.08)
+    static let fill = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.06, darkAlpha: 0.08)
+    static let hover = fill
+    static let subtleFill = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.04, darkAlpha: 0.04)
+    static let memoryTrack = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.06, darkAlpha: 0.05)
+    static let amber = adaptive(light: 0x966000, dark: 0xFFB224)
+    static let red = adaptive(light: 0xC52D24, dark: 0xFF453A)
+    static let softRed = adaptive(light: 0xBA3028, dark: 0xFF6961)
+    /// Text on solid primary buttons and selected checkboxes.
+    static let onPrimary = adaptive(light: 0xFAFAFC, dark: 0x0B0D12)
+    static let windowBackground = adaptive(light: 0xF5F5F7, dark: 0x1E1E21)
+    static let popoverBackground = adaptive(light: 0xF5F5F7, dark: 0x202024)
+    static let snapshotBackground = adaptive(light: 0xE5E7EB, dark: 0x0B0D12)
 
     /// Port identity colors avoid the red, amber, and green status families.
     private static let portColors: [Color] = [
-        Color(red: 0.43, green: 0.78, blue: 0.93), // sky
-        Color(red: 0.71, green: 0.60, blue: 0.94), // lavender
-        Color(red: 0.92, green: 0.61, blue: 0.83), // pink
-        Color(red: 0.49, green: 0.61, blue: 0.95), // periwinkle
-        Color(red: 0.49, green: 0.86, blue: 0.88), // cyan
-        Color(red: 0.85, green: 0.64, blue: 0.95), // lilac
-        Color(red: 0.67, green: 0.76, blue: 0.88), // slate
+        adaptive(light: 0x126B8D, dark: 0x6EC7ED), // sky
+        adaptive(light: 0x704CB0, dark: 0xB599F0), // lavender
+        adaptive(light: 0xA23682, dark: 0xEB9CD4), // pink
+        adaptive(light: 0x405CBC, dark: 0x7D9CF2), // periwinkle
+        adaptive(light: 0x096D75, dark: 0x7DDBE0), // cyan
+        adaptive(light: 0x87449E, dark: 0xD9A3F2), // lilac
+        adaptive(light: 0x4C627D, dark: 0xABC2E0), // slate
     ]
 
     static func portColor(at index: Int) -> Color {
         portColors[index % portColors.count]
+    }
+
+    /// Resolve at drawing time so open windows follow macOS appearance changes.
+    private static func adaptive(light: UInt32, dark: UInt32, lightAlpha: CGFloat = 1, darkAlpha: CGFloat = 1) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let rgb = isDark ? dark : light
+            return NSColor(srgbRed: CGFloat((rgb >> 16) & 0xFF) / 255,
+                           green: CGFloat((rgb >> 8) & 0xFF) / 255,
+                           blue: CGFloat(rgb & 0xFF) / 255,
+                           alpha: isDark ? darkAlpha : lightAlpha)
+        })
     }
 
     static let popoverWidth: CGFloat = 400

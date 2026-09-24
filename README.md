@@ -13,7 +13,9 @@ A macOS menu bar app that monitors your local development servers. See all runni
 - **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
 - **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
+- **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
 - **Global shortcut** - ⌥⌘P opens the popover
+- **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 
 ## Requirements
 
@@ -33,6 +35,8 @@ To build the app bundle:
 ./build-app.sh
 open .build/WhatThePort.app
 ```
+
+For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app and generates a signed update feed for the website.
 
 ## Automatic deployment
 
@@ -60,8 +64,9 @@ use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
 selected. Production runs are serialized; GitHub may replace a pending run with
 a newer one when several merges arrive during an active deployment.
 
-The app still uses the existing ad-hoc signing process; this workflow does not
-add Developer ID signing, notarization, or updates to already installed apps.
+The workflow uses ad-hoc signing and builds without Sparkle release configuration.
+Developer ID signing, notarization, and publishing a signed update feed require
+the [release setup](WhatThePort/UPDATES.md) described above.
 
 ## Usage
 
@@ -72,6 +77,7 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 - Click **Clean up** to tick the servers you want gone and stop them together
 
 To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
+Add `--appearance light` or `--appearance dark` to check a specific appearance without changing your Mac’s settings.
 
 ### Settings
 

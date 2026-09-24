@@ -38,7 +38,7 @@ struct PortLabel: View {
             ColonStatus(status: status, color: color, dot: large ? 6 : 4, gap: large ? 6 : 3)
             Text(String(port))
                 .font(large ? Theme.display : Theme.monoMedium)
-                .foregroundStyle(Theme.text1)
+                .foregroundStyle(color)
         }
     }
 }
@@ -149,7 +149,7 @@ struct PillButtonStyle: ButtonStyle {
 
     private var foreground: Color {
         switch kind {
-        case .primary: return Theme.ink
+        case .primary: return Theme.onPrimary
         case .secondary: return Theme.text1
         case .destructive: return .white
         }

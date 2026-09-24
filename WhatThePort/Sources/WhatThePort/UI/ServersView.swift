@@ -419,10 +419,10 @@ struct Checkbox: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: 5, style: .continuous)
-            .fill(isOn ? Theme.text1 : Color.white.opacity(0.06))
+            .fill(isOn ? Theme.text1 : Theme.fill)
             .overlay {
                 if isOn {
-                    Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.ink)
+                    Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.onPrimary)
                 } else {
                     RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Theme.text3, lineWidth: 1)
                 }
@@ -489,7 +489,7 @@ struct MemoryShareBar: View {
             let unit = max(geometry.size.width - CGFloat(max(segmentCount - 1, 0)) * spacing, 0) / CGFloat(capacity)
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.white.opacity(0.05))
+                    .fill(Theme.memoryTrack)
                     .frame(height: 4)
                     .help("Free · \(Format.bytesString(breakdown.free))")
                 HStack(spacing: spacing) {
@@ -590,7 +590,7 @@ struct MemoryLegend: View {
             item(swatch: Theme.text1.opacity(0.95), label: "Servers", value: amount(breakdown.devServers))
             item(swatch: Theme.text1.opacity(0.12), label: "Other apps", value: amount(breakdown.otherApps))
             if let total = breakdown.total {
-                item(swatch: Color.white.opacity(0.05), label: "Free", value: "\(Format.total(breakdown.free).number) of \(amount(total))")
+                item(swatch: Theme.memoryTrack, label: "Free", value: "\(Format.total(breakdown.free).number) of \(amount(total))")
             }
             Spacer(minLength: 0)
         }

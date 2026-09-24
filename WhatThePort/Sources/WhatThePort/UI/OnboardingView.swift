@@ -82,8 +82,7 @@ struct OnboardingView: View {
             .padding(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
         }
         .frame(width: 480, height: 620)
-        .background(Color(red: 0.118, green: 0.118, blue: 0.129))
-        .environment(\.colorScheme, .dark)
+        .background(Theme.windowBackground)
         .onAppear { updateHero(animated: false); refreshNotificationStatus() }
         .onChange(of: step) { _, _ in updateHero(animated: true) }
     }
@@ -272,8 +271,8 @@ private struct OnboardingCard<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) { content }
-        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
+        .background(Theme.subtleFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.separator, lineWidth: 0.5))
     }
 }
 
@@ -322,6 +321,6 @@ private struct ToolIcon: View {
             }
         }
         .frame(width: 28, height: 28)
-        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .background(Theme.fill, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
 }
