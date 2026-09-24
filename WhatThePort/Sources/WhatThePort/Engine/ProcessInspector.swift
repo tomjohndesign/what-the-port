@@ -22,6 +22,36 @@ struct ProcUsage {
     let cpuNanoseconds: UInt64
 }
 
+/// Physical memory and how much of it is in use, as Activity Monitor counts it.
+struct SystemMemory: Equatable {
+    let total: UInt64
+    let used: UInt64
+    var free: UInt64 { total > used ? total - used : 0 }
+}
+
+/// Whole-Mac CPU usage, as a share of all cores, from the change in the
+/// kernel's CPU tick counters between samples. Use from one serial queue.
+final class SystemCPUSampler: @unchecked Sendable {
+    private var previous: (busy: UInt64, total: UInt64)?
+
+    func sample() -> Double? {
+        var info = host_cpu_load_info()
+        var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info_data_t>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else { return nil }
+        let ticks = info.cpu_ticks // user, system, idle, nice
+        let busy = UInt64(ticks.0) + UInt64(ticks.1) + UInt64(ticks.3)
+        let total = busy + UInt64(ticks.2)
+        defer { previous = (busy, total) }
+        guard let previous, total > previous.total, busy >= previous.busy else { return nil }
+        return Double(busy - previous.busy) / Double(total - previous.total) * 100
+    }
+}
+
 /// Thin wrappers over libproc and sysctl. Everything here works for processes
 /// owned by the current user without any special entitlements.
 enum ProcessInspector {
@@ -72,6 +102,13 @@ enum ProcessInspector {
         return ProcUsage(footprint: info.ri_phys_footprint, cpuNanoseconds: nanoseconds)
     }
 
+    static func executablePath(_ pid: pid_t) -> String? {
+        var buffer = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
+        let length = proc_pidpath(pid, &buffer, UInt32(buffer.count))
+        guard length > 0 else { return nil }
+        return String(cString: buffer)
+    }
+
     static func currentDirectory(_ pid: pid_t) -> String? {
         var info = proc_vnodepathinfo()
         let size = Int32(MemoryLayout<proc_vnodepathinfo>.size)
@@ -119,6 +156,26 @@ enum ProcessInspector {
             }
         }
         return ProcArgs(executablePath: executable, arguments: args, environment: env)
+    }
+
+    /// "Memory Used" in Activity Monitor: app memory (anonymous pages that
+    /// aren't purgeable) + wired + compressed.
+    static func systemMemory() -> SystemMemory {
+        let total = ProcessInfo.processInfo.physicalMemory
+        var stats = vm_statistics64()
+        var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &stats) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else { return SystemMemory(total: total, used: 0) }
+        let page = UInt64(vm_kernel_page_size)
+        let anonymous = UInt64(stats.internal_page_count)
+        let purgeable = UInt64(stats.purgeable_count)
+        let appPages = anonymous > purgeable ? anonymous - purgeable : 0
+        let used = (appPages + UInt64(stats.wire_count) + UInt64(stats.compressor_page_count)) * page
+        return SystemMemory(total: total, used: min(used, total))
     }
 
     static func isAlive(_ pid: pid_t) -> Bool {

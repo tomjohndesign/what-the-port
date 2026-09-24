@@ -66,7 +66,7 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
                     kinds.insert(.memory)
                     post(server, kind: .memory,
                          title: ":\(server.port) \(server.project.name) is using \(Format.bytesString(server.memory))",
-                         body: "That's over your \(MemoryChart.trim(Double(threshold) / 1_000_000_000)) GB alert. \(context(for: server))")
+                         body: "That's over your \(MemoryChart.trim(Double(threshold) / Format.gigabyte)) GB alert. \(context(for: server))")
                 }
             } else if Double(server.memory) < Double(threshold) * 0.9 {
                 overSince[key] = nil

@@ -66,6 +66,7 @@ struct SettingsView: View {
 private struct GeneralPane: View {
     @AppStorage(Preferences.iconStyle) private var iconStyle = Preferences.IconStyle.colonCount.rawValue
     @AppStorage(Preferences.editor) private var editor = "auto"
+    @AppStorage(Preferences.terminal) private var terminal = "com.apple.Terminal"
     @AppStorage(Preferences.hotkey) private var hotkey = true
     @AppStorage(Preferences.scanInterval) private var scanInterval = 2.0
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -93,6 +94,11 @@ private struct GeneralPane: View {
                     Text("Automatic").tag("auto")
                     ForEach(EditorLauncher.installedEditors, id: \.id) { Text($0.name).tag($0.id) }
                     Text("Finder").tag("finder")
+                }
+                Picker(selection: $terminal) {
+                    ForEach(TerminalLauncher.installed, id: \.id) { Text($0.name).tag($0.id) }
+                } label: {
+                    SettingLabel("Resume sessions in", caption: "Terminal used by “Resume in Terminal”")
                 }
                 Toggle(isOn: $hotkey) {
                     SettingLabel("Show popover with ⌥⌘P", caption: "Global shortcut")
