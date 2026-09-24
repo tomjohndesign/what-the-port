@@ -22,13 +22,13 @@ Servers launched by Claude Code, Codex, or Conductor link back to the session th
 
 ### Notices before your fans do
 
-When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its indicators amber and sends a notification. Ten minutes of memory and CPU history show what’s happening across the whole process tree. Adjust thresholds and snooze alerts in Settings.
+When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the whole process tree. Adjust thresholds and snooze alerts in Settings.
 
-![Marketing demo showing an amber memory warning and a rising memory chart for a development server](docs/images/leaks.jpg)
+![Marketing demo showing a rising memory chart and the amber alert threshold for a development server](docs/images/leaks.jpg)
 
 ### Stops the ones you forgot
 
-Servers from deleted worktrees, or idle for hours, collect under **Clean up**. Tick the ones to go and WhatThePort stops each whole process tree. Database processes such as Postgres and Redis are protected by default.
+**Clean up** adds checkboxes to the server list and preselects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops each whole process tree. Database processes such as Postgres and Redis are protected by default.
 
 Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Leaking servers are never stopped automatically.
 
@@ -46,7 +46,7 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 
 ## Features
 
-- **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with a live memory share bar
+- **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with stable port colors and a whole-Mac memory bar for servers, other apps, and free RAM
 - **Knows what started it** - Links servers to the Claude Code, Codex or Conductor session that launched them
 - **Resource charts** - 10 minutes of memory and CPU history per server, summed across its whole process tree
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar

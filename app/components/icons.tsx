@@ -30,14 +30,24 @@ export function DotGrid({ state = 'rest', size = 18 }: { state?: GridState; size
 export type ColonState = 'on' | 'amber' | 'idle'
 
 // The two status dots that prefix every port.
-export function Colon({ state = 'on', dot = 4, gap = 3 }: { state?: ColonState; dot?: number; gap?: number }) {
+export function Colon({
+  state = 'on',
+  dot = 4,
+  gap = 3,
+  color,
+}: {
+  state?: ColonState
+  dot?: number
+  gap?: number
+  color?: string
+}) {
   const style: CSSProperties = { width: dot, height: dot, borderRadius: dot, flexShrink: 0 }
-  if (state === 'on') style.backgroundColor = '#F5F5F7'
+  if (state === 'on') style.backgroundColor = color ?? '#F5F5F7'
   if (state === 'amber') {
-    style.backgroundColor = AMBER
-    style.boxShadow = `${AMBER} 0 0 5px`
+    style.backgroundColor = color ?? AMBER
+    style.boxShadow = `${color ?? AMBER} 0 0 5px`
   }
-  if (state === 'idle') style.boxShadow = '#EBEBF580 0 0 0 1.1px inset'
+  if (state === 'idle') style.boxShadow = `${color ?? '#EBEBF580'} 0 0 0 1.1px inset`
   return (
     <span style={{ display: 'flex', flexDirection: 'column', gap, width: dot === 4 ? 9 : undefined, flexShrink: 0 }}>
       <span style={style} />

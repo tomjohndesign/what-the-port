@@ -6,7 +6,7 @@ import { AppPopover, useDemo } from './App'
 import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { BatteryIcon, DotGrid, GitHubIcon, WifiIcon } from './icons'
-import { GET_IT, GITHUB_URL, LEAKS, SECTIONS } from './sections'
+import { GET_IT, GITHUB_URL, SECTIONS } from './sections'
 
 type Props = {
   active: number
@@ -52,7 +52,7 @@ function Clock() {
 // Headlines scroll with the page via the --p custom property; everything else is fixed.
 export function Screen({ active, stars, onNavigate }: Props) {
   const demo = useDemo(active)
-  const alert = active === LEAKS && demo.running.some((s) => s.status === 'amber')
+  const alert = demo.running.some((s) => s.status === 'amber')
 
   return (
     <div className={styles.screen}>

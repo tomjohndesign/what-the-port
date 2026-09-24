@@ -636,26 +636,96 @@
   color: #ebebf566;
 }
 
-.shareBar {
-  height: 6px;
-  margin: 5px 0;
+.summaryDetail {
+  margin-left: auto;
+  text-align: right;
+}
+
+.cpuToggle {
   display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shareBar {
+  position: relative;
+  height: 16px;
+  display: flex;
+  align-items: center;
   gap: 2px;
 }
 
-.shareBar span {
+.shareBar::before {
+  content: '';
+  position: absolute;
+  inset: 6px 0;
+  background: #ffffff0d;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.memorySegment,
+.freeMemory {
+  position: relative;
   flex-basis: 0;
-  height: 6px;
-  border-radius: 1px;
+  min-width: 2px;
+  height: 16px;
 }
 
-.shareBar span:first-child {
-  border-radius: 3px 1px 1px 3px;
+.memorySegment::after {
+  content: '';
+  position: absolute;
+  inset: 6px 0;
+  border-radius: 1.5px;
+  background: #f5f5f71f;
+  transition: inset 0.12s, opacity 0.12s, background 0.12s;
 }
 
-.shareBar span:last-child {
-  border-radius: 1px 3px 3px 1px;
+.memorySegment[data-raised]::after {
+  inset: 4px 0;
+  background: currentColor;
 }
+
+.memorySegment[data-focused='true']::after {
+  inset: 4px 0;
+  background: #f5f5f7b3;
+}
+
+.memorySegment[data-raised][data-focused='true']::after {
+  inset: 3px 0;
+  background: currentColor;
+}
+
+.memorySegment[data-dim='true']::after {
+  opacity: 0.35;
+}
+
+.memoryLegend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #ebebf599;
+  white-space: nowrap;
+}
+
+.memoryLegend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.memoryLegend i {
+  width: 8px;
+  height: 4px;
+  border-radius: 1.5px;
+  background: #f5f5f71f;
+}
+
+.memoryLegend i[data-servers] { height: 8px; background: #f5f5f7f2; }
+.memoryLegend i[data-free] { background: #ffffff0d; }
+.memoryLegend b { font: inherit; font-family: 'Geist Mono', monospace; color: #ebebf566; }
 
 .popSection {
   border-top: 0.5px solid #ffffff14;
@@ -681,7 +751,8 @@
   transition: background-color 0.12s ease;
 }
 
-.serverRow[data-interactive]:hover {
+.serverRow[data-interactive]:hover,
+.serverRow[data-focused='true'] {
   background-color: #ffffff14;
 }
 
@@ -697,12 +768,13 @@
   flex-shrink: 0;
 }
 
-.serverRow:hover .rowSpark {
+.serverRow[data-cleaning='false']:hover .rowSpark,
+.serverRow[data-cleaning='false']:focus-within .rowSpark {
   display: none;
 }
 
 .rowPort {
-  width: 46px;
+  width: 49px;
   flex-shrink: 0;
   font-family: 'Geist Mono', ui-monospace, monospace;
   font-weight: 500;
@@ -713,7 +785,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   padding-right: 10px;
 }
 
@@ -726,7 +798,9 @@
 }
 
 .rowName {
-  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 500;
 }
 
@@ -755,7 +829,8 @@
   flex-shrink: 0;
 }
 
-.serverRow:hover .rowActions {
+.serverRow:hover .rowActions,
+.serverRow:focus-within .rowActions {
   display: flex;
 }
 
@@ -777,7 +852,7 @@
 }
 
 .rowMemory {
-  width: 58px;
+  width: 64px;
   flex-shrink: 0;
   text-align: right;
   font-family: 'Geist Mono', ui-monospace, monospace;
@@ -797,7 +872,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 5px 10px 5px 8px;
+  padding: 7px 12px;
   border-radius: 7px;
   background-color: #ffffff1a;
   box-shadow: #ffffff1f 0 0.5px 0 inset;
@@ -942,6 +1017,8 @@
   border-radius: 3px;
   background-color: #f5f5f7;
 }
+
+.serverRow > .checkbox { margin-right: 12px; }
 
 .checkbox {
   width: 16px;
@@ -1426,3 +1503,34 @@
   background-size: cover;
   background-position: 50% 70%;
 }
+
+.popover button:focus-visible,
+.memorySegment:focus-visible,
+.serverRow:focus-visible {
+  outline: 2px solid #6ec7ed;
+  outline-offset: 2px;
+}
+
+.popover button:disabled { opacity: 0.5; }
+
+.popover .chip { background: #ffffff14; }
+
+.processBar {
+  width: 64px;
+  height: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-radius: 4px;
+  background: #ffffff14;
+}
+
+.processBar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #f5f5f7bf;
+}
+
+.processRow > span:last-child { width: 70px; flex-shrink: 0; text-align: right; }
+
+.emptyState { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 0; }
