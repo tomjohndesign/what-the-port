@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/react'
+import './globals.css'
 
 export const metadata: Metadata = {
   title: 'WhatThePort - Monitor Your Dev Servers',
@@ -43,7 +44,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0, backgroundColor: '#000' }}>
+      <head>
+        <link rel="preload" href="/fonts/Geist-Regular.ttf" as="font" type="font/ttf" crossOrigin="" />
+        <link rel="preload" href="/fonts/Geist-Medium.ttf" as="font" type="font/ttf" crossOrigin="" />
+        <link rel="preload" href="/scenes/house.jpg" as="image" />
+        <link rel="preload" href="/scenes/laptop.jpg" as="image" />
+      </head>
+      <body>
         {children}
         <Analytics />
       </body>
