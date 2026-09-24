@@ -1,0 +1,1466 @@
+/* ─── Page ─────────────────────────────────────────────── */
+
+.landing {
+  background-color: #0b0d12;
+  color: #ffffff;
+  font-family: 'Geist', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.small {
+  display: none;
+}
+
+@media (max-width: 899px), (max-aspect-ratio: 1/1) {
+  .desk {
+    display: none;
+  }
+  .small {
+    display: block;
+  }
+}
+
+/* ─── Desk stage: a sticky viewport onto the room ─────────── */
+
+.track {
+  position: relative;
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #14110e;
+}
+
+/* Laid out in the 2560×1600 space of the room photos; Landing.tsx scales and pans it. */
+.scene {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2560px;
+  height: 1600px;
+  transform-origin: 0 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.scene[data-ready='true'] {
+  opacity: 1;
+}
+
+.room {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: 50%;
+}
+
+.contactShadow {
+  position: absolute;
+  left: 470px;
+  top: 1428px;
+  width: 1620px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00000055;
+  box-shadow: #00000055 0 8px 18px 12px;
+}
+
+.laptopBase {
+  position: absolute;
+  inset: 0;
+  background: url(/scenes/laptop.jpg) 50% / 100% 100% no-repeat;
+  clip-path: polygon(
+    23.8335% 65.5242%,
+    76.1665% 65.5242%,
+    76.797% 66.9355%,
+    81.5889% 86.2903%,
+    81.7781% 87.2984%,
+    81.7781% 88.5081%,
+    81.4628% 89.2137%,
+    80.5801% 89.7177%,
+    19.2308% 89.9193%,
+    18.4111% 89.5161%,
+    17.9697% 88.9113%,
+    17.9067% 87.7016%,
+    18.0958% 86.3911%,
+    23.2661% 67.1371%
+  );
+}
+
+.lid {
+  position: absolute;
+  left: 606px;
+  top: 190px;
+  width: 1346.8px;
+  height: 862.68px;
+  border-radius: 20.02px 20.02px 3.64px 3.64px;
+  background-color: #08080a;
+  box-shadow: #4a4b50 0 0 0 1.365px, #1c1c1f 0 0 0 2.73px;
+}
+
+.screenMask {
+  position: absolute;
+  left: 18.2px;
+  top: 20.02px;
+  width: 1310.4px;
+  height: 819px;
+  border-radius: 7.28px 7.28px 0 0;
+  overflow: hidden;
+  background-color: #0a0c11;
+}
+
+.notch {
+  position: absolute;
+  left: 591.5px;
+  top: 20.02px;
+  width: 163.8px;
+  height: 27.3px;
+  border-radius: 0 0 9.1px 9.1px;
+  background-color: #08080a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.notch span {
+  width: 7.28px;
+  height: 7.28px;
+  border-radius: 50%;
+  background-color: #16181d;
+  box-shadow: inset 0 0 0 1.4px #22252c;
+}
+
+.glare {
+  position: absolute;
+  left: 18.2px;
+  top: 20.02px;
+  width: 1310.4px;
+  height: 819px;
+  border-radius: 7.28px 7.28px 0 0;
+  background-image: linear-gradient(118deg, #ffffff0d 0%, #ffffff05 28%, #ffffff00 42%);
+  pointer-events: none;
+}
+
+/* ─── The laptop's desktop (1152×720 logical, scaled into the 1310.4×819 mask) ─── */
+
+.screen {
+  position: relative;
+  width: 1152px;
+  height: 720px;
+  overflow: hidden;
+  transform: scale(1.1375);
+  transform-origin: 0 0;
+  font-size: 13px;
+  line-height: 16px;
+  font-feature-settings: 'tnum';
+  background-color: #0a0c11;
+}
+
+.wallpapers,
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wallpaper {
+  background-size: cover;
+  background-position: center;
+  /* Use the same eased scroll progress as the room, without resizing the UI. */
+  opacity: clamp(0, calc(var(--p, 0) - var(--wallpaper-step) + 1), 1);
+}
+
+.wallpapers::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #05080ca8 0%, #05080c88 42%, #05080c22 70%);
+}
+
+.about {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 32px 64px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 96px 24px 200px;
+}
+
+.aboutLabel {
+  margin: 0 0 20px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a8b0ba;
+}
+
+.about h2 {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+.aboutCopy {
+  flex: 0 1 520px;
+  min-width: 0;
+}
+
+.aboutCopy p {
+  margin: 0 0 24px;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #e3e5e9;
+}
+
+.mono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+}
+
+.t1 {
+  color: #f5f5f7;
+}
+
+.t2 {
+  color: #ebebf599;
+}
+
+.t3 {
+  color: #ebebf566;
+}
+
+.caption {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Menu bar */
+
+.menuBar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 3;
+  height: 30px;
+  padding: 0 12px 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #14161e8c;
+  border-bottom: 0.5px solid #ffffff14;
+}
+
+.menus,
+.extras {
+  display: flex;
+  align-items: center;
+}
+
+.menus {
+  gap: 2px;
+}
+
+.extras {
+  gap: 16px;
+}
+
+.menuItem {
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: #ffffffeb;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.menuItem:hover {
+  background-color: #ffffff1a;
+}
+
+.menuItem[data-active='true'] {
+  background-color: #ffffff2e;
+  color: #ffffff;
+}
+
+.menuItem:focus-visible,
+.download:focus-visible,
+.github:focus-visible,
+.statusLink:focus-visible {
+  outline: 2px solid #ffffffb3;
+  outline-offset: 2px;
+}
+
+.menuApp {
+  font-weight: 500;
+  color: #ffffff;
+  cursor: default;
+}
+
+.menuApp:hover {
+  background: none;
+}
+
+.statusItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px 3px 5px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.statusItem[data-open='true'] {
+  background-color: #ffffff33;
+}
+
+.livesHere {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: calc(100% - 22px);
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+  color: #ffffffb3;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.livesHere[data-visible='true'] {
+  opacity: 1;
+}
+
+.statusLink {
+  display: flex;
+  color: #ffffff;
+}
+
+.clock {
+  font-weight: 500;
+  color: #ffffffeb;
+}
+
+/* Desktop */
+
+.desktopIcons {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.desktopIcon {
+  width: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 500;
+  text-align: center;
+  text-shadow: 0 1px 2px #00000080;
+}
+
+.screenshotThumb {
+  width: 56px;
+  height: 37px;
+  border: 2px solid #ffffffe6;
+  border-radius: 3px;
+  background-image: linear-gradient(135deg, #2a3142 0%, #16181f 60%, #3a2e22 100%);
+  box-shadow: 0 2px 6px #00000066;
+}
+
+/* Scrolling headlines */
+
+.scrollViewport {
+  position: absolute;
+  inset: 30px 0 0;
+  overflow: hidden;
+}
+
+.headlines {
+  position: absolute;
+  left: 56px;
+  top: 0;
+  width: 620px;
+  transform: translate3d(0, calc(var(--p, 0) * -690px), 0);
+  will-change: transform;
+}
+
+.headlineSection {
+  height: 690px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* The app popover: opens from the menu bar icon, resizes between views */
+
+.popoverShell {
+  position: absolute;
+  top: 36px;
+  right: 12px;
+  z-index: 2;
+  width: 400px;
+  transform-origin: calc(100% - 222px) -8px;
+  transition:
+    opacity 0.16s ease,
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.popoverShell[data-open='false'] {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  pointer-events: none;
+  transition:
+    opacity 0.14s ease,
+    transform 0.18s ease-in;
+}
+
+.view {
+  animation: viewIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translate3d(calc(var(--dir, 1) * 18px), 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.closing {
+  position: absolute;
+  left: 800px;
+  top: 270px;
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity 0.35s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.closing[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+.dotMatrix circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.82);
+  transition:
+    fill 0.32s ease,
+    transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dotMatrix circle[data-lit='true'] {
+  transform: none;
+}
+
+/* ─── Section copy ──────────────────────────────────────── */
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.headline {
+  margin: 0;
+  font-size: 56px;
+  line-height: 60px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  color: #ffffff;
+}
+
+.body {
+  margin: 0;
+  max-width: 480px;
+  font-size: 16px;
+  line-height: 24px;
+  color: #ffffff8c;
+}
+
+.portLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.portLabelPort {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-weight: 500;
+  color: #f5f5f7;
+}
+
+.portLabelName {
+  padding-left: 6px;
+  color: #ffffff73;
+}
+
+.cta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.download,
+.github {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.download {
+  padding: 0 18px 0 16px;
+  background-color: #ffffff;
+  color: #0b0d12;
+}
+
+.download:hover {
+  background-color: #e6e6e9;
+}
+
+.github {
+  padding: 0 14px;
+  background-color: #ffffff14;
+  box-shadow: inset 0 0 0 0.5px #ffffff1f;
+  color: #ffffff;
+}
+
+.github:hover {
+  background-color: #ffffff21;
+}
+
+.githubCount {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-weight: 400;
+  color: #ffffff8c;
+}
+
+.ctaMeta {
+  margin: 0;
+  color: #ffffff73;
+}
+
+.list {
+  width: 440px;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 0 0;
+  list-style: none;
+}
+
+.listRow {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 0.5px solid #ffffff1a;
+}
+
+.listRow:last-child {
+  border-bottom: 0.5px solid #ffffff1a;
+}
+
+.toolIcon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background-color: #ffffff14;
+}
+
+.listName {
+  flex-grow: 1;
+  font-weight: 500;
+}
+
+.listDetail {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  color: #ffffff73;
+}
+
+.factDetail {
+  color: #ffffff8c;
+}
+
+/* ─── Popover (the app UI) ──────────────────────────────── */
+
+.popover {
+  width: 400px;
+  max-height: 672px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+  transition: height 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 16px;
+  background-color: #202024f2;
+  border: 0.5px solid #ffffff24;
+  box-shadow: #00000099 0 0 0 0.5px, #0000008c 0 24px 64px;
+  color: #f5f5f7;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 16px;
+  font-feature-settings: 'tnum';
+  text-align: left;
+}
+
+.popHead {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.popTitleRow {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popTitle {
+  font-weight: 500;
+  color: #f5f5f7;
+}
+
+.popBack {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popDisplayStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.popDisplay {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popBig {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.popUnit {
+  align-self: flex-end;
+  padding-bottom: 4px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  color: #ebebf566;
+}
+
+.shareBar {
+  height: 6px;
+  margin: 5px 0;
+  display: flex;
+  gap: 2px;
+}
+
+.shareBar span {
+  flex-basis: 0;
+  height: 6px;
+  border-radius: 1px;
+}
+
+.shareBar span:first-child {
+  border-radius: 3px 1px 1px 3px;
+}
+
+.shareBar span:last-child {
+  border-radius: 1px 3px 3px 1px;
+}
+
+.popSection {
+  border-top: 0.5px solid #ffffff14;
+}
+
+.rowList {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+.serverRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 9px;
+  text-align: left;
+}
+
+.serverRow[data-interactive] {
+  cursor: default;
+  transition: background-color 0.12s ease;
+}
+
+.serverRow[data-interactive]:hover {
+  background-color: #ffffff14;
+}
+
+.serverRow[data-interactive]:active {
+  background-color: #ffffff1f;
+}
+
+.serverRow[data-dim='true'] > :not(.rowActions) {
+  opacity: 0.55;
+}
+
+.rowSpark {
+  flex-shrink: 0;
+}
+
+.serverRow:hover .rowSpark {
+  display: none;
+}
+
+.rowPort {
+  width: 46px;
+  flex-shrink: 0;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-weight: 500;
+}
+
+.rowMain {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-right: 10px;
+}
+
+.rowTop {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.rowName {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.rowBranch {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #ebebf58c;
+}
+
+.rowSub {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.rowActions {
+  display: none;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.serverRow:hover .rowActions {
+  display: flex;
+}
+
+.rowAction {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.rowAction:hover {
+  background-color: #ffffff1f;
+}
+
+.rowAction:active {
+  background-color: #ffffff2e;
+}
+
+.rowMemory {
+  width: 58px;
+  flex-shrink: 0;
+  text-align: right;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  color: #f5f5f7d9;
+}
+
+.popFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.chip {
+  cursor: default;
+  transition: background-color 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px 5px 8px;
+  border-radius: 7px;
+  background-color: #ffffff1a;
+  box-shadow: #ffffff1f 0 0.5px 0 inset;
+}
+
+.control {
+  transition: background-color 0.12s ease;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background-color: #ffffff14;
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 16px;
+}
+
+.infoRow {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.infoLabel {
+  width: 64px;
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 14px;
+  color: #ebebf566;
+}
+
+.infoValue {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.infoMore {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 14px;
+  color: #ebebf566;
+}
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 16px 16px;
+}
+
+.chartHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.chartTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.plot {
+  display: flex;
+  gap: 8px;
+}
+
+.axis {
+  width: 32px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 14px;
+  color: #ebebf566;
+}
+
+.processes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+}
+
+.primaryAction {
+  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background-color: #f5f5f7;
+  color: #0b0d12;
+  font-weight: 500;
+}
+
+.secondaryAction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background-color: #ffffff14;
+  color: #f5f5f7;
+}
+
+.moreAction {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 8px;
+  background-color: #ffffff14;
+}
+
+.moreAction span {
+  width: 3px;
+  height: 3px;
+  border-radius: 3px;
+  background-color: #f5f5f7;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background-color: #f5f5f7;
+}
+
+.cleanFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+
+/* Buttons inside the popover look like the native controls they copy. */
+.popover button {
+  margin: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  cursor: default;
+}
+
+.popBack {
+  border-radius: 5px;
+}
+
+.popBack:hover,
+.chip:hover,
+.control:hover,
+.secondaryAction:hover,
+.moreAction:hover {
+  background-color: #ffffff1f;
+}
+
+.chipCount {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  color: #ebebf599;
+}
+
+.popover .control {
+  background-color: #ffffff14;
+}
+
+.popover .controlStop {
+  background-color: #ff453a24;
+}
+
+.popover .controlStop:hover {
+  background-color: #ff453a3d;
+}
+
+.control[data-spinning='true'] svg {
+  animation: spin 0.9s cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.popover .infoMore {
+  padding: 2px 4px;
+  margin-left: -4px;
+  border-radius: 5px;
+  color: #ebebf566;
+}
+
+.popover .infoMore:hover {
+  color: #ebebf5a6;
+}
+
+.infoMore svg {
+  transition: transform 0.2s ease;
+}
+
+.infoMore[data-open='true'] svg {
+  transform: rotate(180deg);
+}
+
+.collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.collapsible > div {
+  overflow: hidden;
+}
+
+.collapsible[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+.popover .processes {
+  width: 100%;
+}
+
+.popover .processes:hover {
+  background-color: #ffffff0a;
+}
+
+.processesChevron {
+  display: flex;
+  transition: transform 0.2s ease;
+}
+
+.processes[data-open='true'] .processesChevron {
+  transform: rotate(90deg);
+}
+
+.processList {
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px 12px;
+}
+
+.processRow {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.popover .primaryAction {
+  background-color: #f5f5f7;
+  color: #0b0d12;
+  transition:
+    background-color 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.popover .primaryAction:hover {
+  background-color: #ffffff;
+}
+
+.popover .primaryAction:active {
+  background-color: #dcdce0;
+}
+
+.popover .destructive {
+  background-color: #ff453a;
+  color: #ffffff;
+}
+
+.popover .destructive:hover {
+  background-color: #ff5a50;
+}
+
+.popover .destructive:disabled {
+  opacity: 0.4;
+}
+
+.popover .secondaryAction,
+.popover .moreAction {
+  background-color: #ffffff14;
+  color: #f5f5f7;
+}
+
+.checkbox {
+  transition:
+    background-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.checkbox svg {
+  transition:
+    opacity 0.12s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.checkbox[data-checked='false'] {
+  background-color: #ffffff0f;
+  box-shadow: #ebebf54d 0 0 0 1px inset;
+}
+
+.checkbox[data-checked='false'] svg {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+.chartLine {
+  stroke-dasharray: 1;
+  animation: draw 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chartDot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+.cpuBar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* Brand, above the laptop */
+
+.brandSlot {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--lid-top, 120px) / 2);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  text-shadow: 0 1px 12px #00000073;
+}
+
+.brand svg {
+  filter: drop-shadow(0 1px 8px #00000073);
+  transition: filter 0.4s ease;
+}
+
+.brand {
+  transition:
+    color 0.4s ease,
+    text-shadow 0.4s ease;
+}
+
+.brand[data-dark='true'] {
+  color: #0b0d12;
+  text-shadow: 0 1px 12px #ffffff40;
+}
+
+.brand[data-dark='true'] svg {
+  filter: drop-shadow(0 1px 8px #ffffff40);
+}
+
+.stacked .brand {
+  align-self: flex-start;
+  margin-bottom: -32px;
+}
+
+/* Footer: pinned to the bottom of the window and slid out of view until the page ends,
+   so it overlays the content instead of adding height. */
+.footer {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 5;
+  padding: 72px 40px 32px;
+  background-image: linear-gradient(to bottom, #0b0d1200 0, #0b0d12e6 64px, #0b0d12 100%);
+  font-size: 13px;
+  line-height: 16px;
+  opacity: 0;
+  transform: translateY(24px);
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.footer[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.footerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding-top: 24px;
+  border-top: 0.5px solid #ffffff1a;
+}
+
+.footerBrand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.footerMeta {
+  flex-grow: 1;
+  color: #ffffff73;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footerLinks a {
+  color: #ffffffb3;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.footerLinks a:hover {
+  color: #ffffff;
+}
+
+@media (max-width: 899px), (max-aspect-ratio: 1/1) {
+  .footer {
+    padding: 56px 20px 24px;
+  }
+}
+
+/* Section content: as a section moves away from the middle its parts spread apart
+   (later parts lag further), fade out one after another and soften with a slight blur. */
+.copy > * {
+  --i: 0;
+  --lag: 0;
+  transform: translate3d(0, calc(var(--d, 0) * var(--lag) * -1px), 0);
+  opacity: calc(1 - clamp(0, (var(--a, 0) - 0.12 - var(--i) * 0.06) * 2.6, 1));
+  filter: blur(calc(clamp(0, var(--a, 0) - 0.15, 1) * 8px));
+}
+
+.copy > :nth-child(2) {
+  --i: 1;
+  --lag: 44;
+}
+
+.copy > :nth-child(3) {
+  --i: 2;
+  --lag: 88;
+}
+
+.copy > :nth-child(4) {
+  --i: 3;
+  --lag: 132;
+}
+
+.copy > :nth-child(5) {
+  --i: 4;
+  --lag: 170;
+}
+
+.statusItem {
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+  background: none;
+}
+
+.statusItem:hover {
+  background-color: #ffffff1f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popoverShell,
+  .popover,
+  .closing,
+  .livesHere,
+  .scene,
+  .collapsible,
+  .dotMatrix circle {
+    transition: none;
+  }
+  .view,
+  .chartLine,
+  .chartDot,
+  .cpuBar {
+    animation: none;
+  }
+  .copy > * {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* ─── Small screens: stacked sections ──────────────────── */
+
+.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 72px;
+  padding: 40px 20px 80px;
+  font-size: 13px;
+  line-height: 16px;
+  background-image: radial-gradient(ellipse 120% 40% at 0% 0% in oklab, oklab(31% 0.003 -0.04) 0%, oklab(15.9% -0.0004 -0.011 / 0%) 70%);
+}
+
+.stackedSection {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.stacked .headline {
+  font-size: 36px;
+  line-height: 40px;
+}
+
+.stacked .ctaButtons {
+  flex-wrap: wrap;
+}
+
+.peek {
+  min-height: 360px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 16px;
+  background-size: cover;
+  background-position: 50% 70%;
+}
