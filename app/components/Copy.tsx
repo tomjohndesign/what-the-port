@@ -1,5 +1,15 @@
 import styles from './landing.module.css'
-import { AppleIcon, ClaudeIcon, CodexIcon, Colon, type ColonState, ConductorIcon, GitHubIcon, VercelIcon } from './icons'
+import {
+  AppleIcon,
+  ClaudeIcon,
+  CodexIcon,
+  Colon,
+  type ColonState,
+  ConductorIcon,
+  GitHubIcon,
+  VercelIcon,
+} from './icons'
+import { portColor } from './servers'
 import { DOWNLOAD_URL, GITHUB_URL } from './sections'
 
 // Marketing copy for each section. Shared by the laptop screen and the small-screen layout.
@@ -7,8 +17,10 @@ import { DOWNLOAD_URL, GITHUB_URL } from './sections'
 function PortLabel({ port, colon, label }: { port: string; colon: ColonState; label: string }) {
   return (
     <div className={styles.portLabel}>
-      <Colon state={colon} />
-      <span className={styles.portLabelPort}>{port}</span>
+      <Colon state={colon} color={portColor(port)} />
+      <span className={styles.portLabelPort} style={{ color: portColor(port) }}>
+        {port}
+      </span>
       <span className={styles.portLabelName}>{label}</span>
     </div>
   )
@@ -53,8 +65,8 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
         <div className={styles.copy}>
           <h1 className={styles.headline}>Every dev server on your Mac, in the menu bar.</h1>
           <p className={styles.body}>
-            What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you
-            forgot about in one click.
+            What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you forgot
+            about in one click.
           </p>
           <Cta stars={stars} />
         </div>
@@ -65,8 +77,8 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <PortLabel port="3000" colon="on" label="Sessions" />
           <h2 className={styles.headline}>Knows which agent started it.</h2>
           <p className={styles.body}>
-            Servers launched by Claude Code, Codex or Conductor link back to the session that started them. Pick up
-            the conversation, check the branch, or open the Vercel preview for the same commit.
+            Servers launched by Claude Code, Codex or Conductor link back to the session that started them. Pick up the
+            conversation, check the branch, or open the Vercel preview for the same commit.
           </p>
           <ul className={styles.list}>
             {TOOLS.map((tool) => (
@@ -85,7 +97,7 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <PortLabel port="6006" colon="amber" label="Leaks" />
           <h2 className={styles.headline}>Notices before your fans do.</h2>
           <p className={styles.body}>
-            When a server passes 2 GB or grows 500 MB in ten minutes, the dots turn amber and you get one quiet
+            When a server passes 2 GB or grows 500 MB in ten minutes, the menu bar turns amber and you get one quiet
             notification. Crashed, hung and failed preview builds get flagged too.
           </p>
         </div>
@@ -96,8 +108,8 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <PortLabel port="8000" colon="idle" label="Clean up" />
           <h2 className={styles.headline}>Stops the ones you forgot.</h2>
           <p className={styles.body}>
-            Servers from deleted worktrees, or idle for hours, collect under Clean up. Tick the ones to go and
-            WhatThePort stops each whole process tree. Postgres and Redis are never touched.
+            Clean up selects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops
+            each whole process tree. Postgres and Redis are protected by default.
           </p>
         </div>
       )

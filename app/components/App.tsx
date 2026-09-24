@@ -2,19 +2,21 @@
 
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
-import {
-  AMBER,
-  BackIcon,
-  BranchIcon,
-  Chevron,
-  ClaudeIcon,
-  CodexIcon,
-  Colon,
-  OpenIcon,
-  VercelIcon,
-} from './icons'
+import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
 import { GET_IT } from './sections'
-import { type Agent, type Server, SERVERS, cpuBars, formatMemory, memoryChart } from './servers'
+import {
+  type Agent,
+  type Server,
+  SERVERS,
+  OTHER_APPS,
+  OTHER_MEMORY,
+  SYSTEM_MEMORY,
+  cpuBars,
+  formatMemory,
+  formatTotal,
+  memoryChart,
+  portColor,
+} from './servers'
 
 // A working copy of the WhatThePort popover. Scrolling picks the view for each
 // section; clicking around works like the real app until the next section.
@@ -46,25 +48,26 @@ export function useDemo(section: number) {
     previous.current = section
     setView(SECTION_VIEWS[section])
     setOpen(section !== GET_IT)
-    setSelected((current) => (current.length ? current : suggested(running)))
+    setSelected(suggested(running))
     // `running` intentionally omitted: stopping a server shouldn't reset the view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section])
 
-  const go = useCallback((next: View, dir: number) => {
-    setDirection(dir)
-    setView(next)
-  }, [])
+  const go = useCallback(
+    (next: View, dir: number) => {
+      setDirection(dir)
+      if (next.name === 'cleanUp') setSelected(suggested(running))
+      setView(next)
+    },
+    [running],
+  )
 
   const stop = useCallback((ports: string[]) => {
-    setRunning((current) => {
-      const next = current.filter((port) => !ports.includes(port))
-      setSelected((sel) => sel.filter((port) => next.includes(port)))
-      return next
-    })
+    setRunning((current) => current.filter((port) => !ports.includes(port)))
+    setSelected((current) => current.filter((port) => !ports.includes(port)))
+    setDirection(-1)
     setView((current) => {
       if (current.name === 'detail' && ports.includes(current.port)) {
-        setDirection(-1)
         return { name: 'list' }
       }
       return current
@@ -124,12 +127,17 @@ function Frame({ children, viewKey }: { children: ReactNode; viewKey: string }) 
 
 export function AppPopover({ demo }: { demo: Demo }) {
   const { view, direction } = demo
-  const key = view.name === 'detail' ? `detail-${view.port}` : demo.running.length ? view.name : 'empty'
+  const key =
+    view.name === 'detail'
+      ? `detail-${view.port}`
+      : demo.running.length
+        ? view.name === 'cleanUp'
+          ? 'list'
+          : view.name
+        : 'empty'
 
   let content: ReactNode
-  if (!demo.running.length) content = <EmptyView demo={demo} />
-  else if (view.name === 'detail') content = <DetailView demo={demo} server={SERVERS.find((s) => s.port === view.port)!} />
-  else if (view.name === 'cleanUp') content = <CleanUpView demo={demo} />
+  if (view.name === 'detail') content = <DetailView demo={demo} server={SERVERS.find((s) => s.port === view.port)!} />
   else content = <ListView demo={demo} />
 
   return (
@@ -175,37 +183,138 @@ function useFlash() {
 
 function ListView({ demo }: { demo: Demo }) {
   const [flash, trigger] = useFlash()
+  const cleaning = demo.view.name === 'cleanUp'
+  const [focus, setFocus] = useState<string | null>(null)
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null)
+  const [cpuAll, setCpuAll] = useState(false)
   const total = demo.running.reduce((sum, s) => sum + s.memory, 0)
-  const cpu = Math.round(demo.running.reduce((sum, s) => sum + s.cpu, 0) * 0.375)
+  const cpu = Math.round(demo.running.reduce((sum, s) => sum + s.cpu, 0) / 8)
   const cleanUpCount = demo.running.filter((s) => s.cleanUp?.suggested).length
+  const chosen = demo.running.filter((s) => demo.selected.includes(s.port))
+  const freed = chosen.reduce((sum, s) => sum + s.memory, 0)
+  const focusedServer = demo.running.find((s) => s.port === focus)
+  const focusedApp = OTHER_APPS.find((app) => app.id === focus)
+  const focusedMemory = focusedServer?.memory ?? focusedApp?.memory
+  const [value, unit] = (
+    focusedServer ? formatMemory(focusedServer.memory) : formatTotal(focusedMemory ?? (cleaning ? freed : total))
+  ).split(' ')
+  const activePort = focus ?? hoveredRow
+  const activate = (port: string) => {
+    if (cleaning) demo.toggleSelected(port)
+    else {
+      setFocus(null)
+      demo.go({ name: 'detail', port }, 1)
+    }
+  }
 
   return (
     <>
       <div className={styles.popHead}>
-        <Header title="Servers" />
-        <div className={styles.popDisplayStack}>
-          <div className={styles.popDisplay}>
-            <span className={styles.popBig}>{(total / 1000).toFixed(1)}</span>
-            <span className={styles.popUnit}>GB</span>
-            <span className={`${styles.mono} ${styles.t3}`} style={{ marginLeft: 'auto' }}>
-              CPU {cpu}%
-            </span>
-          </div>
-          <div className={styles.shareBar}>
-            {demo.running.map((s, i) => (
-              <span
-                key={s.port}
-                style={{
-                  flexGrow: s.memory,
-                  backgroundColor: s.status === 'amber' ? AMBER : ['#F5F5F7D1', '#F5F5F78C', '#F5F5F766', '#F5F5F74D'][i % 4],
-                }}
-              />
-            ))}
-          </div>
+        <Header
+          title={
+            focusedServer
+              ? `${focusedServer.name} :${focusedServer.port}`
+              : (focusedApp?.name ?? (cleaning ? 'Clean up' : 'Servers'))
+          }
+        />
+        <div className={styles.popDisplay}>
+          <span className={styles.popBig}>{value}</span>
+          <span className={styles.popUnit}>{unit}</span>
+          <span className={styles.summaryDetail}>
+            {focusedMemory !== undefined ? (
+              <span className={focusedApp?.id === 'rest' ? styles.t2 : styles.mono}>
+                {focusedApp?.id === 'rest'
+                  ? 'System and smaller apps'
+                  : `${((focusedMemory / SYSTEM_MEMORY) * 100).toFixed(1)}% of RAM${focusedServer ? ` · CPU ${focusedServer.cpu}%` : ''}`}
+              </span>
+            ) : cleaning ? (
+              <span className={styles.t2}>
+                {chosen.length ? `freed by stopping ${chosen.length}` : 'Pick servers to stop'}
+              </span>
+            ) : (
+              <button
+                type="button"
+                className={styles.cpuToggle}
+                onClick={() => setCpuAll((v) => !v)}
+                title={
+                  cpuAll
+                    ? 'Whole Mac. Click for servers only.'
+                    : 'Dev servers, as a share of the whole Mac. Click for all.'
+                }
+              >
+                <span className={styles.t3}>CPU ({cpuAll ? 'all' : 'servers'})</span>
+                <span className={`${styles.mono} ${styles.t2}`}>{cpuAll ? cpu + 18 : cpu}%</span>
+              </button>
+            )}
+          </span>
+        </div>
+        <div className={styles.shareBar} aria-label="Mac memory usage">
+          {demo.running.map((s) => (
+            <button
+              key={s.port}
+              type="button"
+              className={styles.memorySegment}
+              style={{ flexGrow: s.memory, color: portColor(s.port) }}
+              data-raised
+              data-focused={activePort === s.port}
+              data-dim={
+                (activePort !== null && activePort !== s.port) ||
+                (cleaning && !demo.selected.includes(s.port) && activePort !== s.port)
+              }
+              aria-label={`${s.name} :${s.port} · ${formatMemory(s.memory)}`}
+              aria-pressed={cleaning ? demo.selected.includes(s.port) : undefined}
+              onMouseEnter={() => setFocus(s.port)}
+              onMouseLeave={() => setFocus(null)}
+              onFocus={() => setFocus(s.port)}
+              onBlur={() => setFocus(null)}
+              onClick={() => activate(s.port)}
+            />
+          ))}
+          {OTHER_APPS.map((app) => (
+            <span
+              key={app.id}
+              className={styles.memorySegment}
+              style={{ flexGrow: app.memory }}
+              tabIndex={0}
+              role="img"
+              aria-label={`${app.name} · ${formatMemory(app.memory)}`}
+              data-focused={focus === app.id}
+              onMouseEnter={() => setFocus(app.id)}
+              onMouseLeave={() => setFocus(null)}
+              onFocus={() => setFocus(app.id)}
+              onBlur={() => setFocus(null)}
+            />
+          ))}
+          <span
+            className={styles.freeMemory}
+            style={{ flexGrow: SYSTEM_MEMORY - total - OTHER_MEMORY }}
+            title={`Free · ${formatMemory(SYSTEM_MEMORY - total - OTHER_MEMORY)}`}
+          />
+        </div>
+        <div className={styles.memoryLegend}>
+          <span>
+            <i data-servers />
+            Servers <b>{formatTotal(total)}</b>
+          </span>
+          <span>
+            <i />
+            Other apps <b>{formatTotal(OTHER_MEMORY)}</b>
+          </span>
+          <span>
+            <i data-free />
+            Free <b>{formatTotal(SYSTEM_MEMORY - total - OTHER_MEMORY).split(' ')[0]} of 16 GB</b>
+          </span>
         </div>
       </div>
 
       <div className={`${styles.popSection} ${styles.rowList}`}>
+        {!demo.running.length && (
+          <div className={styles.emptyState}>
+            <DotGrid size={48} />
+            <span className={styles.t2}>Nothing listening</span>
+            <span className={`${styles.caption} ${styles.t3}`}>Dev servers on ports 3000–9999 show up here.</span>
+          </div>
+        )}
         {demo.running.map((s) => (
           <div
             key={s.port}
@@ -213,29 +322,55 @@ function ListView({ demo }: { demo: Demo }) {
             tabIndex={0}
             className={styles.serverRow}
             data-interactive
-            data-dim={s.status === 'idle'}
-            onClick={() => demo.go({ name: 'detail', port: s.port }, 1)}
-            onKeyDown={(e) => e.key === 'Enter' && demo.go({ name: 'detail', port: s.port }, 1)}
+            data-dim={s.status === 'idle' || (focus !== null && focus !== s.port)}
+            data-focused={focus === s.port}
+            data-cleaning={cleaning}
+            aria-pressed={cleaning ? demo.selected.includes(s.port) : undefined}
+            aria-label={`${cleaning ? 'Select' : 'View'} ${s.branch} on port ${s.port}`}
+            onMouseEnter={() => setHoveredRow(s.port)}
+            onMouseLeave={() => setHoveredRow(null)}
+            onClick={() => activate(s.port)}
+            onKeyDown={(e) => {
+              if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault()
+                activate(s.port)
+              }
+            }}
           >
-            <Colon state={s.status} />
-            <span className={styles.rowPort}>{s.port}</span>
+            {cleaning && (
+              <span className={styles.checkbox} data-checked={demo.selected.includes(s.port)} aria-hidden>
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                  <path
+                    d="M2 5.2 4.1 7.3 8 2.8"
+                    fill="none"
+                    stroke="#0B0D12"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            )}
+            <Colon state={s.status} color={portColor(s.port)} />
+            <span className={styles.rowPort} style={{ color: portColor(s.port) }}>
+              {s.port}
+            </span>
             <span className={styles.rowMain}>
-              <span className={styles.rowTop}>
-                <span className={styles.rowName}>{s.name}</span>
-                <span className={styles.rowBranch}>
-                  <BranchIcon />
-                  <span className={styles.ellipsis}>{s.branch}</span>
+              <span className={styles.rowName} title={s.branch}>
+                {s.branch.replaceAll('-', ' ')}
+              </span>
+              <span className={styles.rowSub} style={{ color: s.context.tone === 'amber' ? AMBER : '#EBEBF599' }}>
+                {cleaning && s.cleanUp ? REASON_ICONS[s.cleanUp.reason] : <AgentIcon agent={s.context.agent} />}
+                <span className={styles.ellipsis}>
+                  {flash === s.port
+                    ? `Opened localhost:${s.port}`
+                    : cleaning && s.cleanUp
+                      ? s.cleanUp.note
+                      : s.context.text}
                 </span>
               </span>
-              <span
-                className={styles.rowSub}
-                style={{ color: s.context.tone === 'amber' ? AMBER : s.context.agent ? '#EBEBF599' : '#EBEBF580' }}
-              >
-                <AgentIcon agent={s.context.agent} />
-                <span className={styles.ellipsis}>{flash === s.port ? `Opened localhost:${s.port}` : s.context.text}</span>
-              </span>
             </span>
-            <svg className={styles.rowSpark} width="44" height="18" viewBox="0 0 44 18" aria-hidden>
+            <svg className={styles.rowSpark} width="40" height="18" viewBox="0 0 44 18" aria-hidden>
               <path
                 d={s.spark}
                 fill="none"
@@ -246,32 +381,34 @@ function ListView({ demo }: { demo: Demo }) {
                 strokeDasharray={s.status === 'idle' ? '2 3' : undefined}
               />
             </svg>
-            <span className={styles.rowActions}>
-              <button
-                type="button"
-                className={styles.rowAction}
-                aria-label={`Open localhost:${s.port}`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  trigger(s.port)
-                }}
-              >
-                <OpenIcon />
-              </button>
-              <button
-                type="button"
-                className={styles.rowAction}
-                aria-label={`Stop ${s.name}`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  demo.stop([s.port])
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
-                  <rect x="2.5" y="2.5" width="7" height="7" rx="1.5" fill="rgb(245 245 247 / 80%)" />
-                </svg>
-              </button>
-            </span>
+            {!cleaning && (
+              <span className={styles.rowActions}>
+                <button
+                  type="button"
+                  className={styles.rowAction}
+                  aria-label={`Open localhost:${s.port}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    trigger(s.port)
+                  }}
+                >
+                  <OpenIcon />
+                </button>
+                <button
+                  type="button"
+                  className={styles.rowAction}
+                  aria-label={`Stop ${s.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    demo.stop([s.port])
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+                    <rect x="2.5" y="2.5" width="7" height="7" rx="1.5" fill="rgb(245 245 247 / 80%)" />
+                  </svg>
+                </button>
+              </span>
+            )}
             <span className={styles.rowMemory} style={{ color: s.status === 'amber' ? AMBER : undefined }}>
               {formatMemory(s.memory)}
             </span>
@@ -279,27 +416,61 @@ function ListView({ demo }: { demo: Demo }) {
         ))}
       </div>
 
-      <div className={`${styles.popSection} ${styles.popFooter}`}>
-        <button type="button" className={styles.chip} onClick={() => demo.go({ name: 'cleanUp' }, 1)}>
-          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-            <path d="M8.5 1.5 6 7M3 8.5h7l.8 4H2.2L3 8.5Z" fill="none" stroke="#F5F5F7" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M5 10.5v2M7.5 10.5v2" fill="none" stroke="#F5F5F7" strokeWidth="1.1" strokeLinecap="round" />
+      {!demo.running.length ? (
+        <div className={`${styles.popSection} ${styles.actions}`}>
+          <button type="button" className={styles.primaryAction} onClick={demo.restartAll}>
+            Start the demo servers again
+          </button>
+        </div>
+      ) : cleaning ? (
+        <div className={`${styles.popSection} ${styles.actions}`}>
+          <button type="button" className={styles.secondaryAction} onClick={() => demo.go({ name: 'list' }, -1)}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={`${styles.primaryAction} ${styles.destructive}`}
+            disabled={!chosen.length}
+            onClick={() => {
+              demo.stop(chosen.map((s) => s.port))
+              demo.go({ name: 'list' }, -1)
+            }}
+          >
+            {chosen.length
+              ? `Stop ${chosen.length} ${chosen.length === 1 ? 'server' : 'servers'} · free ${formatMemory(freed)}`
+              : 'Stop servers'}
+          </button>
+        </div>
+      ) : (
+        <div className={`${styles.popSection} ${styles.popFooter}`}>
+          <button type="button" className={styles.chip} onClick={() => demo.go({ name: 'cleanUp' }, 1)}>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+              <path
+                d="M8.5 1.5 6 7M3 8.5h7l.8 4H2.2L3 8.5Z"
+                fill="none"
+                stroke="#F5F5F7"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M5 10.5v2M7.5 10.5v2" fill="none" stroke="#F5F5F7" strokeWidth="1.1" strokeLinecap="round" />
+            </svg>
+            <span className={styles.popTitle}>Clean up</span>
+            {cleanUpCount > 0 && <span className={styles.chipCount}>{cleanUpCount}</span>}
+          </button>
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+              fill="none"
+              stroke="rgb(235 235 245 / 70%)"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="12" cy="12" r="3" fill="none" stroke="rgb(235 235 245 / 70%)" strokeWidth="1.9" />
           </svg>
-          <span className={styles.popTitle}>Clean up</span>
-          {cleanUpCount > 0 && <span className={styles.chipCount}>{cleanUpCount}</span>}
-        </button>
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-          <path
-            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
-            fill="none"
-            stroke="rgb(235 235 245 / 70%)"
-            strokeWidth="1.9"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="12" cy="12" r="3" fill="none" stroke="rgb(235 235 245 / 70%)" strokeWidth="1.9" />
-        </svg>
-      </div>
+        </div>
+      )}
     </>
   )
 }
@@ -310,9 +481,19 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
   const [restarting, setRestarting] = useState(false)
   const [restarted, setRestarted] = useState(false)
   const [flash, trigger] = useFlash()
+  const [hover, setHover] = useState<number | null>(null)
   const memory = memoryChart(server)
   const bars = cpuBars(server)
-  const leaking = server.chart === 'leaking'
+  const sample = hover === null ? null : memory.points[Math.round(hover * (memory.points.length - 1))]
+  const cpuSample = hover === null ? server.cpu : bars[Math.round(hover * (bars.length - 1))]
+  const timestamp =
+    hover === null
+      ? null
+      : `13:${String(14 + Math.floor(hover * 10)).padStart(2, '0')}:${String(Math.floor(hover * 600) % 60).padStart(2, '0')}`
+  const chartHover = (event: React.MouseEvent<SVGSVGElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    setHover(Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)))
+  }
 
   useEffect(() => {
     if (!restarting) return
@@ -330,7 +511,6 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
           <span key="session" className={styles.infoValue}>
             <AgentIcon agent={server.session.agent} />
             <span className={`${styles.ellipsis} ${styles.t1}`}>{server.session.title}</span>
-            <span className={`${styles.mono} ${styles.t3}`}>{server.session.id}</span>
             <span style={{ flexGrow: 1 }} />
             <OpenIcon color="rgb(235 235 245 / 60%)" />
           </span>,
@@ -341,7 +521,10 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
         ['Branch', server.branch],
         ['Folder', server.info[0][1]],
       ]
-  const hiddenInfo = server.info.filter(([label]) => !(label === 'Folder' && !server.session))
+  const hiddenInfo: [string, string][] = server.info
+    .filter(([label]) => !(label === 'Folder' && !server.session) && label !== 'PID' && label !== 'Git')
+    .map(([label, value]) => [label, label === 'Workspace' ? `Conductor · ${value}` : value])
+  if (server.session) hiddenInfo.push(['Session ID', server.session.id])
 
   return (
     <>
@@ -349,24 +532,47 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
         <Header title={server.name} onBack={() => demo.go({ name: 'list' }, -1)} />
         <div className={styles.popDisplay} style={{ justifyContent: 'space-between' }}>
           <span className={styles.popDisplay}>
-            <Colon state={server.status} dot={6} gap={6} />
-            <span className={styles.popBig}>{server.port}</span>
+            <Colon state={server.status} color={portColor(server.port)} dot={6} gap={6} />
+            <span className={styles.popBig} style={{ color: portColor(server.port) }}>
+              {server.port}
+            </span>
           </span>
           <span className={styles.popDisplay} style={{ gap: 10 }}>
-            <span className={`${styles.mono} ${styles.t3}`}>
-              {restarting ? 'restarting…' : restarted ? 'up just now' : server.uptime}
+            <span className={styles.t3}>
+              {restarting
+                ? 'restarting…'
+                : restarted
+                  ? 'Running for <1m'
+                  : `Running for ${server.uptime.replace(/^(up|idle) /, '')}`}
             </span>
             <span className={styles.popDisplay}>
               <button
                 type="button"
                 className={styles.control}
                 aria-label="Restart"
+                disabled={server.status === 'idle' || restarting}
+                title={
+                  server.status === 'idle' ? 'Working directory no longer exists' : 'Restart with the same command'
+                }
                 data-spinning={restarting}
                 onClick={() => setRestarting(true)}
               >
                 <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden>
-                  <path d="M11.5 7a4.5 4.5 0 1 1-1.3-3.2" fill="none" stroke="#F5F5F7" strokeWidth="1.4" strokeLinecap="round" />
-                  <path d="M10.6 1.6v2.6H8" fill="none" stroke="#F5F5F7" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M11.5 7a4.5 4.5 0 1 1-1.3-3.2"
+                    fill="none"
+                    stroke="#F5F5F7"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M10.6 1.6v2.6H8"
+                    fill="none"
+                    stroke="#F5F5F7"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </button>
               <button
@@ -396,7 +602,9 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
             {hiddenInfo.map(([label, value]) => (
               <div key={label} className={styles.infoRow}>
                 <span className={styles.infoLabel}>{label}</span>
-                <span className={`${styles.ellipsis} ${label === 'PID' || label === 'Command' ? styles.mono : ''} ${styles.t1}`}>
+                <span
+                  className={`${styles.ellipsis} ${label === 'PID' || label === 'Command' ? styles.mono : ''} ${styles.t1}`}
+                >
                   {value}
                 </span>
               </div>
@@ -414,35 +622,42 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
       <div className={`${styles.popSection} ${styles.chart}`}>
         <div className={styles.chartHead}>
           <span className={styles.chartTitle}>
-            <span className={styles.t2} style={{ fontWeight: 500 }}>
-              Memory
-            </span>
-            <span className={styles.mono} style={{ fontWeight: 500, color: leaking ? AMBER : '#F5F5F7' }}>
-              {formatMemory(server.memory)}
+            <span className={styles.t2}>Memory</span>
+            <span className={styles.mono} style={{ fontWeight: 500 }}>
+              {formatMemory(sample?.memory ?? server.memory)}
             </span>
           </span>
-          <span className={`${styles.mono} ${styles.caption} ${styles.t3}`}>10 min</span>
+          <span className={`${styles.mono} ${styles.caption} ${styles.t3}`}>{timestamp ?? '10 min'}</span>
         </div>
         <div className={styles.plot}>
-          <span className={styles.axis} style={{ height: 76 }}>
-            <span style={{ color: memory.topAmber ? '#FFB224D9' : undefined, marginTop: -6 }}>{memory.top}</span>
-            <span style={{ marginBottom: -6 }}>0</span>
+          <span className={styles.axis} style={{ height: 56, position: 'relative' }}>
+            <span style={{ position: 'absolute', top: memory.limit - 7, color: '#FFB224D9' }}>2 GB</span>
+            <span style={{ position: 'absolute', bottom: -6 }}>0</span>
           </span>
-          <svg width="328" height="76" viewBox="0 0 328 76" aria-hidden style={{ flexShrink: 0 }}>
-            <path d="M0.5 0 V76" fill="none" stroke="rgb(255 255 255 / 14%)" />
-            <path d="M0 75.5 H328" fill="none" stroke="rgb(255 255 255 / 14%)" />
+          <svg
+            width="328"
+            height="56"
+            viewBox="0 0 328 56"
+            role="img"
+            aria-label="Memory over the last ten minutes"
+            style={{ flexShrink: 0 }}
+            onMouseMove={chartHover}
+            onMouseLeave={() => setHover(null)}
+          >
+            <path d="M0.5 0 V56 M0 55.5 H328" fill="none" stroke="rgb(255 255 255 / 14%)" />
             <path d={`M0 ${memory.limit} H328`} fill="none" stroke="rgb(255 178 36 / 55%)" strokeDasharray="3 3" />
             <path
               className={styles.chartLine}
               d={memory.line}
               fill="none"
-              stroke={leaking ? AMBER : 'rgb(245 245 247 / 90%)'}
+              stroke="rgb(245 245 247 / 90%)"
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
               pathLength={1}
             />
-            <circle className={styles.chartDot} cx="327" cy={memory.end} r="3" fill={leaking ? AMBER : '#F5F5F7'} />
+            {sample && <path d={`M${sample.x} 0 V56`} stroke="#F5F5F740" />}
+            <circle cx={sample?.x ?? 327} cy={sample?.y ?? memory.end} r="3" fill="#F5F5F7" />
           </svg>
         </div>
       </div>
@@ -450,35 +665,43 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
       <div className={styles.chart} style={{ paddingTop: 0 }}>
         <div className={styles.chartHead}>
           <span className={styles.chartTitle}>
-            <span className={styles.t2} style={{ fontWeight: 500 }}>
-              CPU
-            </span>
+            <span className={styles.t2}>CPU</span>
             <span className={styles.mono} style={{ fontWeight: 500 }}>
-              {server.cpu}%
+              {Math.round(cpuSample)}%
             </span>
           </span>
-          <span className={`${styles.caption} ${styles.t3}`}>{server.cpuNote}</span>
+          {timestamp && <span className={`${styles.mono} ${styles.caption} ${styles.t3}`}>{timestamp}</span>}
         </div>
         <div className={styles.plot}>
-          <span className={styles.axis} style={{ height: 28 }}>
+          <span className={styles.axis} style={{ height: 56 }}>
             <span style={{ marginTop: -6 }}>100%</span>
             <span style={{ marginBottom: -6 }}>0</span>
           </span>
-          <svg width="328" height="28" viewBox="0 0 328 28" aria-hidden style={{ flexShrink: 0 }}>
-            <path d="M0.5 0 V28" fill="none" stroke="rgb(255 255 255 / 14%)" />
-            {bars.map((h, i) => (
+          <svg
+            width="328"
+            height="56"
+            viewBox="0 0 328 56"
+            role="img"
+            aria-label="CPU over the last ten minutes"
+            style={{ flexShrink: 0 }}
+            onMouseMove={chartHover}
+            onMouseLeave={() => setHover(null)}
+          >
+            <path d="M0.5 0 V56 M0 55.5 H328" fill="none" stroke="rgb(255 255 255 / 14%)" />
+            {bars.map((cpu, i) => (
               <rect
                 key={i}
                 className={styles.cpuBar}
                 style={{ animationDelay: `${i * 6}ms` }}
                 x={0.5 + i * 5.4627}
-                y={28 - h}
-                width="4"
-                height={h}
+                y={56 - Math.max(0.6, cpu * 0.56)}
+                width="3"
+                height={Math.max(0.6, cpu * 0.56)}
                 rx="1"
-                fill={i === bars.length - 1 ? 'rgb(245 245 247 / 80%)' : 'rgb(245 245 247 / 32%)'}
+                fill={i === Math.round((hover ?? 1) * (bars.length - 1)) ? '#F5F5F7D9' : '#F5F5F752'}
               />
             ))}
+            {hover !== null && <path d={`M${hover * 328} 0 V56`} stroke="#F5F5F740" />}
           </svg>
         </div>
       </div>
@@ -488,6 +711,7 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
           type="button"
           className={styles.processes}
           onClick={() => setProcessesOpen((v) => !v)}
+          aria-expanded={processesOpen}
           data-open={processesOpen}
         >
           <span className={styles.popDisplay} style={{ gap: 4 }}>
@@ -504,9 +728,15 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
         <div className={styles.collapsible} data-open={processesOpen}>
           <div>
             <div className={styles.processList}>
-              {server.processes.map((p) => (
+              {server.processes.map((p, index) => (
                 <div key={p.command} className={styles.processRow}>
-                  <span className={`${styles.mono} ${styles.ellipsis} ${styles.t1}`}>{p.command}</span>
+                  <span className={`${styles.mono} ${styles.ellipsis} ${styles.t1}`}>
+                    {index ? '└ ' : ''}
+                    {p.command}
+                  </span>
+                  <span className={styles.processBar}>
+                    <i style={{ width: `${(p.memory / Math.max(...server.processes.map((p) => p.memory))) * 100}%` }} />
+                  </span>
                   <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(p.memory)}</span>
                 </div>
               ))}
@@ -536,7 +766,12 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
 const REASON_ICONS = {
   deleted: (
     <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
-      <path d="M1.5 3.5c0-.6.4-1 1-1h2.3l1 1.2h3.7c.6 0 1 .4 1 1V9c0 .6-.4 1-1 1h-7c-.6 0-1-.4-1-1V3.5Z" fill="none" stroke="rgb(235 235 245 / 60%)" strokeWidth="1.1" />
+      <path
+        d="M1.5 3.5c0-.6.4-1 1-1h2.3l1 1.2h3.7c.6 0 1 .4 1 1V9c0 .6-.4 1-1 1h-7c-.6 0-1-.4-1-1V3.5Z"
+        fill="none"
+        stroke="rgb(235 235 245 / 60%)"
+        strokeWidth="1.1"
+      />
       <path d="M4.5 6.2h3" fill="none" stroke="rgb(235 235 245 / 60%)" strokeWidth="1.1" strokeLinecap="round" />
     </svg>
   ),
@@ -548,128 +783,14 @@ const REASON_ICONS = {
   ),
   leaking: (
     <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
-      <path d="M1.5 9 4.5 6l2 2 4-4.5M7.5 3.5h3v3" fill="none" stroke={AMBER} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M1.5 9 4.5 6l2 2 4-4.5M7.5 3.5h3v3"
+        fill="none"
+        stroke={AMBER}
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
-}
-
-function CleanUpView({ demo }: { demo: Demo }) {
-  const order = ['deleted', 'idle', 'leaking']
-  const candidates = demo.running
-    .filter((s) => s.cleanUp)
-    .sort((a, b) => order.indexOf(a.cleanUp!.reason) - order.indexOf(b.cleanUp!.reason))
-  const chosen = candidates.filter((s) => demo.selected.includes(s.port))
-  const freed = chosen.reduce((sum, s) => sum + s.memory, 0)
-  const count = chosen.length
-  const plural = count === 1 ? 'server' : 'servers'
-  const [value, unit] = formatMemory(freed).split(' ')
-
-  return (
-    <>
-      <div className={styles.popHead}>
-        <Header title="Clean up" onBack={() => demo.go({ name: 'list' }, -1)} />
-        <div className={styles.popDisplayStack}>
-          <div className={styles.popDisplay}>
-            <span className={styles.popBig}>{count ? `~${value}` : '0'}</span>
-            <span className={styles.popUnit}>{count ? unit : 'MB'}</span>
-          </div>
-          <span className={styles.t2}>
-            {candidates.length
-              ? `can be freed by stopping ${count} ${plural}`
-              : 'Nothing to clean up. Every server is earning its keep.'}
-          </span>
-        </div>
-      </div>
-
-      {candidates.length > 0 && (
-        <div className={`${styles.popSection} ${styles.rowList}`}>
-          {candidates.map((s) => {
-            const checked = demo.selected.includes(s.port)
-            const amber = s.cleanUp!.reason === 'leaking'
-            return (
-              <button
-                key={s.port}
-                type="button"
-                className={styles.serverRow}
-                data-interactive
-                style={{ gap: 12 }}
-                onClick={() => demo.toggleSelected(s.port)}
-                aria-pressed={checked}
-              >
-                <span className={styles.checkbox} data-checked={checked}>
-                  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
-                    <path d="M2 5.2 4.1 7.3 8 2.8" fill="none" stroke="#0B0D12" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-                <span className={styles.popDisplay} style={{ gap: 0, width: 52, flexShrink: 0 }}>
-                  <Colon state={s.status} />
-                  <span className={styles.rowPort} style={{ width: 'auto' }}>
-                    {s.port}
-                  </span>
-                </span>
-                <span className={styles.rowMain} style={{ gap: 2, paddingRight: 0 }}>
-                  <span className={styles.rowName}>{s.name}</span>
-                  <span className={styles.rowSub} style={{ color: amber ? AMBER : '#EBEBF599' }}>
-                    {REASON_ICONS[s.cleanUp!.reason]}
-                    {s.cleanUp!.note}
-                  </span>
-                </span>
-                <span className={styles.rowMemory} style={{ width: 60, color: amber ? AMBER : undefined }}>
-                  {formatMemory(s.memory)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      <div className={`${styles.popSection} ${styles.cleanFooter}`}>
-        <span className={styles.rowSub} style={{ color: '#EBEBF573', gap: 6, paddingInline: 4 }}>
-          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
-            <rect x="2.5" y="5.2" width="7" height="5" rx="1.3" fill="none" stroke="rgb(235 235 245 / 45%)" strokeWidth="1.1" />
-            <path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" fill="none" stroke="rgb(235 235 245 / 45%)" strokeWidth="1.1" />
-          </svg>
-          postgres :5432 and redis :6379 are protected
-        </span>
-        <span className={styles.actions} style={{ padding: 0 }}>
-          <button type="button" className={styles.secondaryAction} style={{ paddingInline: 14, fontWeight: 500 }} onClick={() => demo.go({ name: 'list' }, -1)}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={`${styles.primaryAction} ${styles.destructive}`}
-            disabled={!count}
-            onClick={() => {
-              demo.stop(chosen.map((s) => s.port))
-              demo.go({ name: 'list' }, -1)
-            }}
-          >
-            {count ? `Stop ${count} ${plural} · free ${formatMemory(freed)}` : 'Select servers to stop'}
-          </button>
-        </span>
-      </div>
-    </>
-  )
-}
-
-function EmptyView({ demo }: { demo: Demo }) {
-  return (
-    <>
-      <div className={styles.popHead}>
-        <Header title="Servers" />
-        <div className={styles.popDisplayStack}>
-          <div className={styles.popDisplay}>
-            <span className={styles.popBig}>0</span>
-            <span className={styles.popUnit}>GB</span>
-          </div>
-          <span className={styles.t2}>Nothing is listening. Every port is free.</span>
-        </div>
-      </div>
-      <div className={`${styles.popSection} ${styles.actions}`}>
-        <button type="button" className={styles.primaryAction} onClick={demo.restartAll}>
-          Start the demo servers again
-        </button>
-      </div>
-    </>
-  )
 }
