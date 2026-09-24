@@ -1,0 +1,89 @@
+name: Rebuild and deploy site and app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Finish an active deployment before starting the next one.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-app:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and sign the Mac app
+        run: ./WhatThePort/build-app.sh
+
+      - name: Package the download
+        run: |
+          codesign --verify --strict WhatThePort/.build/WhatThePort.app
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent WhatThePort/.build/WhatThePort.app dist/WhatThePort.zip
+          unzip -t dist/WhatThePort.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-app
+          path: dist/WhatThePort.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    needs: build-app
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deployment configuration
+        run: |
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Add the $name repository secret before deploying. See README.md."
+              exit 1
+            fi
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Remove the checked-in download
+        run: rm public/WhatThePort.zip
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-app
+          path: public
+
+      - name: Verify the rebuilt download
+        run: unzip -t public/WhatThePort.zip
+
+      - name: Install dependencies and Vercel CLI
+        run: |
+          npm ci
+          npm install --global vercel@59.6.2
+
+      - name: Pull production configuration
+        run: vercel pull --yes --environment=production
+
+      - name: Build the site with the rebuilt app
+        run: vercel build --prod
+
+      - name: Deploy to production
+        run: vercel deploy --prebuilt --prod --yes
