@@ -44,6 +44,8 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 
 To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
 
+To render the onboarding loading, success, missing-tool, and approval states without changing macOS permissions or login items, run `WhatThePort --snapshot-onboarding <dir>`.
+
 ### Settings
 
 Open Settings from the gear in the popover (⌘,):

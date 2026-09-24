@@ -6,6 +6,7 @@ import UserNotifications
 /// column, so any glyph can morph into any other.
 struct DotMatrixView: View {
     let glyph: DotGlyph
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var size: CGFloat = 110
 
     var body: some View {
@@ -20,7 +21,7 @@ struct DotMatrixView: View {
                             .opacity(dot == "." ? 0.12 : 1)
                             .frame(width: pitch * 0.64, height: pitch * 0.64)
                             .frame(width: pitch, height: pitch)
-                            .animation(.easeInOut(duration: 0.28).delay(Double(column) * 0.04), value: glyph)
+                            .animation(reduceMotion ? nil : .easeInOut(duration: 0.28).delay(Double(column) * 0.04), value: glyph)
                     }
                 }
             }
@@ -35,19 +36,16 @@ enum OnboardingStep: Int, CaseIterable {
 
 struct OnboardingView: View {
     @ObservedObject var monitor: ServerMonitor
+    @StateObject var status = OnboardingStatus()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.openWindow) private var openWindow
     @State var step: OnboardingStep = .welcome
     var close: () -> Void = {}
 
     @AppStorage(Preferences.onboarded) private var onboarded = false
-    @AppStorage(Preferences.linkClaude) private var linkClaude = true
-    @AppStorage(Preferences.linkCodex) private var linkCodex = true
-    @AppStorage(Preferences.linkConductor) private var linkConductor = true
-    @AppStorage(Preferences.githubPullRequests) private var pullRequests = false
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.thresholdGB) private var thresholdGB = 2.0
     @AppStorage(Preferences.cleanUpIdleHours) private var idleHours = 4
-    @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
-    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var heroGlyph: DotGlyph = .colon
 
     var body: some View {
@@ -59,7 +57,7 @@ struct OnboardingView: View {
                     Text(title).font(Theme.displaySans).foregroundStyle(Theme.text1)
                     Text(message)
                         .font(Theme.body)
-                        .foregroundStyle(Theme.text2)
+                        .foregroundStyle(OnboardingStyle.secondary)
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
@@ -67,7 +65,7 @@ struct OnboardingView: View {
                 card
                 Spacer(minLength: 0)
             }
-            .padding(EdgeInsets(top: 36, leading: 40, bottom: 20, trailing: 40))
+            .padding(EdgeInsets(top: 36, leading: 32, bottom: 20, trailing: 32))
 
             SectionDivider()
             HStack {
@@ -84,8 +82,11 @@ struct OnboardingView: View {
         .frame(width: 480, height: 620)
         .background(Color(red: 0.118, green: 0.118, blue: 0.129))
         .environment(\.colorScheme, .dark)
-        .onAppear { updateHero(animated: false); refreshNotificationStatus() }
-        .onChange(of: step) { _, _ in updateHero(animated: true) }
+        .onAppear { updateHero(animated: false); loadStep() }
+        .onChange(of: step) { _, _ in updateHero(animated: !reduceMotion); loadStep() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if step == .leaks { Task { await status.refreshSetup(force: true) } }
+        }
     }
 
     // MARK: - Copy
@@ -94,7 +95,7 @@ struct OnboardingView: View {
         switch step {
         case .welcome: return "WhatThePort"
         case .leaks: return "Stay ahead of leaks"
-        case .tools: return "Link your tools"
+        case .tools: return "Your tools, at a glance."
         case .vercel: return "Vercel previews"
         case .done: return "You’re set"
         }
@@ -104,7 +105,7 @@ struct OnboardingView: View {
         switch step {
         case .welcome: return "Every dev server on your Mac, in the menu bar. What it is, what branch it’s on, and what it’s costing you."
         case .leaks: return "WhatThePort warns you when a server starts eating memory. It never sends anything off your Mac."
-        case .tools: return "Found on this Mac. WhatThePort only reads local session files and process info."
+        case .tools: return "WhatThePort reads local session files and process info to put your servers in context."
         case .vercel: return "See the preview deployment for whatever branch each server is running. Optional."
         case .done: return "The dots settle into the colon in your menu bar. Press ⌥⌘P any time to open it."
         }
@@ -122,34 +123,37 @@ struct OnboardingView: View {
                 }
             }
         case .leaks:
-            OnboardingCard {
-                OnboardingRow(title: "Notifications", caption: "For memory and leak alerts") { notificationControl }
-                RowDivider()
-                OnboardingRow(title: "Launch at login") {
-                    Toggle("", isOn: $launchAtLogin).labelsHidden().toggleStyle(.switch)
-                        .onChange(of: launchAtLogin) { _, enabled in
-                            do {
-                                if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-                            } catch {
-                                launchAtLogin = SMAppService.mainApp.status == .enabled
-                            }
-                        }
+            VStack(spacing: 18) {
+                OnboardingCard {
+                    OnboardingSummary(title: status.setupSummary, detail: "\(status.readyCount) of 2 ready")
+                    RowDivider()
+                    OnboardingRow(title: "Notifications", caption: status.notifications == .action("Not allowed", button: "Settings…") ? "Allow in System Settings" : "Memory and leak alerts") {
+                        OnboardingConfirmation(state: status.notifications, action: notificationAction)
+                    }
+                    RowDivider()
+                    OnboardingRow(title: "Launch at login", caption: status.login == .action("Needs approval", button: "Settings…") ? "Approve in System Settings" : "Opens when you sign in") {
+                        OnboardingConfirmation(state: status.login, action: loginAction)
+                    }
                 }
+                if let error = status.notificationError ?? status.loginError {
+                    Text(error).font(OnboardingStyle.label).foregroundStyle(Theme.amber)
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                }
+                Button("You can change these in Settings.") { openWindow(id: "settings") }
+                    .buttonStyle(.plain).font(OnboardingStyle.label).foregroundStyle(OnboardingStyle.secondary)
             }
         case .tools:
             OnboardingCard {
-                toolRow(.claudeCode, name: "Claude Code", found: ToolDetection.claude ? "~/.claude" : "not found", caption: "Link servers to the session that started them", isOn: $linkClaude)
-                RowDivider()
-                toolRow(.codex, name: "Codex", found: ToolDetection.codex ? "~/.codex" : "not found", caption: "Link servers to Codex threads", isOn: $linkCodex)
-                RowDivider()
-                OnboardingRow(title: "Conductor", caption: "Show workspace names", icon: AnyView(ToolIcon(systemName: "square.grid.2x2")), detail: ToolDetection.conductor ? "installed" : "not found") {
-                    Toggle("", isOn: $linkConductor).labelsHidden().toggleStyle(.switch)
+                OnboardingSummary(
+                    title: status.isScanning ? "Checking this Mac…" : "\(status.detectedCount) \(status.detectedCount == 1 ? "tool" : "tools") detected",
+                    detail: status.isScanning ? "\(status.detectedCount) of 4 found" : "Scan complete"
+                )
+                ForEach(OnboardingTool.allCases, id: \.self) { tool in
+                    RowDivider()
+                    OnboardingRow(title: tool.name, icon: AnyView(toolIcon(tool))) {
+                        OnboardingConfirmation(state: status.tools[tool] ?? .loading("Checking…"), monospaced: true)
+                    }
                 }
-                RowDivider()
-                OnboardingRow(title: "GitHub CLI", caption: "Show the pull request for each branch", icon: AnyView(ToolIcon(systemName: "arrow.triangle.branch")), detail: GitHubLookup.isAvailable ? "gh" : "not found") {
-                    Toggle("", isOn: $pullRequests).labelsHidden().toggleStyle(.switch)
-                }
-                .disabled(!GitHubLookup.isAvailable)
             }
         case .vercel:
             OnboardingCard {
@@ -180,29 +184,38 @@ struct OnboardingView: View {
         }
     }
 
-    private func toolRow(_ kind: AgentKind, name: String, found: String, caption: String, isOn: Binding<Bool>) -> some View {
-        OnboardingRow(title: name, caption: caption, icon: AnyView(ToolIcon(agent: kind)), detail: found) {
-            Toggle("", isOn: isOn).labelsHidden().toggleStyle(.switch)
+    @ViewBuilder private func toolIcon(_ tool: OnboardingTool) -> some View {
+        switch tool {
+        case .claude: ToolIcon(agent: .claudeCode)
+        case .codex: ToolIcon(agent: .codex)
+        case .conductor: ToolIcon(systemName: "square.grid.2x2")
+        case .github: ToolIcon(systemName: "arrow.triangle.branch")
         }
     }
 
-    @ViewBuilder private var notificationControl: some View {
-        switch notificationStatus {
-        case .authorized, .provisional:
-            Text("Allowed").font(Theme.body).foregroundStyle(Theme.text2)
-        case .denied:
-            Button("Open Settings…") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") { NSWorkspace.shared.open(url) }
-            }
-            .buttonStyle(PillButtonStyle())
-        default:
-            Button("Allow…") {
-                Task {
-                    _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
-                    refreshNotificationStatus()
-                }
-            }
-            .buttonStyle(PillButtonStyle())
+    private func loadStep() {
+        // Keep in-flight work when moving between steps; returning shows cached
+        // results instead of replaying a scan. Reads never change preferences.
+        switch step {
+        case .leaks: Task { await status.refreshSetup() }
+        case .tools: Task { await status.scanTools() }
+        default: break
+        }
+    }
+
+    private func notificationAction() {
+        if case .action(_, "Settings…") = status.notifications {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") { NSWorkspace.shared.open(url) }
+        } else {
+            Task { await status.allowNotifications() }
+        }
+    }
+
+    private func loginAction() {
+        if case .action(_, "Settings…") = status.login {
+            SMAppService.openSystemSettingsLoginItems()
+        } else {
+            Task { await status.addLoginItem() }
         }
     }
 
@@ -225,7 +238,7 @@ struct OnboardingView: View {
     }
 
     private func go(_ next: OnboardingStep) {
-        withAnimation(.snappy(duration: 0.25)) { step = next }
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { step = next }
     }
 
     private func finish() {
@@ -249,20 +262,13 @@ struct OnboardingView: View {
                 DotGlyph(rows: ["#...#", ".....", ".....", ".....", "#...#"]),
                 .colon,
             ]
-            guard animated else { heroGlyph = .colon; return }
+            guard animated, !reduceMotion else { heroGlyph = .colon; return }
             for (index, frame) in frames.enumerated() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35 * Double(index)) { heroGlyph = frame }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35 * Double(index)) { if step == .done { heroGlyph = frame } }
             }
         }
     }
 
-    private func refreshNotificationStatus() {
-        guard Bundle.main.bundleURL.pathExtension == "app" else { return }
-        Task {
-            let settings = await UNUserNotificationCenter.current().notificationSettings()
-            notificationStatus = settings.authorizationStatus
-        }
-    }
 }
 
 // MARK: - Pieces
@@ -272,37 +278,35 @@ private struct OnboardingCard<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) { content }
-        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
+        .background(OnboardingStyle.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(OnboardingStyle.divider, lineWidth: 1))
     }
 }
 
 private struct RowDivider: View {
-    var body: some View { SectionDivider().padding(.leading, 12) }
+    var body: some View { Rectangle().fill(OnboardingStyle.divider).frame(height: 1) }
 }
 
 private struct OnboardingRow<Control: View>: View {
     let title: String
     var caption: String?
     var icon: AnyView?
-    var detail: String?
     @ViewBuilder let control: Control
 
     var body: some View {
         HStack(spacing: 12) {
             if let icon { icon }
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(title).font(Theme.body).foregroundStyle(Theme.text1)
-                    if let detail { Text(detail).font(Theme.monoCaption).foregroundStyle(Theme.text3) }
-                }
-                if let caption { Text(caption).font(Theme.caption).foregroundStyle(Theme.text3) }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(Theme.bodyMedium).foregroundStyle(Theme.text1)
+                if let caption { Text(caption).font(OnboardingStyle.label).foregroundStyle(OnboardingStyle.secondary) }
             }
-            Spacer(minLength: 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
             control
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, caption == nil ? 10 : 14)
+        .frame(minHeight: caption == nil ? 49 : 64)
+        .accessibilityElement(children: .contain)
     }
 }
 

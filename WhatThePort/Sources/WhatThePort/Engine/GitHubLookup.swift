@@ -29,12 +29,12 @@ final class GitHubLookup: ObservableObject {
     private var inFlight = Set<String>()
     private let queue = DispatchQueue(label: "com.whattheport.github", qos: .utility)
 
-    static let ghPath: String? = {
+    nonisolated static let ghPath: String? = {
         let candidates = ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", NSHomeDirectory() + "/homebrew/bin/gh"]
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) } ?? shellWhich("gh")
     }()
 
-    static var isAvailable: Bool { ghPath != nil }
+    nonisolated static var isAvailable: Bool { ghPath != nil }
 
     private var wantsPreviews: Bool { UserDefaults.standard.bool(forKey: Preferences.vercelPreviews) }
     private var wantsPullRequests: Bool { UserDefaults.standard.bool(forKey: Preferences.githubPullRequests) }
