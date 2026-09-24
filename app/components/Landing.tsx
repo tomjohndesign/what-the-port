@@ -239,19 +239,19 @@ function Footer() {
     <footer className={styles.footer} data-visible={visible}>
       <div className={styles.footerInner}>
         <span className={styles.footerBrand}>
-          <DotGrid size={16} />
+          <DotGrid size={22} />
           WhatThePort
         </span>
-        <span className={styles.footerMeta}>Free and open source · MIT licensed · Made by Tomjohn</span>
-        <nav className={styles.footerLinks}>
+        <span className={styles.footerMeta}>Free and open source · Made by Tomjohn</span>
+        <nav className={styles.footerLinks} aria-label="Footer">
           <a href={DOWNLOAD_URL} download>
-            Download
+            Download <span aria-hidden="true">↗</span>
           </a>
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-            GitHub
+            GitHub <span aria-hidden="true">↗</span>
           </a>
           <a href="https://tomjohn.design" target="_blank" rel="noopener noreferrer">
-            tomjohn.design
+            tomjohn.design <span aria-hidden="true">↗</span>
           </a>
         </nav>
       </div>
