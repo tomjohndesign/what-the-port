@@ -38,6 +38,36 @@ open .build/WhatThePort.app
 
 For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app and generates a signed update feed for the website.
 
+## Automatic deployment
+
+Every push to `main`, including a merged pull request, runs
+[Rebuild and deploy site and app](.github/workflows/deploy.yml). It builds the
+Apple Silicon Mac app on macOS, verifies its ad-hoc signature, and packages it as
+`WhatThePort.zip`. A Linux job then replaces `public/WhatThePort.zip` with that
+artifact, builds the Next.js site, and deploys both together to production on
+Vercel. A failed app or site build stops deployment.
+
+Configure these GitHub Actions **repository secrets** under
+**Settings → Secrets and variables → Actions** before merging this workflow:
+
+- `VERCEL_TOKEN`: a Vercel access token with access to the production project.
+- `VERCEL_ORG_ID`: the production project's `orgId` from `.vercel/project.json`.
+- `VERCEL_PROJECT_ID`: its `projectId` from `.vercel/project.json`.
+
+Run `vercel link` locally to obtain the project IDs. Keep tokens and the generated
+`.vercel` directory out of Git.
+
+`vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
+workflow publishes production with the freshly built app. Other branches retain
+Vercel's normal preview deployments using the checked-in ZIP. To retry production,
+use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
+selected. Production runs are serialized; GitHub may replace a pending run with
+a newer one when several merges arrive during an active deployment.
+
+The workflow uses ad-hoc signing and builds without Sparkle release configuration.
+Developer ID signing, notarization, and publishing a signed update feed require
+the [release setup](WhatThePort/UPDATES.md) described above.
+
 ## Usage
 
 WhatThePort lives in the menu bar as a small dot grid. Click it to see every server:
