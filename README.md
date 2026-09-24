@@ -13,7 +13,9 @@ A macOS menu bar app that monitors your local development servers. See all runni
 - **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
 - **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
+- **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
 - **Global shortcut** - ⌥⌘P opens the popover
+- **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 
 ## Requirements
 
@@ -34,6 +36,8 @@ To build the app bundle:
 open .build/WhatThePort.app
 ```
 
+For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app and generates a signed update feed for the website.
+
 ## Usage
 
 WhatThePort lives in the menu bar as a small dot grid. Click it to see every server:
@@ -43,6 +47,7 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 - Click **Clean up** to tick the servers you want gone and stop them together
 
 To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
+Add `--appearance light` or `--appearance dark` to check a specific appearance without changing your Mac’s settings.
 
 ### Settings
 

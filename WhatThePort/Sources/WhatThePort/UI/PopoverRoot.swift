@@ -32,7 +32,6 @@ struct PopoverRoot: View {
             }
         }
         .frame(width: Theme.popoverWidth)
-        .environment(\.colorScheme, .dark)
         .onAppear {
             monitor.start()
             consumePendingRoute()

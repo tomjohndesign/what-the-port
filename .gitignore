@@ -16,3 +16,6 @@ node_modules/
 .context/
 .vercel
 .env*
+
+# Local release configuration (the private update key belongs in Keychain)
+WhatThePort/update-config.env
