@@ -3,7 +3,15 @@ import Foundation
 
 @MainActor
 final class ServerMonitor: ObservableObject {
-    @Published private(set) var servers: [Server] = []
+    @Published private(set) var servers: [Server] = [] {
+        didSet {
+            for port in servers.map(\.port).sorted() where portColorIndices[port] == nil {
+                portColorIndices[port] = portColorIndices.count
+            }
+        }
+    }
+    /// Keep port identities stable across reordering, filtering, and restarts.
+    private var portColorIndices: [Int: Int] = [:]
     @Published private(set) var hasScanned = false
     @Published private(set) var systemMemory: SystemMemory?
     /// Whole-Mac CPU, as a share of all cores.
@@ -147,6 +155,8 @@ final class ServerMonitor: ObservableObject {
     var needsAttention: Bool { servers.contains { $0.status(alertThreshold: alertThreshold) == .attention } }
 
     func server(port: Int) -> Server? { servers.first { $0.port == port } }
+
+    func colorIndex(for port: Int) -> Int { portColorIndices[port] ?? 0 }
 
     func status(of server: Server) -> ServerStatus { server.status(alertThreshold: alertThreshold) }
 

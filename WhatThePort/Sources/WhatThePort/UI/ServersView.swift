@@ -307,15 +307,15 @@ struct ServerRow: View {
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
 
-            PortLabel(port: server.port, status: status)
+            PortLabel(port: server.port, status: status, color: Theme.portColor(at: monitor.colorIndex(for: server.port)))
                 .frame(width: 58, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(server.project.name)
+                Text(primaryName.replacingOccurrences(of: "-", with: " "))
                     .font(Theme.bodyMedium)
                     .foregroundStyle(Theme.text1)
                     .lineLimit(1)
-                    .help(server.project.name)
+                    .help(primaryName)
                 if let reason = cleaning?.reason {
                     HStack(spacing: 5) {
                         Image(systemName: reason.symbol).font(.system(size: 9, weight: .medium))
@@ -379,10 +379,10 @@ struct ServerRow: View {
         } else {
             HStack(spacing: 5) {
                 if let agent = server.agent { AgentGlyph(kind: agent.kind, size: 10) }
-                if server.cwdExists, let branch = server.project.branch {
-                    Image(systemName: "arrow.triangle.branch").font(.system(size: 8, weight: .medium))
+                if server.cwdExists, server.project.branch != nil {
                     HStack(spacing: 3) {
-                        Text(branch).lineLimit(1).truncationMode(.tail).help(branch)
+                        Text(server.project.name.replacingOccurrences(of: "-", with: " "))
+                            .lineLimit(1).truncationMode(.tail).help(server.project.name)
                         Text("· " + contextText).fixedSize()
                     }
                 } else {
@@ -392,6 +392,10 @@ struct ServerRow: View {
             .font(Theme.caption)
             .foregroundStyle(Theme.text2)
         }
+    }
+
+    private var primaryName: String {
+        server.project.branch ?? server.project.name
     }
 
     /// Uptime or idle time, prefixed with the location when there's no branch.
@@ -489,8 +493,8 @@ struct MemoryShareBar: View {
                     .frame(height: 4)
                     .help("Free · \(Format.bytesString(breakdown.free))")
                 HStack(spacing: spacing) {
-                    ForEach(Array(servers.enumerated()), id: \.element.id) { index, server in
-                        serverSegment(server, index: index, width: max(unit * CGFloat(server.memory), 2), height: geometry.size.height)
+                    ForEach(servers) { server in
+                        serverSegment(server, width: max(unit * CGFloat(server.memory), 2), height: geometry.size.height)
                     }
                     ForEach(apps) { app in
                         baselineSegment(focus: .app(app.id), width: unit * CGFloat(app.memory), height: geometry.size.height,
@@ -508,13 +512,13 @@ struct MemoryShareBar: View {
         }
     }
 
-    private func serverSegment(_ server: Server, index: Int, width: CGFloat, height: CGFloat) -> some View {
+    private func serverSegment(_ server: Server, width: CGFloat, height: CGFloat) -> some View {
         let isFocused = focus == .server(server.port) || (focus == nil && highlightedPort == server.port)
         let isSelected = selection?.contains(server.port) ?? false
         let someoneFocused = focus != nil || highlightedPort != nil
         let isDimmed = (someoneFocused && !isFocused) || (selection != nil && !isSelected && !isFocused)
         return RoundedRectangle(cornerRadius: 1.5)
-            .fill(color(for: server, index: index, highlighted: isFocused || isSelected))
+            .fill(Theme.portColor(at: monitor.colorIndex(for: server.port)))
             .frame(height: isFocused ? 10 : 8)
             .opacity(isDimmed ? 0.35 : 1)
             // A tall, invisible hit area so thin segments are easy to hover.
@@ -545,13 +549,6 @@ struct MemoryShareBar: View {
         if hovering { focus = target } else if focus == target { focus = nil }
     }
 
-    private func color(for server: Server, index: Int, highlighted: Bool) -> Color {
-        if monitor.status(of: server) == .attention { return Theme.amber }
-        if highlighted { return Theme.text1 }
-        // Bright enough to stand clear of the dim baseline of other apps.
-        let opacities: [Double] = [0.95, 0.8, 0.68, 0.58, 0.5]
-        return Theme.text1.opacity(opacities[min(index, opacities.count - 1)])
-    }
 }
 
 struct MemoryBreakdown {

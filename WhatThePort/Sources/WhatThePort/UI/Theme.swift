@@ -14,6 +14,21 @@ enum Theme {
     static let softRed = Color(red: 1, green: 105 / 255, blue: 97 / 255)
     static let ink = Color(red: 11 / 255, green: 13 / 255, blue: 18 / 255)
 
+    /// Port identity colors avoid the red, amber, and green status families.
+    private static let portColors: [Color] = [
+        Color(red: 0.43, green: 0.78, blue: 0.93), // sky
+        Color(red: 0.71, green: 0.60, blue: 0.94), // lavender
+        Color(red: 0.92, green: 0.61, blue: 0.83), // pink
+        Color(red: 0.49, green: 0.61, blue: 0.95), // periwinkle
+        Color(red: 0.49, green: 0.86, blue: 0.88), // cyan
+        Color(red: 0.85, green: 0.64, blue: 0.95), // lilac
+        Color(red: 0.67, green: 0.76, blue: 0.88), // slate
+    ]
+
+    static func portColor(at index: Int) -> Color {
+        portColors[index % portColors.count]
+    }
+
     static let popoverWidth: CGFloat = 400
     static let inset: CGFloat = 16
 
