@@ -83,7 +83,7 @@ Open Settings from the gear in the popover (⌘,):
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
 - **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
-- **About** - Version, update controls, and bug reports or feature requests as GitHub issues with your app and macOS versions filled in
+- **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, and a tip jar
 
 ## How It Works
 
@@ -140,6 +140,14 @@ Configure these GitHub Actions **repository secrets** under
 Run `vercel link` locally to obtain the project IDs. Keep tokens and the generated
 `.vercel` directory out of Git.
 
+The app's tip jar opens `whattheport.dev/tip`, which redirects to the `TIP_URL`
+environment variable, so the payment page can change without an app update. Create
+a Stripe [Payment Link](https://dashboard.stripe.com/payment-links) and set its
+type to **Customers choose what to pay** (not a product price), then add it to the Vercel project's production
+environment with `vercel env add TIP_URL production`. Production builds fail
+without it ([`scripts/check-tip.mjs`](scripts/check-tip.mjs)); local dev and
+previews redirect `/tip` to production.
+
 `vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
 workflow publishes production with the freshly built app. Other branches retain
 Vercel's normal preview deployments. To retry production,
@@ -154,7 +162,7 @@ notarizes the app, and publishes a signed Sparkle feed under `/updates/`. See
 
 ## About
 
-Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev) or browse the source to see how it works.
+Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev) or browse the source to see how it works. If WhatThePort saves you time, [buy me a coffee](https://whattheport.dev/tip).
 
 ## License
 

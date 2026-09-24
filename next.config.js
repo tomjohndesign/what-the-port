@@ -7,11 +7,19 @@ const path = require('path')
 // can't run without it (scripts/check-download.mjs), so this can't loop.
 const hasDownload = fs.existsSync(path.join(__dirname, 'public/WhatThePort.zip'))
 
+// The app's tip jar opens /tip, so the payment page can change without an app
+// update. Set TIP_URL (a Stripe Payment Link) in the Vercel project. Without it,
+// /tip goes to production, which can't build without it (scripts/check-tip.mjs).
+const tipUrl = process.env.TIP_URL || 'https://whattheport.dev/tip'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
-    if (hasDownload) return []
-    return [{ source: '/WhatThePort.zip', destination: 'https://whattheport.dev/WhatThePort.zip', permanent: false }]
+    const redirects = [{ source: '/tip', destination: tipUrl, permanent: false }]
+    if (!hasDownload) {
+      redirects.push({ source: '/WhatThePort.zip', destination: 'https://whattheport.dev/WhatThePort.zip', permanent: false })
+    }
+    return redirects
   },
 }
 
