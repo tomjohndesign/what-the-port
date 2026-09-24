@@ -149,8 +149,7 @@ function DeskStage({ stars }: { stars: number | null }) {
           </div>
         </div>
         <div className={styles.brandSlot}>
-          {/* The corporate office has bright windows behind the logo, so it goes black there. */}
-          <Brand dark={active === GET_IT} />
+          <Brand dark={SECTIONS[active].logo === 'dark'} />
         </div>
       </div>
     </div>
