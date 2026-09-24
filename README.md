@@ -67,6 +67,8 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 - Click a row for details: session, branch, folder, command, charts and processes
 - Click **Clean up** to tick the servers you want gone and stop them together
 
+Right-click the dot grid to open a server in the browser, open Settings, check for updates, send feedback or quit.
+
 To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
 Add `--appearance light` or `--appearance dark` to check a specific appearance without changing your Mac’s settings.
 

@@ -82,6 +82,10 @@ struct MenuBarLabel: View {
         Image(nsImage: MenuBarIcon.image(glyph: glyph, count: label))
             .accessibilityLabel(count == 0 ? "WhatThePort, no servers" : "WhatThePort, \(count) servers")
             .task {
+                StatusItemMenu.install(monitor: monitor) {
+                    NSApp.activate(ignoringOtherApps: true)
+                    openWindow(id: "settings")
+                }
                 // First launch: show onboarding once. After updating, ask about usage once.
                 guard !onboarded || !usageAsked, Bundle.main.bundleURL.pathExtension == "app" else { return }
                 NSApp.activate(ignoringOtherApps: true)
