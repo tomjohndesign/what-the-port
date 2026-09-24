@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://whattheport.dev'),
   title: 'WhatThePort - Monitor Your Dev Servers',
   description: 'A macOS menu bar app to see what\'s running on your ports',
   icons: {
@@ -26,10 +27,10 @@ export const metadata: Metadata = {
     description: 'A macOS menu bar app to see what\'s running on your ports',
     images: [
       {
-        url: '/screenshot.png',
-        width: 1262,
-        height: 812,
-        alt: 'WhatThePort screenshot showing ports with node and Python processes',
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'What the port?! Your dev servers, in the menu bar. WhatThePort server list on an amber background.',
       },
     ],
   },
@@ -37,7 +38,12 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'WhatThePort - Monitor Your Dev Servers',
     description: 'A macOS menu bar app to see what\'s running on your ports',
-    images: ['/screenshot.png'],
+    images: [
+      {
+        url: '/og-image.png',
+        alt: 'What the port?! Your dev servers, in the menu bar. WhatThePort server list on an amber background.',
+      },
+    ],
   },
 }
 
