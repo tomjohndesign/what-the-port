@@ -107,6 +107,7 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         content.userInfo = ["port": server.port]
         let request = UNNotificationRequest(identifier: "\(kind.rawValue)-\(server.port)-\(server.rootPid)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
+        Usage.record(.memoryAlert)
     }
 
     private func announceStartStop(_ servers: [Server]) {
@@ -168,7 +169,10 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         }
         switch action {
         case Action.stop:
-            if let server = monitor.server(port: port) { monitor.stop(server) }
+            if let server = monitor.server(port: port) {
+                Usage.record(.stop)
+                monitor.stop(server)
+            }
         case Action.snooze:
             let minutes = UserDefaults.standard.integer(forKey: Preferences.snoozeMinutes)
             snoozedUntil[port] = Date().addingTimeInterval(TimeInterval(max(minutes, 1) * 60))

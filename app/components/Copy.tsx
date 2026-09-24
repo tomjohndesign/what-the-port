@@ -9,6 +9,7 @@ import {
   GitHubIcon,
   VercelIcon,
 } from './icons'
+import { track } from '@vercel/analytics'
 import { portColor } from './servers'
 import { DOWNLOAD_URL, GITHUB_URL } from './sections'
 
@@ -26,11 +27,11 @@ function PortLabel({ port, colon, label }: { port: string; colon: ColonState; la
   )
 }
 
-export function Cta({ stars }: { stars: number | null }) {
+export function Cta({ stars, location }: { stars: number | null; location: string }) {
   return (
     <div className={styles.cta}>
       <div className={styles.ctaButtons}>
-        <a className={styles.download} href={DOWNLOAD_URL} download>
+        <a className={styles.download} href={DOWNLOAD_URL} download onClick={() => track('Download', { location })}>
           <AppleIcon />
           Download for macOS
         </a>
@@ -68,7 +69,7 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
             What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you forgot
             about in one click.
           </p>
-          <Cta stars={stars} />
+          <Cta stars={stars} location="hero" />
         </div>
       )
     case 1:
@@ -118,7 +119,7 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
         <div className={styles.copy}>
           <h2 className={styles.headline}>Know what’s running.</h2>
           <p className={styles.body}>Two white dots when everything’s fine. You’ll know when it isn’t.</p>
-          <Cta stars={stars} />
+          <Cta stars={stars} location="get-it" />
           <ul className={styles.list}>
             {FACTS.map((fact) => (
               <li key={fact.name} className={styles.listRow} style={{ height: 44 }}>

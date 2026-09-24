@@ -13,6 +13,7 @@ struct DotGlyph: Equatable {
     static let leak = DotGlyph(rows: ["....a", "...a.", "..#..", ".#...", "#...."])
     static let burst = DotGlyph(rows: ["#.#.#", ".....", "#...#", ".....", "#.#.#"])
     static let triangle = DotGlyph(rows: [".....", "..#..", ".###.", "#####", "....."])
+    static let bars = DotGlyph(rows: ["....#", "..#.#", "..#.#", "#.#.#", "#.#.#"])
 
     private static let digits: [[String]] = [
         [".###.", "#..##", "#.#.#", "##..#", ".###."],

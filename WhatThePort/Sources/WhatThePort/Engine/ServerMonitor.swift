@@ -200,6 +200,7 @@ final class ServerMonitor: ObservableObject {
         case .ask:
             if notify { AlertCenter.shared.announceCleanUp(fresh.map(\.server), stopped: false) }
         case .automatic:
+            Usage.record(.autoCleanUp)
             fresh.forEach { stop($0.server) }
             if notify { AlertCenter.shared.announceCleanUp(fresh.map(\.server), stopped: true) }
         }

@@ -24,10 +24,10 @@ No production key or feed is included in this repository. Ordinary `./build-app.
 
 ## Prepare and publish each release
 
-Use a new, increasing build number every time (the previous bundled release was version 2.1, build 3):
+Use a new, increasing build number every time (the previous bundled release was version 2.2, build 4):
 
 ```bash
-./release.sh 2.2 4
+./release.sh 2.3 5
 ```
 
 The script embeds the public configuration, builds the app, signs its bundled framework and helpers, optionally notarizes and staples it, verifies that the Keychain signing key matches the embedded public key, and creates:
@@ -45,6 +45,8 @@ mkdir -p public/updates
 rsync -av --exclude old_updates/ WhatThePort/.build/updates/ public/updates/
 cp WhatThePort/.build/WhatThePort.zip public/WhatThePort.zip
 ```
+
+Both paths are gitignored. Production builds check that the download is the feed's newest archive and matches `Info.plist`.
 
 Review and deploy those website files together through your normal release process. If uploading separately, upload archives before the feed. Keep old archive URLs available, and never edit a signed feed by hand. The release script only prepares artifacts locally; it does not publish or deploy.
 
@@ -76,6 +78,22 @@ The version comes from `Info.plist`. Increase `CFBundleVersion` (and usually `CF
 Then run **Actions → Rebuild and deploy site and app → Run workflow** on `main`. Download `https://whattheport.dev/WhatThePort.zip` on another Mac: it should open without a Gatekeeper warning and `spctl --assess --verbose=2 /Applications/WhatThePort.app` should report `source=Notarized Developer ID`.
 
 Keep the Sparkle key and Developer ID certificate stable. Installed copies only accept updates signed with the Sparkle key they shipped with, and changing both the Sparkle key and signing identity in one release breaks updates.
+
+## Usage and download analytics
+
+Copies that share anonymous usage request `https://<feed host>/usage/<feature>` once a day for each feature used, plus `active`. The feed host comes from `SUFeedURL`, so local builds without a feed never report. [`middleware.ts`](../middleware.ts) answers known features with an empty `204` and records nothing itself. Vercel's request counts per path give installs per feature per day. The site build fails if the middleware's feature list differs from `Usage.Feature` ([`scripts/check-usage-features.mjs`](../scripts/check-usage-features.mjs)).
+
+```bash
+vercel metrics vercel.request.count -p whattheport --prod -s 30d -g 1d \
+  -f "startswith(request_path, '/usage/') and http_status eq 204" --group-by request_path
+```
+
+Download buttons on the site send a **Download** Web Analytics event with a `location` (`hero`, `get-it` or `footer`). Direct downloads, such as from the README, don't run page scripts. To count every request for the archive:
+
+```bash
+vercel metrics vercel.request.count -p whattheport --prod -s 30d -g 1d \
+  -f "request_path eq '/WhatThePort.zip'" --group-by referrer_hostname
+```
 
 ## Verify a release
 

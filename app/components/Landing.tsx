@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { track } from '@vercel/analytics'
 import styles from './landing.module.css'
 import { AppPopover, useDemo } from './App'
 import { SectionCopy } from './Copy'
@@ -225,7 +226,7 @@ function Footer() {
         </span>
         <span className={styles.footerMeta}>Free and open source · Made by Tomjohn</span>
         <nav className={styles.footerLinks} aria-label="Footer">
-          <a href={DOWNLOAD_URL} download>
+          <a href={DOWNLOAD_URL} download onClick={() => track('Download', { location: 'footer' })}>
             Download <span aria-hidden="true">↗</span>
           </a>
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">

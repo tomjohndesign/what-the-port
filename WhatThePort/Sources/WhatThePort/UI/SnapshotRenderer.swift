@@ -108,6 +108,9 @@ enum SnapshotRenderer {
                          size: CGSize(width: 480, height: 620),
                          to: output.appendingPathComponent("\(name).png"))
         }
+        // What people updating from before usage sharing see.
+        renderWindow(OnboardingView(monitor: monitor, step: .usage, usageOnly: true), size: CGSize(width: 480, height: 620),
+                     to: output.appendingPathComponent("usage-after-update.png"))
         exit(0)
     }
 

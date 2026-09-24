@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-download.mjs && node scripts/check-usage-features.mjs",
     "build": "next build",
     "start": "next start"
   },
