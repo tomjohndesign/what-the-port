@@ -52,19 +52,33 @@ fi
 TOOLS=".build/artifacts/sparkle/Sparkle/bin"
 APP=".build/WhatThePort.app"
 
-if [[ ${#NOTARY_AUTH[@]} -gt 0 ]]; then
-    ditto -c -k --sequesterRsrc --keepParent "${APP}" .build/notarize.zip
-    SUBMISSION="$(xcrun notarytool submit .build/notarize.zip "${NOTARY_AUTH[@]}" --wait --output-format json)"
+notarize() {
+    local SUBMISSION SUBMISSION_ID STATUS
+    SUBMISSION="$(xcrun notarytool submit "$1" "${NOTARY_AUTH[@]}" --wait --output-format json)"
     echo "${SUBMISSION}"
     read -r SUBMISSION_ID STATUS < <(python3 -c 'import json, sys; s = json.load(sys.stdin); print(s["id"], s["status"])' <<< "${SUBMISSION}")
     if [[ "${STATUS}" != "Accepted" ]]; then
         xcrun notarytool log "${SUBMISSION_ID}" "${NOTARY_AUTH[@]}" >&2 || true
-        echo "Notarization finished with status ${STATUS}." >&2
+        echo "Notarization of $1 finished with status ${STATUS}." >&2
         exit 1
     fi
+}
+
+if [[ ${#NOTARY_AUTH[@]} -gt 0 ]]; then
+    ditto -c -k --sequesterRsrc --keepParent "${APP}" .build/notarize.zip
+    notarize .build/notarize.zip
     xcrun stapler staple "${APP}"
     xcrun stapler validate "${APP}"
     spctl --assess --type execute --verbose=2 "${APP}"
+fi
+
+# The website download: a disk image with the app beside an Applications shortcut.
+./make-dmg.sh "${APP}" .build/WhatThePort.dmg
+if [[ ${#NOTARY_AUTH[@]} -gt 0 ]]; then
+    notarize .build/WhatThePort.dmg
+    xcrun stapler staple .build/WhatThePort.dmg
+    xcrun stapler validate .build/WhatThePort.dmg
+    spctl --assess --type open --context context:primary-signature --verbose=2 .build/WhatThePort.dmg
 fi
 
 STAGING="$(mktemp -d .build/update-staging.XXXXXX)"
@@ -81,7 +95,6 @@ swift scripts/verify-update-signature.swift "${SPARKLE_PUBLIC_KEY}" "${STAGED_AR
 "${TOOLS}/generate_appcast" ${SPARKLE_KEY[@]+"${SPARKLE_KEY[@]}"} --download-url-prefix "${SPARKLE_FEED_URL%/*}/" "${STAGING}/updates"
 # Only expose artifacts after signing and feed generation both succeed.
 ditto "${STAGING}/updates" "${UPDATES}"
-cp "${ARCHIVE}" .build/WhatThePort.zip
 
-echo "Prepared ${ARCHIVE}, ${UPDATES}/appcast.xml and .build/WhatThePort.zip"
-echo "Publish the updates directory at ${SPARKLE_FEED_URL%/*}/ and replace the website download with .build/WhatThePort.zip."
+echo "Prepared ${ARCHIVE}, ${UPDATES}/appcast.xml and .build/WhatThePort.dmg"
+echo "Publish the updates directory at ${SPARKLE_FEED_URL%/*}/ and replace the website download with .build/WhatThePort.dmg."

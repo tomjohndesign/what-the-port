@@ -1,4 +1,4 @@
-export const DOWNLOAD_URL = '/WhatThePort.zip'
+export const DOWNLOAD_URL = '/WhatThePort.dmg'
 export const GITHUB_URL = 'https://github.com/tomjohndesign/what-the-port'
 
 // One entry per scroll step. `scene` is the room the laptop sits in while this
