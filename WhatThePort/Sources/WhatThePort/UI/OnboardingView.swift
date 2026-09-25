@@ -31,7 +31,7 @@ struct DotMatrixView: View {
 }
 
 enum OnboardingStep: Int, CaseIterable {
-    case welcome, leaks, tools, vercel, usage, done
+    case welcome, leaks, tools, vercel, terminal, usage, done
 }
 
 struct OnboardingView: View {
@@ -51,6 +51,8 @@ struct OnboardingView: View {
     @AppStorage(Preferences.thresholdGB) private var thresholdGB = 2.0
     @AppStorage(Preferences.cleanUpIdleHours) private var idleHours = 4
     @State private var heroGlyph: DotGlyph = .colon
+    @State private var command = CommandLineTool.state
+    @State private var commandError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -102,6 +104,7 @@ struct OnboardingView: View {
         case .leaks: return "Stay ahead of leaks"
         case .tools: return "Your tools, at a glance."
         case .vercel: return "Vercel previews"
+        case .terminal: return "WTP TUI"
         case .usage: return "Help shape WhatThePort"
         case .done: return "You’re set"
         }
@@ -113,6 +116,7 @@ struct OnboardingView: View {
         case .leaks: return "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac."
         case .tools: return "WhatThePort reads local session files and process info to put your servers in context."
         case .vercel: return "See the preview deployment for whatever branch each server is running. Optional."
+        case .terminal: return "Type wtp in any terminal to browse, open and stop your servers, with the same details and Clean up. Optional."
         case .usage: return "Share which features you use, once a day. Nothing about your servers, projects or Mac is included."
         case .done: return "The dots settle into the colon in your menu bar. Press ⌥⌘P any time to open it."
         }
@@ -170,6 +174,23 @@ struct OnboardingView: View {
                 }
                 .disabled(!GitHubLookup.isAvailable)
             }
+        case .terminal:
+            VStack(spacing: 18) {
+                OnboardingCard {
+                    OnboardingRow(title: "wtp command", caption: commandCaption, icon: AnyView(ToolIcon(systemName: "terminal"))) {
+                        OnboardingConfirmation(state: commandState, monospaced: true) {
+                            commandError = CommandLineTool.install()
+                            command = CommandLineTool.state
+                        }
+                    }
+                }
+                if let commandError {
+                    Text(commandError).font(OnboardingStyle.label).foregroundStyle(Theme.amber)
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                }
+                Button("You can remove it in Settings.") { openWindow(id: "settings") }
+                    .buttonStyle(.plain).font(OnboardingStyle.label).foregroundStyle(OnboardingStyle.secondary)
+            }
         case .usage:
             VStack(spacing: 18) {
                 OnboardingCard {
@@ -212,12 +233,31 @@ struct OnboardingView: View {
         }
     }
 
+    private var commandState: OnboardingRowState {
+        switch command {
+        case .installed: return .success("Installed")
+        case .notInstalled: return .action("Not installed", button: "Install…")
+        case .other: return .action("Taken", button: "Replace…")
+        case .unavailable: return .unavailable("Unavailable")
+        }
+    }
+
+    private var commandCaption: String {
+        switch command {
+        case .installed: return "Ready in new terminal windows"
+        case .notInstalled: return "Adds \(CommandLineTool.linkPath)"
+        case .other: return "\(CommandLineTool.linkPath) is already something else"
+        case .unavailable: return "Move WhatThePort to Applications first"
+        }
+    }
+
     private func loadStep() {
         // Keep in-flight work when moving between steps; returning shows cached
         // results instead of replaying a scan. Reads never change preferences.
         switch step {
         case .leaks: Task { await status.refreshSetup() }
         case .tools: Task { await status.scanTools() }
+        case .terminal: command = CommandLineTool.state
         default: break
         }
     }
@@ -246,8 +286,8 @@ struct OnboardingView: View {
             Button("Get started") { go(.leaks) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .vercel:
             Button("Back") { go(.tools) }.buttonStyle(PillButtonStyle())
-            Button("Skip") { previews = false; go(.usage) }.buttonStyle(PillButtonStyle())
-            Button("Continue") { go(.usage) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button("Skip") { previews = false; go(.terminal) }.buttonStyle(PillButtonStyle())
+            Button("Continue") { go(.terminal) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .usage where usageOnly:
             Button("Done") { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .done:
@@ -275,6 +315,7 @@ struct OnboardingView: View {
         case .leaks: heroGlyph = .leak
         case .tools: heroGlyph = .prompt
         case .vercel: heroGlyph = .triangle
+        case .terminal: heroGlyph = .cursor
         case .usage: heroGlyph = .bars
         case .done:
             // The celebration: spark, burst, fade, then settle into the colon.

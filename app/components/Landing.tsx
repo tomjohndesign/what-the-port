@@ -8,7 +8,8 @@ import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { DotGrid } from './icons'
 import { Screen } from './Screen'
-import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS } from './sections'
+import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TERMINAL } from './sections'
+import { TerminalWindow } from './Terminal'
 
 // Scene geometry, in the 2560×1600 space the room photos and laptop were composed in (Paper boards 22–26).
 const SCENE = { width: 2560, height: 1600 }
@@ -119,13 +120,26 @@ function DeskStage({ stars }: { stars: number | null }) {
     }
   }, [])
 
-  const navigate = useCallback((index: number) => {
+  const navigate = useCallback((index: number, instant = false) => {
     const track = trackRef.current
     if (!track) return
     const top = track.getBoundingClientRect().top + window.scrollY + index * window.innerHeight
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' })
+    window.scrollTo({ top, behavior: reduce || instant ? 'auto' : 'smooth' })
   }, [])
+
+  // Links like /#terminal scroll the page to that section.
+  useEffect(() => {
+    const follow = (instant: boolean) => {
+      const index = SECTIONS.findIndex((section) => `#${section.id}` === window.location.hash)
+      // The laptop scene is hidden in the stacked phone layout.
+      if (index >= 0 && trackRef.current?.offsetParent) navigate(index, instant)
+    }
+    follow(true)
+    const onHashChange = () => follow(false)
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [navigate])
 
   return (
     <div ref={trackRef} className={styles.track} style={{ height: `${SECTIONS.length * 100}vh` }}>
@@ -195,7 +209,15 @@ function StackedPage({ stars }: { stars: number | null }) {
             className={styles.peek}
             style={{ backgroundImage: `linear-gradient(#05080c33, #05080c33), url(/wallpapers/${section.scene}.jpg)` }}
           >
-            {index === GET_IT ? <DotMatrix size={160} /> : <StandalonePopover section={index} zoom={zoom} />}
+            {index === GET_IT ? (
+              <DotMatrix size={160} />
+            ) : index === TERMINAL ? (
+              <div style={{ zoom: Math.min(1, zoom * (400 / 500)) }}>
+                <TerminalWindow />
+              </div>
+            ) : (
+              <StandalonePopover section={index} zoom={zoom} />
+            )}
           </div>
         </section>
       ))}

@@ -6,7 +6,8 @@ import { AppPopover, useDemo } from './App'
 import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { BatteryIcon, DotGrid, GitHubIcon, WifiIcon } from './icons'
-import { GET_IT, GITHUB_URL, SECTIONS } from './sections'
+import { GET_IT, GITHUB_URL, SECTIONS, TERMINAL } from './sections'
+import { TerminalWindow } from './Terminal'
 
 type Props = {
   active: number
@@ -81,6 +82,8 @@ export function Screen({ active, stars, onNavigate }: Props) {
       <div className={styles.closing} data-visible={active === GET_IT && !demo.open} aria-hidden>
         <DotMatrix size={176} playing={active === GET_IT} />
       </div>
+
+      <TerminalWindow visible={active === TERMINAL} desktop />
 
       <div className={styles.popoverShell} data-open={demo.open}>
         <AppPopover demo={demo} />

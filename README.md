@@ -57,6 +57,7 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
 - **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
 - **Global shortcut** - ⌥⌘P opens the popover
+- **Terminal UI** - `wtp` shows the same servers, details and Clean up in your terminal
 - **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 
 ## Usage
@@ -69,6 +70,22 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 
 Right-click the dot grid to open a server in the browser, open Settings, check for updates, send feedback or quit.
 
+### In the terminal
+
+`wtp` opens the same server list in your terminal, using the app's scanner and settings. Onboarding offers to install it, or click **Install…** in **Settings → General → Terminal**. That links `/usr/local/bin/wtp` to the app, asking for your password if the folder needs it, and keeps working through updates. To link it yourself:
+
+```bash
+sudo mkdir -p /usr/local/bin
+sudo ln -sf /Applications/WhatThePort.app/Contents/MacOS/WhatThePort /usr/local/bin/wtp
+```
+
+- `↑` `↓` to select, `⏎` for details, `space` for an Actions menu (open, restart, stop, resume the agent session, editor, copy), `c` for Clean up, `?` for every key
+- Every action also has its own key, such as `o` to open, `r` to restart and `s` to stop; in details, `i` shows more info and `p` shows processes
+- Click rows and scroll with the mouse
+- `wtp list` prints the servers and exits; `wtp list --json` prints them as JSON for scripts and agents
+
+`wtp` follows your terminal's colors and leaves notifications and automatic clean up to the menu bar app. Memory and CPU charts fill in while it runs. From source, run `swift run WhatThePort --tui`.
+
 To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
 Add `--appearance light` or `--appearance dark` to check a specific appearance without changing your Mac’s settings.
 
@@ -78,7 +95,7 @@ To render the onboarding loading, success, missing-tool, and approval states wit
 
 Open Settings from the gear in the popover (⌘,):
 
-- **General** - Launch at login, menu bar icon style, editor, global shortcut, scan interval, anonymous usage sharing
+- **General** - Launch at login, menu bar icon style, editor, global shortcut, the `wtp` terminal command, scan interval, anonymous usage sharing
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers

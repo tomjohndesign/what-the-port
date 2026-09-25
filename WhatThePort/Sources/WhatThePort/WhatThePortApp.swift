@@ -1,6 +1,14 @@
 import SwiftUI
 
 @main
+enum Main {
+    @MainActor static func main() {
+        // Run as `wtp` (a symlink to this binary) or with --tui for the terminal UI.
+        if TerminalCommand.isRequested { TerminalCommand.run() }
+        WhatThePortApp.main()
+    }
+}
+
 struct WhatThePortApp: App {
     @StateObject private var monitor: ServerMonitor
 

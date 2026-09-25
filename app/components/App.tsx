@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
 import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
-import { GET_IT } from './sections'
+import { GET_IT, TERMINAL } from './sections'
 import {
   type Agent,
   type Server,
@@ -29,7 +29,11 @@ const SECTION_VIEWS: View[] = [
   { name: 'detail', port: '6006' },
   { name: 'cleanUp' },
   { name: 'list' },
+  { name: 'list' },
 ]
+
+// The Terminal section shows `wtp` instead, and the last section the dot matrix.
+const opensPopover = (section: number) => section !== GET_IT && section !== TERMINAL
 
 const suggested = (running: string[]) =>
   SERVERS.filter((s) => s.cleanUp?.suggested && running.includes(s.port)).map((s) => s.port)
@@ -38,7 +42,7 @@ export function useDemo(section: number) {
   const [running, setRunning] = useState(() => SERVERS.map((s) => s.port))
   const [view, setView] = useState<View>(SECTION_VIEWS[section])
   const [direction, setDirection] = useState(1)
-  const [open, setOpen] = useState(section !== GET_IT)
+  const [open, setOpen] = useState(opensPopover(section))
   const [selected, setSelected] = useState(() => suggested(SERVERS.map((s) => s.port)))
   const previous = useRef(section)
 
@@ -47,7 +51,7 @@ export function useDemo(section: number) {
     setDirection(section > previous.current ? 1 : -1)
     previous.current = section
     setView(SECTION_VIEWS[section])
-    setOpen(section !== GET_IT)
+    setOpen(opensPopover(section))
     setSelected(suggested(running))
     // `running` intentionally omitted: stopping a server shouldn't reset the view.
     // eslint-disable-next-line react-hooks/exhaustive-deps

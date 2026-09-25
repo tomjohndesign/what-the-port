@@ -13,6 +13,8 @@ struct DotGlyph: Equatable {
     static let leak = DotGlyph(rows: ["....a", "...a.", "..#..", ".#...", "#...."])
     static let burst = DotGlyph(rows: ["#.#.#", ".....", "#...#", ".....", "#.#.#"])
     static let triangle = DotGlyph(rows: [".....", "..#..", ".###.", "#####", "....."])
+    /// The colon with a cursor after it, for the terminal.
+    static let cursor = DotGlyph(rows: [".....", ".#...", ".....", ".#.##", "....."])
     static let bars = DotGlyph(rows: ["....#", "..#.#", "..#.#", "#.#.#", "#.#.#"])
 
     private static let digits: [[String]] = [
