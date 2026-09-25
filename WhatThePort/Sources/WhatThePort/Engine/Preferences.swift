@@ -13,6 +13,8 @@ enum Preferences {
     static let shareUsage = "general.shareUsage"
     /// Set once the usage step has been shown, in onboarding or after updating.
     static let usageAsked = "general.usageAsked"
+    /// Set once people know about `wtp`: from onboarding, or the 2.5 update notification.
+    static let announcedTUI = "general.announcedTUI"
 
     // Alerts
     static let thresholdGB = "alerts.thresholdGB"

@@ -29,6 +29,7 @@ struct WhatThePortApp: App {
         }
         _ = AppUpdater.shared
         AlertCenter.shared.start(monitor: monitor)
+        AlertCenter.shared.announceTUI()
         HotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: Preferences.hotkey))
         monitor.start()
         Usage.start()
@@ -90,10 +91,12 @@ struct MenuBarLabel: View {
         Image(nsImage: MenuBarIcon.image(glyph: glyph, count: label))
             .accessibilityLabel(count == 0 ? "WhatThePort, no servers" : "WhatThePort, \(count) servers")
             .task {
-                StatusItemMenu.install(monitor: monitor) {
+                let openSettings = {
                     NSApp.activate(ignoringOtherApps: true)
                     openWindow(id: "settings")
                 }
+                StatusItemMenu.install(monitor: monitor, openSettings: openSettings)
+                AlertCenter.shared.openSettings = openSettings
                 // First launch: show onboarding once. After updating, ask about usage once.
                 guard !onboarded || !usageAsked, Bundle.main.bundleURL.pathExtension == "app" else { return }
                 NSApp.activate(ignoringOtherApps: true)

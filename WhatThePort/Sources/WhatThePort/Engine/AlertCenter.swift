@@ -20,6 +20,8 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
     private let sustainFor: TimeInterval = 30
 
     private weak var monitor: ServerMonitor?
+    /// Opens Settings. Set by the menu bar label, which has SwiftUI's openWindow.
+    var openSettings: (() -> Void)?
     private var fired: [String: Set<Kind>] = [:]
     private var overSince: [String: Date] = [:]
     private var snoozedUntil: [Int: Date] = [:]
@@ -140,6 +142,28 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "cleanup-\(Date().timeIntervalSince1970)", content: content, trigger: nil))
     }
 
+    /// Tells people who updated to 2.5 about `wtp`, once. New installs meet it in
+    /// onboarding instead, and clicking opens Settings, where it's installed.
+    func announceTUI() {
+        let defaults = UserDefaults.standard
+        guard isAvailable, defaults.bool(forKey: Preferences.onboarded), !defaults.bool(forKey: Preferences.announcedTUI) else { return }
+        defaults.set(true, forKey: Preferences.announcedTUI)
+        Task {
+            // Let launch after an update settle first.
+            try? await Task.sleep(for: .seconds(3))
+            let center = UNUserNotificationCenter.current()
+            let status = await center.notificationSettings().authorizationStatus
+            guard status == .authorized || status == .provisional else { return }
+            let content = UNMutableNotificationContent()
+            content.title = "WTP now has TUI"
+            content.body = CommandLineTool.state == .installed
+                ? "Type wtp in any terminal to see and stop your servers."
+                : "See and stop your servers from any terminal. Click to add the wtp command."
+            content.userInfo = ["announcement": "tui"]
+            try? await center.add(UNNotificationRequest(identifier: "announcement-tui", content: content, trigger: nil))
+        }
+    }
+
     private func context(for server: Server) -> String {
         [server.project.branch, server.agent.map { "\($0.kind.rawValue) session" }].compactMap { $0 }.joined(separator: " · ")
     }
@@ -154,9 +178,14 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
         let port = response.notification.request.content.userInfo["port"] as? Int
+        let isAnnouncement = response.notification.request.content.userInfo["announcement"] != nil
         let action = response.actionIdentifier
         Task { @MainActor in
-            self.handle(action: action, port: port)
+            if isAnnouncement {
+                self.openSettings?()
+            } else {
+                self.handle(action: action, port: port)
+            }
             completionHandler()
         }
     }

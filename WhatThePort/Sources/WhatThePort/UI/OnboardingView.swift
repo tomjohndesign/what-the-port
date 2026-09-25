@@ -48,6 +48,7 @@ struct OnboardingView: View {
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.shareUsage) private var shareUsage = true
     @AppStorage(Preferences.usageAsked) private var usageAsked = false
+    @AppStorage(Preferences.announcedTUI) private var announcedTUI = false
     @AppStorage(Preferences.thresholdGB) private var thresholdGB = 2.0
     @AppStorage(Preferences.cleanUpIdleHours) private var idleHours = 4
     @State private var heroGlyph: DotGlyph = .colon
@@ -305,6 +306,8 @@ struct OnboardingView: View {
     private func finish() {
         onboarded = true
         usageAsked = true
+        // The WTP TUI step already introduced wtp, so skip the update notification.
+        if !usageOnly { announcedTUI = true }
         close()
         if !usageOnly { StatusItemOpener.open() }
     }
