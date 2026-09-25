@@ -2,11 +2,34 @@ import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
+import { AUTHOR, OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from '@/lib/content'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://whattheport.dev'),
-  title: 'WhatThePort - Monitor Your Dev Servers',
-  description: 'A macOS menu bar app to see what\'s running on your ports',
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [AUTHOR],
+  creator: AUTHOR.name,
+  keywords: [
+    'localhost',
+    'dev server',
+    'port already in use',
+    'EADDRINUSE',
+    'kill port mac',
+    'lsof',
+    'menu bar app',
+    'macOS',
+    'port monitor',
+    'localhost manager',
+    'Claude Code',
+    'Codex',
+    'Conductor',
+    'git worktrees',
+    'memory leak',
+  ],
+  alternates: { canonical: '/', types: { 'text/markdown': '/index.md' } },
+  robots: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   icons: {
     icon: [
       {
@@ -24,27 +47,18 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'WhatThePort - Monitor Your Dev Servers',
-    description: 'A macOS menu bar app to see what\'s running on your ports',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'What the port?! Your dev servers, in the menu bar. WhatThePort server list on an amber background.',
-      },
-    ],
+    type: 'website',
+    siteName: SITE_NAME,
+    url: '/',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'WhatThePort - Monitor Your Dev Servers',
-    description: 'A macOS menu bar app to see what\'s running on your ports',
-    images: [
-      {
-        url: '/og-image.png',
-        alt: 'What the port?! Your dev servers, in the menu bar. WhatThePort server list on an amber background.',
-      },
-    ],
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
   },
 }
 
@@ -60,6 +74,7 @@ export default function RootLayout({
         <link rel="preload" href="/fonts/Geist-Medium.ttf" as="font" type="font/ttf" crossOrigin="" />
         <link rel="preload" href="/scenes/house.jpg" as="image" />
         <link rel="preload" href="/scenes/laptop.jpg" as="image" />
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
       </head>
       <body>
         {children}

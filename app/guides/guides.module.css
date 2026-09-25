@@ -1,0 +1,548 @@
+/* ─── Written pages: /guides and each guide ───────────────── */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #0b0d12;
+  background-image: radial-gradient(ellipse 90% 520px at 0% 0% in oklab, oklab(31% 0.003 -0.04) 0%, oklab(15.9% -0.0004 -0.011 / 0%) 70%);
+  background-repeat: no-repeat;
+  color: #ffffff;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 26px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.header,
+.main,
+.footer {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.headerBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* The blur lives on a pseudo-element: a backdrop-filter on the bar itself would stop the
+   demo popover inside it from blurring the page behind. */
+.headerBar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: #0b0d12cc;
+  -webkit-backdrop-filter: saturate(1.4) blur(16px);
+  backdrop-filter: saturate(1.4) blur(16px);
+  box-shadow: 0 0.5px 0 #ffffff1f;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.navLink {
+  color: #ffffffb3;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.navLink:hover {
+  color: #ffffff;
+}
+
+/* ─── Try WTP: the landing page's demo popover, dropped down from the header ─── */
+
+/* The panel anchors to the nav's right edge, lined up with the Download button. */
+.tryIt {
+  margin-right: -16px;
+}
+
+.tryButton {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background-color: #ffffff14;
+  box-shadow: inset 0 0 0 0.5px #ffffff1f;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.tryButton:hover,
+.tryButton[aria-expanded='true'] {
+  background-color: #ffffff21;
+}
+
+.tryButton:focus-visible {
+  outline: 2px solid #ffffffb3;
+  outline-offset: 2px;
+}
+
+.demoPanel {
+  position: absolute;
+  top: calc(100% + 26px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 16px;
+  font-feature-settings: 'tnum';
+  transform-origin: calc(100% - 190px) -8px;
+  transition:
+    opacity 0.16s ease,
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.demoPanel[data-open='false'] {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.96);
+  pointer-events: none;
+  transition:
+    opacity 0.14s ease,
+    transform 0.18s ease-in,
+    visibility 0s 0.18s;
+}
+
+/* Like a macOS popover, blur whatever is behind it so the article doesn't show through. */
+.demoApp,
+.demoLabel {
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+
+.demoApp {
+  border-radius: 16px;
+}
+
+.demoLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 10px 6px 6px;
+  border-radius: 10px;
+  background-color: #202024f2;
+  box-shadow: inset 0 0 0 0.5px #ffffff24, #0000008c 0 8px 24px;
+  color: #ffffffb3;
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.demoBadge {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background-color: #ffb224;
+  color: #0b0d12;
+  font-weight: 500;
+}
+
+.download {
+  height: 36px;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 0 14px;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #0b0d12;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.download:hover {
+  background-color: #e6e6e9;
+}
+
+.download:focus-visible,
+.indexLink:focus-visible {
+  outline: 2px solid #ffffffb3;
+  outline-offset: 2px;
+}
+
+.main {
+  flex: 1;
+  padding-top: 48px;
+  padding-bottom: 96px;
+}
+
+/* ─── Headings shared by the index and articles ─── */
+
+.title {
+  margin: 0;
+  font-size: 36px;
+  line-height: 42px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.lede {
+  margin: 16px 0 0;
+  max-width: 600px;
+  color: #ffffff8c;
+}
+
+.meta {
+  margin: 20px 0 0;
+  font-size: 13px;
+  line-height: 16px;
+  color: #ffffff73;
+}
+
+.intro {
+  margin-bottom: 40px;
+}
+
+/* ─── Index list ─── */
+
+.index {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #ffffff1f;
+}
+
+.index li {
+  border-bottom: 1px solid #ffffff1f;
+}
+
+.indexLink {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.indexTitle {
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.indexDescription {
+  color: #ffffff8c;
+}
+
+.indexLink:hover .indexTitle {
+  color: #ffffffb3;
+}
+
+/* ─── Article ─── */
+
+.articleHeader {
+  margin-bottom: 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #ffffff1f;
+}
+
+.crumbs {
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.crumbs a {
+  color: #ffffff8c;
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  color: #ffffff;
+}
+
+.prose {
+  color: #ffffffc2;
+}
+
+.prose > * {
+  margin: 0 0 20px;
+}
+
+.prose h2 {
+  margin: 48px 0 16px;
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 88px;
+}
+
+.prose h3 {
+  margin: 32px 0 12px;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  scroll-margin-top: 88px;
+}
+
+.prose strong {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.prose a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-color: #ffffff59;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease;
+}
+
+.prose a:hover {
+  text-decoration-color: #ffffff;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 22px;
+}
+
+.prose li + li {
+  margin-top: 8px;
+}
+
+.prose code {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.prose :not(pre) > code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background-color: #ffffff14;
+  overflow-wrap: anywhere;
+}
+
+.prose pre {
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background-color: #ffffff0d;
+  box-shadow: inset 0 0 0 0.5px #ffffff1f;
+  overflow-x: auto;
+  line-height: 20px;
+}
+
+.prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.prose th,
+.prose td {
+  padding: 10px 16px 10px 0;
+  border-bottom: 1px solid #ffffff1f;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.prose blockquote {
+  margin-left: 0;
+  padding-left: 16px;
+  border-left: 2px solid #ffffff33;
+}
+
+/* ─── After the article ─── */
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 56px;
+  padding: 24px;
+  border-radius: 14px;
+  background-color: #ffffff0d;
+  box-shadow: inset 0 0 0 0.5px #ffffff1f;
+}
+
+.ctaTitle {
+  margin: 0;
+  font-weight: 500;
+}
+
+.ctaMeta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 16px;
+  color: #ffffff73;
+}
+
+.more {
+  margin-top: 64px;
+}
+
+.moreTitle {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  color: #ffffff8c;
+}
+
+.more .indexLink {
+  padding: 14px 0;
+}
+
+/* ─── Footer ─── */
+
+.footer {
+  padding-bottom: 32px;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.footerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding-top: 24px;
+  border-top: 1px solid #ffffff24;
+}
+
+.footerBrand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.footerMeta {
+  color: #ffffff73;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footerLinks a {
+  color: #ffffffb3;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.footerLinks a:hover {
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .header,
+  .main,
+  .footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .header {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .nav {
+    gap: 8px;
+  }
+
+  .navLink,
+  .header .forMac {
+    display: none;
+  }
+
+  /* Centre the demo under the header on phones. */
+  .nav {
+    position: static;
+  }
+
+  .tryIt {
+    margin-right: 0;
+  }
+
+  .demoPanel {
+    left: 16px;
+    right: 16px;
+    top: calc(100% + 8px);
+    align-items: center;
+    transform-origin: 50% -8px;
+  }
+
+  .demoLabel {
+    white-space: normal;
+  }
+
+  .main {
+    padding-top: 24px;
+  }
+
+  .title {
+    font-size: 28px;
+    line-height: 34px;
+  }
+
+  .cta {
+    padding: 20px;
+  }
+}

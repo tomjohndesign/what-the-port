@@ -255,6 +255,7 @@ function Footer() {
           <a href={DOWNLOAD_URL} download onClick={() => track('Download', { location: 'footer' })}>
             Download <span aria-hidden="true">↗</span>
           </a>
+          <a href="/guides">Guides</a>
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
             GitHub <span aria-hidden="true">↗</span>
           </a>
