@@ -4,7 +4,7 @@
 
 What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you forgot about in one click.
 
-[**Download for macOS**](https://whattheport.dev/WhatThePort.dmg) · [Try the interactive demo](https://whattheport.dev) · [Build from source](#building)
+[**Download for macOS**](https://whattheport.dev/WhatThePort.dmg) · [Try the interactive demo](https://whattheport.dev) · [Guides](https://whattheport.dev/guides) · [Build from source](#building)
 
 Free and open source · macOS 14 or later · No account
 
@@ -185,7 +185,7 @@ notarizes the app, and publishes a signed Sparkle feed under `/updates/`. See
 
 ## About
 
-Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev) or browse the source to see how it works. If WhatThePort saves you time, [buy me a coffee](https://whattheport.dev/tip).
+Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev), read the [guides](https://whattheport.dev/guides) to ports, dev servers and coding agents on macOS, or browse the source to see how it works. Agents can read the site as Markdown from [`/llms.txt`](https://whattheport.dev/llms.txt). If WhatThePort saves you time, [buy me a coffee](https://whattheport.dev/tip).
 
 ## License
 
