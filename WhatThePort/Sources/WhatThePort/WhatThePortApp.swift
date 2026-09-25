@@ -99,7 +99,8 @@ struct MenuBarLabel: View {
         let count = monitor.servers.count
         let style = Preferences.IconStyle(rawValue: iconStyle) ?? .colonCount
         let (glyph, label): (DotGlyph, Int?) = {
-            if count == 0 { return (.idle, nil) }
+            // With nothing running every style rests on the colon, since an unlit grid draws nothing.
+            if count == 0 { return (.colon, nil) }
             if monitor.needsAttention { return (.alert, style == .colon ? nil : count) }
             switch style {
             case .colon: return (.colon, nil)
