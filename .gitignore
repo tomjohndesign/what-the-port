@@ -18,7 +18,7 @@ node_modules/
 .env*
 
 # Built by CI for each production deploy. Never commit these.
-public/WhatThePort.zip
+public/WhatThePort.dmg
 public/updates/
 
 # Local release configuration (the private update key belongs in Keychain)

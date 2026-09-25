@@ -10,8 +10,7 @@ enum StatusItemMenu {
         guard eventMonitor == nil else { return }
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) { event in
             let secondary = event.type == .rightMouseDown || event.modifierFlags.contains(.control)
-            guard secondary, let window = event.window, window.className.contains("NSStatusBarWindow"),
-                  let button = StatusItemOpener.findButton(in: window.contentView) else { return event }
+            guard secondary, let button = StatusItemOpener.findButton(in: event.window?.contentView) else { return event }
             show(from: button, monitor: monitor, openSettings: openSettings)
             return nil
         }

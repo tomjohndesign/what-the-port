@@ -456,6 +456,15 @@ private struct AboutPane: View {
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
+            Section {
+                ExternalLinkRow(label: "Enjoying WTP?", value: "Tip jar", url: FeedbackLink.tip)
+            } header: {
+                Text("Support")
+            } footer: {
+                Text("WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe.")
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Made by Tomjohn") {
                 ForEach(links, id: \.label) { link in
                     ExternalLinkRow(label: link.label, value: link.value, url: URL(string: link.url)!)
@@ -470,6 +479,9 @@ enum FeedbackLink {
     enum Kind { case bug, feature }
 
     static let repository = "https://github.com/tomjohndesign/what-the-port"
+
+    /// Redirects to the tip page (TIP_URL on the site), so it can change without an app update.
+    static let tip = URL(string: "https://whattheport.dev/tip")!
 
     static func issue(_ kind: Kind) -> URL {
         let body: String

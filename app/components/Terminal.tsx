@@ -173,7 +173,7 @@ type Page = { name: 'list' } | { name: 'detail'; port: string } | { name: 'help'
 
 type Output = { text: string; tone?: 'dim' }
 
-const FILES = 'README.md  Terminal.tsx  WhatThePort.zip  landing.module.css  servers.ts'
+const FILES = 'README.md  Terminal.tsx  WhatThePort.dmg  landing.module.css  servers.ts'
 const JOKE = 'This is a web page dressed as a terminal. Type wtp, or download the real thing.'
 
 function table(ports: string[]): Output[] {

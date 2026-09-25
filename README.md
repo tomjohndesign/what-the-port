@@ -4,7 +4,7 @@
 
 What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you forgot about in one click.
 
-[**Download for macOS**](https://whattheport.dev/WhatThePort.zip) · [Try the interactive demo](https://whattheport.dev) · [Build from source](#building)
+[**Download for macOS**](https://whattheport.dev/WhatThePort.dmg) · [Try the interactive demo](https://whattheport.dev) · [Build from source](#building)
 
 Free and open source · macOS 14 or later · No account
 
@@ -38,8 +38,8 @@ Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Leaking servers a
 
 ## Get started
 
-1. [Download WhatThePort](https://whattheport.dev/WhatThePort.zip) and unzip it.
-2. Move **WhatThePort.app** to **Applications** and open it.
+1. [Download WhatThePort](https://whattheport.dev/WhatThePort.dmg) and open it.
+2. Drag **WhatThePort** onto the **Applications** shortcut beside it, then open it from Applications.
 3. Start a development server, then click the dot grid in your menu bar or press **⌥⌘P**.
 
 The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. To compile the app yourself, you’ll also need **Swift 5.9+**.
@@ -69,6 +69,8 @@ WhatThePort lives in the menu bar as a small dot grid. Click it to see every ser
 - Click **Clean up** to tick the servers you want gone and stop them together
 
 Right-click the dot grid to open a server in the browser, open Settings, check for updates, send feedback or quit.
+
+Can't see the dot grid? The menu bar hides icons that don't fit: click » at its edge on macOS 27, or check **System Settings → Menu Bar**. Opening WhatThePort again from Finder or Spotlight shows the popover, or Settings when the icon is hidden.
 
 ### In the terminal
 
@@ -100,7 +102,7 @@ Open Settings from the gear in the popover (⌘,):
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
 - **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
-- **About** - Version, update controls, and bug reports or feature requests as GitHub issues with your app and macOS versions filled in
+- **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, and a tip jar
 
 ## How It Works
 
@@ -130,20 +132,24 @@ To build the app bundle:
 open .build/WhatThePort.app
 ```
 
-For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app and generates a signed update feed for the website.
+For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app as a notarized disk image and generates a signed update feed for the website.
+
+To package a local build as the download's disk image, run `./make-dmg.sh` after `./build-app.sh`.
 
 ## Automatic deployment
 
 Every push to `main`, including a merged pull request, runs
 [Rebuild and deploy site and app](.github/workflows/deploy.yml). It builds the
 Apple Silicon Mac app on macOS, verifies its ad-hoc signature, and packages it as
-`WhatThePort.zip`. A Linux job then puts that artifact at `public/WhatThePort.zip`,
+`WhatThePort.dmg` ([`make-dmg.sh`](WhatThePort/make-dmg.sh)): the app beside an
+Applications shortcut, on a background designed in Paper
+([`WhatThePort/dmg/`](WhatThePort/dmg)). A Linux job then puts that artifact at `public/WhatThePort.dmg`,
 builds the Next.js site, and deploys both together to production on Vercel. A
 failed app or site build stops deployment.
 
 The download is never checked in, so the site always serves the latest release.
-Production builds fail unless `public/WhatThePort.zip` is this commit's release
-archive ([`scripts/check-download.mjs`](scripts/check-download.mjs)). Local dev
+Production builds fail unless `public/WhatThePort.dmg` is a disk image and any
+update feed is for this commit's build ([`scripts/check-download.mjs`](scripts/check-download.mjs)). Local dev
 and preview deployments don't have the file, so they redirect downloads to
 production.
 
@@ -156,6 +162,14 @@ Configure these GitHub Actions **repository secrets** under
 
 Run `vercel link` locally to obtain the project IDs. Keep tokens and the generated
 `.vercel` directory out of Git.
+
+The app's tip jar opens `whattheport.dev/tip`, which redirects to the `TIP_URL`
+environment variable, so the payment page can change without an app update. Create
+a Stripe [Payment Link](https://dashboard.stripe.com/payment-links) and set its
+type to **Customers choose what to pay** (not a product price), then add it to the Vercel project's production
+environment with `vercel env add TIP_URL production`. Production builds fail
+without it ([`scripts/check-tip.mjs`](scripts/check-tip.mjs)); local dev and
+previews redirect `/tip` to production.
 
 `vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
 workflow publishes production with the freshly built app. Other branches retain
@@ -171,7 +185,7 @@ notarizes the app, and publishes a signed Sparkle feed under `/updates/`. See
 
 ## About
 
-Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev) or browse the source to see how it works.
+Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev) or browse the source to see how it works. If WhatThePort saves you time, [buy me a coffee](https://whattheport.dev/tip).
 
 ## License
 

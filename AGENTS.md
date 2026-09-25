@@ -1,6 +1,6 @@
 # The download is always the latest release
 
-Never commit `public/WhatThePort.zip` or `public/updates/`. The deploy workflow builds them for each production deploy, and `scripts/check-download.mjs` fails production builds whose download isn't this commit's release. Local dev and previews redirect the download to production. Don't link a versioned archive such as `/updates/WhatThePort-4.zip` from the site or README; always link `/WhatThePort.zip`.
+Never commit `public/WhatThePort.dmg` or `public/updates/`. The deploy workflow builds them for each production deploy, and `scripts/check-download.mjs` fails production builds whose download isn't this commit's release. Local dev and previews redirect the download to production. Don't link a versioned archive such as `/updates/WhatThePort-4.zip` from the site or README; always link `/WhatThePort.dmg`.
 
 # Keep the marketing demo in sync with the product
 
