@@ -1,6 +1,14 @@
 import SwiftUI
 
 @main
+enum Main {
+    @MainActor static func main() {
+        // Run as `wtp` (a symlink to this binary) or with --tui for the terminal UI.
+        if TerminalCommand.isRequested { TerminalCommand.run() }
+        WhatThePortApp.main()
+    }
+}
+
 struct WhatThePortApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
     @StateObject private var monitor: ServerMonitor
@@ -22,6 +30,7 @@ struct WhatThePortApp: App {
         }
         _ = AppUpdater.shared
         AlertCenter.shared.start(monitor: monitor)
+        AlertCenter.shared.announceTUI()
         HotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: Preferences.hotkey))
         monitor.start()
         Usage.start()
@@ -107,6 +116,7 @@ struct MenuBarLabel: View {
                 }
                 AppDelegate.openSettings = openSettings
                 StatusItemMenu.install(monitor: monitor, openSettings: openSettings)
+                AlertCenter.shared.openSettings = openSettings
                 // First launch: show onboarding once. After updating, ask about usage once.
                 guard !onboarded || !usageAsked, Bundle.main.bundleURL.pathExtension == "app" else { return }
                 NSApp.activate(ignoringOtherApps: true)

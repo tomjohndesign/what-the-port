@@ -106,6 +106,9 @@ private struct GeneralPane: View {
                 }
                 .onChange(of: hotkey) { _, enabled in HotKey.shared.setEnabled(enabled) }
             }
+            Section("Terminal") {
+                CommandLineToolRow()
+            }
             Section("Scanning") {
                 Picker("Scan every", selection: $scanInterval) {
                     Text("1 second").tag(1.0)
@@ -126,6 +129,48 @@ private struct GeneralPane: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+/// Installs or removes the `wtp` command.
+private struct CommandLineToolRow: View {
+    @State private var state = CommandLineTool.state
+    @State private var error: String?
+
+    var body: some View {
+        HStack {
+            SettingLabel("wtp command", caption: caption)
+            Spacer()
+            switch state {
+            case .installed:
+                Button("Remove") { run(CommandLineTool.uninstall) }
+            case .other:
+                Button("Replace…") { run(CommandLineTool.install) }
+            case .notInstalled, .unavailable:
+                Button("Install…") { run(CommandLineTool.install) }
+                    .disabled(state == .unavailable)
+            }
+        }
+        // Pick up changes made outside the app, e.g. removing the link by hand.
+        .onAppear { state = CommandLineTool.state }
+    }
+
+    private var caption: String {
+        if let error { return "Couldn’t update \(CommandLineTool.linkPath): \(error)" }
+        switch state {
+        case .installed: return "Type wtp in any terminal to see and stop your servers"
+        case .notInstalled: return "Adds wtp to see and stop your servers from any terminal"
+        case .unavailable: return "Move WhatThePort to Applications to add the wtp command"
+        case .other(let path):
+            return FileManager.default.fileExists(atPath: path)
+                ? "\(CommandLineTool.linkPath) is another program: \((path as NSString).abbreviatingWithTildeInPath)"
+                : "wtp points to a copy of WhatThePort that’s no longer there"
+        }
+    }
+
+    private func run(_ action: () -> String?) {
+        error = action()
+        state = CommandLineTool.state
     }
 }
 

@@ -53,6 +53,12 @@ const TOOLS = [
   { name: 'Vercel', detail: 'preview per branch', icon: <VercelIcon /> },
 ]
 
+const COMMANDS = [
+  { name: 'wtp', detail: 'Browse, open and stop servers' },
+  { name: 'wtp list', detail: 'Print them and exit' },
+  { name: 'wtp list --json', detail: 'For scripts and agents' },
+]
+
 const FACTS = [
   { name: 'Native', detail: 'Swift, no Electron, no Dock icon.' },
   { name: 'Private', detail: 'Nothing leaves your Mac.' },
@@ -112,6 +118,25 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
             Clean up selects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops
             each whole process tree. Postgres and Redis are protected by default.
           </p>
+        </div>
+      )
+    case 4:
+      return (
+        <div className={styles.copy}>
+          <PortLabel port="5173" colon="on" label="Terminal" />
+          <h2 className={styles.headline}>WTP TUI</h2>
+          <p className={styles.body}>
+            Type <span className={styles.inlineMono}>wtp</span> for the same servers, details and Clean up in your
+            terminal, in its own colours. Click the window and try it: arrow keys to move, space for actions, q to quit.
+          </p>
+          <ul className={styles.list}>
+            {COMMANDS.map((command) => (
+              <li key={command.name} className={styles.listRow}>
+                <span className={`${styles.listName} ${styles.inlineMono}`}>{command.name}</span>
+                <span className={styles.factDetail}>{command.detail}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )
     default:

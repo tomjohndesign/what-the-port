@@ -11,28 +11,24 @@ enum Theme {
     static let hover = fill
     static let subtleFill = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.04, darkAlpha: 0.04)
     static let memoryTrack = adaptive(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.06, darkAlpha: 0.05)
-    static let amber = adaptive(light: 0x966000, dark: 0xFFB224)
-    static let red = adaptive(light: 0xC52D24, dark: 0xFF453A)
-    static let softRed = adaptive(light: 0xBA3028, dark: 0xFF6961)
     /// Text on solid primary buttons and selected checkboxes.
     static let onPrimary = adaptive(light: 0xFAFAFC, dark: 0x0B0D12)
     static let windowBackground = adaptive(light: 0xF5F5F7, dark: 0x1E1E21)
     static let popoverBackground = adaptive(light: 0xF5F5F7, dark: 0x202024)
     static let snapshotBackground = adaptive(light: 0xE5E7EB, dark: 0x0B0D12)
 
-    /// Port identity colors avoid the red, amber, and green status families.
-    private static let portColors: [Color] = [
-        adaptive(light: 0x126B8D, dark: 0x6EC7ED), // sky
-        adaptive(light: 0x704CB0, dark: 0xB599F0), // lavender
-        adaptive(light: 0xA23682, dark: 0xEB9CD4), // pink
-        adaptive(light: 0x405CBC, dark: 0x7D9CF2), // periwinkle
-        adaptive(light: 0x096D75, dark: 0x7DDBE0), // cyan
-        adaptive(light: 0x87449E, dark: 0xD9A3F2), // lilac
-        adaptive(light: 0x4C627D, dark: 0xABC2E0), // slate
-    ]
+    static let amber = adaptive(Palette.amber)
+    static let red = adaptive(Palette.red)
+    static let softRed = adaptive(Palette.softRed)
+
+    private static let portColors = Palette.ports.map(adaptive)
 
     static func portColor(at index: Int) -> Color {
         portColors[index % portColors.count]
+    }
+
+    private static func adaptive(_ pair: Palette.Pair) -> Color {
+        adaptive(light: pair.light, dark: pair.dark)
     }
 
     /// Resolve at drawing time so open windows follow macOS appearance changes.
@@ -60,6 +56,26 @@ enum Theme {
     static let mono = Font.custom("GeistMono-Regular", fixedSize: 13)
     static let monoMedium = Font.custom("GeistMono-Medium", fixedSize: 13)
     static let monoCaption = Font.custom("GeistMono-Regular", fixedSize: 11)
+}
+
+/// Raw colors shared by the app and the `wtp` terminal UI.
+enum Palette {
+    typealias Pair = (light: UInt32, dark: UInt32)
+
+    static let amber: Pair = (0x966000, 0xFFB224)
+    static let red: Pair = (0xC52D24, 0xFF453A)
+    static let softRed: Pair = (0xBA3028, 0xFF6961)
+
+    /// Port identity colors avoid the red, amber, and green status families.
+    static let ports: [Pair] = [
+        (0x126B8D, 0x6EC7ED), // sky
+        (0x704CB0, 0xB599F0), // lavender
+        (0xA23682, 0xEB9CD4), // pink
+        (0x405CBC, 0x7D9CF2), // periwinkle
+        (0x096D75, 0x7DDBE0), // cyan
+        (0x87449E, 0xD9A3F2), // lilac
+        (0x4C627D, 0xABC2E0), // slate
+    ]
 }
 
 enum FontLoader {

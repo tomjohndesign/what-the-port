@@ -22,6 +22,10 @@ final class ServerMonitor: ObservableObject {
     /// Set from outside the popover (e.g. a notification's Details button).
     @Published var pendingRoute: PopoverRoute?
 
+    /// Off in the `wtp` terminal UI, so it never duplicates the menu bar app's
+    /// notifications or automatic clean up.
+    var handlesAlerts = true
+
     var minPort: Int = 3000
     var maxPort: Int = 9999
 
@@ -127,8 +131,10 @@ final class ServerMonitor: ObservableObject {
                 self.otherApps = apps
                 self.hasScanned = true
                 self.isScanning = false
-                AlertCenter.shared.evaluate(result, threshold: self.alertThreshold)
-                self.handleCleanUp()
+                if self.handlesAlerts {
+                    AlertCenter.shared.evaluate(result, threshold: self.alertThreshold)
+                    self.handleCleanUp()
+                }
                 // Keep previews and PRs roughly fresh in the background (no-op when disabled).
                 result.forEach { self.github.refresh($0, maxAge: 300) }
             }

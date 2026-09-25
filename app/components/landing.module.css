@@ -32,6 +32,7 @@
   top: 0;
   height: 100vh;
   overflow: hidden;
+  overflow: clip;
   background-color: #14110e;
 }
 
@@ -110,6 +111,7 @@
   height: 819px;
   border-radius: 7.28px 7.28px 0 0;
   overflow: hidden;
+  overflow: clip;
   background-color: #0a0c11;
 }
 
@@ -153,6 +155,7 @@
   width: 1152px;
   height: 720px;
   overflow: hidden;
+  overflow: clip;
   transform: scale(1.1375);
   transform-origin: 0 0;
   font-size: 13px;
@@ -326,6 +329,7 @@
   position: absolute;
   inset: 30px 0 0;
   overflow: hidden;
+  overflow: clip;
 }
 
 .headlines {
@@ -380,6 +384,343 @@
     opacity: 1;
     transform: none;
   }
+}
+
+/* The wtp terminal UI, in a draggable terminal window on the Terminal section's desktop */
+
+.terminalShell {
+  position: absolute;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.18s ease-in;
+}
+
+.terminalShell[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity 0.2s ease 0.08s,
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.08s;
+}
+
+.terminalShell[data-desktop='false'] {
+  position: relative;
+}
+
+.terminal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: #141417f2;
+  box-shadow:
+    0 0 0 0.5px #ffffff26,
+    0 24px 60px #00000080,
+    0 4px 14px #00000059;
+  backdrop-filter: blur(24px);
+  color: #f5f5f7;
+  text-align: left;
+  outline: none;
+}
+
+.terminalTitle {
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff8c;
+  border-bottom: 0.5px solid #ffffff1a;
+  user-select: none;
+  touch-action: none;
+}
+
+.terminal[data-focused='false'] .terminalTitle {
+  color: #ffffff59;
+}
+
+.trafficLights {
+  position: absolute;
+  left: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.trafficLights button {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: #ff5f57;
+  cursor: default;
+}
+
+.trafficLights button:nth-child(2) {
+  background-color: #febc2e;
+}
+
+.trafficLights button:nth-child(3) {
+  background-color: #28c840;
+}
+
+/* Background windows lose their colour, like macOS. */
+.terminal[data-focused='false'] .trafficLights button {
+  background-color: #ffffff26;
+}
+
+.tuiBody {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 12px 12px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 15px;
+  white-space: pre;
+  cursor: default;
+  user-select: none;
+}
+
+/* Invisible grips along each edge and corner, like a macOS window. */
+.resizeHandle {
+  position: absolute;
+  z-index: 1;
+  touch-action: none;
+}
+
+.resizeHandle[data-edge='n'],
+.resizeHandle[data-edge='s'] {
+  left: 10px;
+  right: 10px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.resizeHandle[data-edge='e'],
+.resizeHandle[data-edge='w'] {
+  top: 10px;
+  bottom: 10px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.resizeHandle[data-edge='n'],
+.resizeHandle[data-edge='ne'],
+.resizeHandle[data-edge='nw'] {
+  top: 0;
+}
+
+.resizeHandle[data-edge='s'],
+.resizeHandle[data-edge='se'],
+.resizeHandle[data-edge='sw'] {
+  bottom: 0;
+}
+
+.resizeHandle[data-edge='e'],
+.resizeHandle[data-edge='ne'],
+.resizeHandle[data-edge='se'] {
+  right: 0;
+}
+
+.resizeHandle[data-edge='w'],
+.resizeHandle[data-edge='nw'],
+.resizeHandle[data-edge='sw'] {
+  left: 0;
+}
+
+.resizeHandle[data-edge='ne'],
+.resizeHandle[data-edge='nw'],
+.resizeHandle[data-edge='se'],
+.resizeHandle[data-edge='sw'] {
+  width: 12px;
+  height: 12px;
+}
+
+.resizeHandle[data-edge='ne'],
+.resizeHandle[data-edge='sw'] {
+  cursor: nesw-resize;
+}
+
+.resizeHandle[data-edge='nw'],
+.resizeHandle[data-edge='se'] {
+  cursor: nwse-resize;
+}
+
+.tuiBody strong {
+  font-weight: 500;
+}
+
+.tuiLine {
+  display: flex;
+  align-items: baseline;
+  min-height: 15px;
+  padding: 0 8px;
+  /* Like a terminal, anything past the last column is cut off. */
+  overflow: hidden;
+}
+
+.tuiCell {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+}
+
+.tuiSelected {
+  background-color: #f5f5f714;
+}
+
+.tuiIdle {
+  opacity: 0.55;
+}
+
+.tuiCentered {
+  justify-content: center;
+}
+
+.tuiCenterFill {
+  flex: 1;
+  text-align: center;
+}
+
+.tuiSpacer {
+  flex: 1;
+}
+
+.tuiText2 {
+  color: #f5f5f799;
+}
+
+.tuiText3 {
+  color: #f5f5f766;
+}
+
+.tuiFaint {
+  color: #f5f5f733;
+}
+
+.tuiLabel {
+  width: 13ch;
+  flex-shrink: 0;
+}
+
+.tuiValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Glyphs sit on the cell's bottom edge, like ▅ █ ▂ in a terminal. */
+.tuiBar {
+  display: flex;
+  align-items: flex-end;
+  height: 15px;
+  margin: 0 8px;
+}
+
+.tuiSegment {
+  height: 62%;
+  opacity: 0.35;
+  transition:
+    height 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.tuiSegment[data-lit='true'] {
+  opacity: 1;
+}
+
+.tuiSegment[data-selected='true'] {
+  height: 100%;
+}
+
+.tuiBaseline,
+.tuiTrack {
+  height: 25%;
+  background-color: #f5f5f747;
+}
+
+.tuiTrack {
+  flex: 1;
+  background-color: #f5f5f71f;
+}
+
+.tuiSwatch {
+  align-self: flex-end;
+  width: 6.6px;
+  margin: 0 6.6px 3px 0;
+}
+
+.tuiSwatch:not(:first-child) {
+  margin-left: 19.8px;
+}
+
+.tuiDivider {
+  height: 15px;
+  margin: 0 -12px;
+  background: linear-gradient(#f5f5f71f, #f5f5f71f) center / 100% 1px no-repeat;
+}
+
+.tuiPort {
+  width: 7ch;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.tuiName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.tuiSpark {
+  margin-left: 1ch;
+  color: #f5f5f7b3;
+}
+
+.tuiMemory {
+  width: 9ch;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.tuiIndent {
+  width: 7ch;
+  flex-shrink: 0;
+}
+
+.tuiHints {
+  gap: 3ch;
+}
+
+.tuiCursor {
+  width: 1ch;
+  height: 13px;
+  align-self: center;
+  background-color: #f5f5f7cc;
+}
+
+.tuiCursorBlink {
+  animation: tuiBlink 1.06s steps(1) infinite;
+}
+
+@keyframes tuiBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.inlineMono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
 }
 
 .closing {
@@ -1443,6 +1784,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .terminalShell,
+  .tuiSegment,
   .popoverShell,
   .footer,
   .popover,
@@ -1454,6 +1797,7 @@
     transition: none;
   }
   .view,
+  .tuiCursorBlink,
   .chartLine,
   .chartDot,
   .cpuBar {
