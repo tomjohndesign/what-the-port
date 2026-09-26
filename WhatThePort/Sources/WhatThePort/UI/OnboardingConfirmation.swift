@@ -1,3 +1,4 @@
+import FlickerDot
 import SwiftUI
 
 /// Preserve the approved Paper palette in dark mode and adapt it for light mode.
@@ -59,31 +60,19 @@ struct OnboardingConfirmation: View {
 struct OnboardingStatusMark: View {
     let state: OnboardingRowState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var revealed = false
+    /// How many frames of the checkmark are drawn.
+    @State private var drawn = 0
 
     var body: some View {
         ZStack {
             if state.isLoading {
-                TimelineView(.animation(minimumInterval: 1 / 60, paused: reduceMotion)) { context in
-                    let turns = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 0.85) / 0.85
-                    ZStack {
-                        Circle().stroke(OnboardingStyle.secondary.opacity(0.35), lineWidth: 1.35)
-                        Circle().trim(from: 0, to: 0.25)
-                            .stroke(OnboardingStyle.secondary, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-                            .rotationEffect(.degrees(reduceMotion ? -90 : turns * 360))
-                    }
-                    .frame(width: 14, height: 14)
-                }
-                .transition(.opacity)
+                DotSpinner(color: OnboardingStyle.secondary)
+                    .transition(.opacity)
             } else if state.isSuccess {
-                ZStack {
-                    Circle().stroke(OnboardingStyle.success, lineWidth: 1.35)
-                    ConfirmationCheck().trim(from: 0, to: revealed ? 1 : 0)
-                        .stroke(OnboardingStyle.success, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-                }
-                .frame(width: 14, height: 14)
-                .scaleEffect(revealed || reduceMotion ? 1 : 0.9)
-                .transition(.opacity)
+                // Same unlit dots as the loader, so only the lit dots change.
+                DotSpinner(frames: [DotGlyph.checkStrokes[max(drawn, 1) - 1]], color: OnboardingStyle.success,
+                           unlitColor: OnboardingStyle.secondary.opacity(0.12))
+                    .transition(.opacity)
             } else {
                 Image(systemName: "minus.circle")
                     .font(.system(size: 15, weight: .regular))
@@ -92,25 +81,17 @@ struct OnboardingStatusMark: View {
         }
         .frame(width: 20, height: 20)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.16), value: state.isLoading)
-        .onAppear { revealed = state.isSuccess }
+        .onAppear { drawn = state.isSuccess ? DotGlyph.checkStrokes.count : 0 }
         .onChange(of: state.isSuccess) { _, success in
-            if success {
-                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { revealed = true }
-            } else {
-                revealed = false
-            }
+            drawn = success ? (reduceMotion ? DotGlyph.checkStrokes.count : 1) : 0
         }
-        .onChange(of: reduceMotion) { _, _ in revealed = state.isSuccess }
+        .onChange(of: reduceMotion) { _, _ in drawn = state.isSuccess ? DotGlyph.checkStrokes.count : 0 }
+        // Draw the next dot every half Flicker frame until the mark is complete.
+        .task(id: drawn) {
+            guard (1..<DotGlyph.checkStrokes.count).contains(drawn) else { return }
+            try? await Task.sleep(for: .seconds(Flicker.frameInterval / 2))
+            if !Task.isCancelled { drawn += 1 }
+        }
         .accessibilityLabel(state.isLoading ? state.label : state.isSuccess ? "Confirmed" : state.label)
-    }
-}
-
-private struct ConfirmationCheck: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.width * 0.257, y: rect.height * 0.5))
-        path.addLine(to: CGPoint(x: rect.width * 0.421, y: rect.height * 0.664))
-        path.addLine(to: CGPoint(x: rect.width * 0.743, y: rect.height * 0.336))
-        return path
     }
 }
