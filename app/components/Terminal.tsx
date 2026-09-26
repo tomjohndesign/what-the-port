@@ -178,7 +178,7 @@ const JOKE = 'This is a web page dressed as a terminal. Type wtp, or download th
 
 function table(ports: string[]): Output[] {
   const servers = SERVERS.filter((server) => ports.includes(server.port))
-  if (!servers.length) return [{ text: 'Nothing listening on ports 3000–9999.' }]
+  if (!servers.length) return [{ text: 'Nothing listening on ports 3000–65535.' }]
   const header = ['PORT', 'NAME', 'BRANCH', 'MEMORY']
   const rows = servers.map((s) => [`:${s.port}`, s.name, s.branch, formatMemory(s.memory)])
   const widths = header.map((_, column) => Math.max(...[header, ...rows].map((row) => row[column].length)))
@@ -849,7 +849,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
             <T2>Nothing listening</T2>
           </Line>,
           <Line key="e3" className={styles.tuiCentered}>
-            <T3>Dev servers on ports 3000–9999 show up here.</T3>
+            <T3>Dev servers on ports 3000–65535 show up here.</T3>
           </Line>,
         ],
       ]

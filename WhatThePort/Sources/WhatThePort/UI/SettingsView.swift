@@ -279,7 +279,7 @@ private struct CleanUpPane: View {
 private struct PortsPane: View {
     @ObservedObject var monitor: ServerMonitor
     @State private var minPort = 3000
-    @State private var maxPort = 9999
+    @State private var maxPort = 65535
     @State private var processes: [String] = []
 
     var body: some View {
