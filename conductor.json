@@ -1,7 +1,0 @@
-{
-  "scripts": {
-    "setup": "cd WhatThePort && swift build",
-    "run": "cd WhatThePort && swift run",
-    "archive": ""
-  }
-}
