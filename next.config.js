@@ -12,8 +12,17 @@ const hasDownload = fs.existsSync(path.join(__dirname, 'public/WhatThePort.dmg')
 // /tip goes to production, which can't build without it (scripts/check-tip.mjs).
 const tipUrl = process.env.TIP_URL || 'https://whattheport.dev/tip'
 
+// The Mac app's version, for the site's structured data (lib/content.ts). CI builds
+// with the whole repo; anywhere the app source is missing, the version is left out.
+let appVersion = ''
+try {
+  const plist = fs.readFileSync(path.join(__dirname, 'WhatThePort/Info.plist'), 'utf8')
+  appVersion = plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/)?.[1] ?? ''
+} catch {}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: { APP_VERSION: appVersion },
   async redirects() {
     const tip = { source: '/tip', destination: tipUrl, permanent: false }
     // The download was a zip before 2.4. Keep old links working.
