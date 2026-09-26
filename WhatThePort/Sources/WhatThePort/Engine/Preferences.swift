@@ -4,6 +4,7 @@ import Foundation
 /// `@AppStorage(Preferences.x)`, the engine reads through `Preferences.value`.
 enum Preferences {
     // General
+    static let language = "general.language"
     static let iconStyle = "general.iconStyle"
     static let editor = "general.editor"
     static let terminal = "general.terminal"
@@ -59,6 +60,7 @@ enum Preferences {
 
     static func register() {
         UserDefaults.standard.register(defaults: [
+            language: InterfaceLanguage.system.rawValue,
             iconStyle: IconStyle.colonCount.rawValue,
             editor: "auto",
             terminal: "com.apple.Terminal",

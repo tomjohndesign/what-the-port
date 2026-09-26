@@ -93,6 +93,10 @@ Add `--appearance light` or `--appearance dark` to check a specific appearance w
 
 To render the onboarding loading, success, missing-tool, and approval states without changing macOS permissions or login items, run `WhatThePort --snapshot-onboarding <dir>`.
 
+### Interface language
+
+The native app supports English and Simplified Chinese. Choose System default, 简体中文, or English in Settings → General → Language, then restart the app. Commands, project names and the `wtp` terminal interface remain unchanged. See [Localization](LOCALIZATION.md) for translation and build details.
+
 ### Settings
 
 Open Settings from the gear in the popover (⌘,):

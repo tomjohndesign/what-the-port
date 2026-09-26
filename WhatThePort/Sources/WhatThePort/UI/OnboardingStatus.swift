@@ -19,7 +19,7 @@ enum OnboardingTool: CaseIterable, Hashable, Sendable {
         switch self {
         case .claude: return "~/.claude"
         case .codex: return "~/.codex"
-        case .conductor: return "Installed"
+        case .conductor: return L10n.text("Installed")
         case .github: return "gh"
         }
     }
@@ -99,10 +99,10 @@ final class OnboardingStatus: ObservableObject {
     var isScanning: Bool { tools.count < OnboardingTool.allCases.count || tools.values.contains(where: \.isLoading) }
     var readyCount: Int { [notifications, login].filter(\.isSuccess).count }
     var setupSummary: String {
-        if requestingNotifications { return "Waiting for permission…" }
-        if registeringLogin { return "Saving login item…" }
-        if notifications.isLoading || login.isLoading { return "Checking setup…" }
-        return readyCount == 2 ? "Setup complete" : "Finish setup"
+        if requestingNotifications { return L10n.text("Waiting for permission…") }
+        if registeringLogin { return L10n.text("Saving login item…") }
+        if notifications.isLoading || login.isLoading { return L10n.text("Checking setup…") }
+        return readyCount == 2 ? L10n.text("Setup complete") : L10n.text("Finish setup")
     }
 
     func scanTools() async {
@@ -168,7 +168,7 @@ final class OnboardingStatus: ObservableObject {
             // Re-read: a thrown request must never be presented as success.
             let state = Self.notificationState(await services.notifications())
             notifications = state
-            if !state.isSuccess { notificationError = "Couldn’t request notifications. Try again or check System Settings." }
+            if !state.isSuccess { notificationError = L10n.text("Couldn’t request notifications. Try again or check System Settings.") }
         }
     }
 
@@ -184,7 +184,7 @@ final class OnboardingStatus: ObservableObject {
             login = Self.loginState(await services.login())
         } catch {
             login = Self.loginState(await services.login())
-            if !login.isSuccess { loginError = "Couldn’t add the login item. Try again or check System Settings." }
+            if !login.isSuccess { loginError = L10n.text("Couldn’t add the login item. Try again or check System Settings.") }
         }
     }
 

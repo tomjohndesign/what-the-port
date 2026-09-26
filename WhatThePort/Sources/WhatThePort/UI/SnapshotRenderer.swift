@@ -25,18 +25,17 @@ enum SnapshotRenderer {
             pages.insert(("detail", .detail(port: first.port), false), at: 1)
         }
         for (name, route, cleaning) in pages {
-            let view = PopoverRoot(monitor: monitor, route: route, startCleaning: cleaning)
+            // Render the same page at the popover's width without its menu-bar
+            // window fitter, which would resize away the snapshot padding.
+            let view = snapshotPage(monitor: monitor, route: route, cleaning: cleaning)
+                .frame(width: Theme.popoverWidth)
                 .background(Theme.popoverBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(20)
                 .background(Theme.snapshotBackground)
                 .environment(\.colorScheme, scheme)
-            let renderer = ImageRenderer(content: view)
-            renderer.scale = 2
-            if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
-               let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
-                try? png.write(to: output.appendingPathComponent("\(name).png"))
-            }
+            let size = NSHostingView(rootView: view).fittingSize
+            renderWindow(view, size: size, to: output.appendingPathComponent("\(name).png"))
         }
 
         for pane in SettingsPane.allCases {
@@ -67,6 +66,17 @@ enum SnapshotRenderer {
         }
         print("apps: " + monitor.otherApps.prefix(8).map { "\($0.name) \(Format.bytesString($0.memory))" }.joined(separator: ", "))
         exit(0)
+    }
+
+    @ViewBuilder private static func snapshotPage(monitor: ServerMonitor, route: PopoverRoute, cleaning: Bool) -> some View {
+        switch route {
+        case .servers:
+            ServersView(monitor: monitor, startCleaning: cleaning, openServer: { _ in }, openSettings: {})
+        case .detail(let port):
+            if let server = monitor.server(port: port) {
+                ServerDetailView(server: server, monitor: monitor, back: {})
+            }
+        }
     }
 
     /// Deterministic onboarding samples. These services never request real

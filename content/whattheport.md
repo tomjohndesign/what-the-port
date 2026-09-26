@@ -20,6 +20,7 @@
 - **Previews and pull requests (optional).** A Vercel preview button and the branch’s pull request, through the GitHub CLI you’re already signed in to.
 - **Terminal UI.** `wtp` shows the same servers, details and Clean up in your terminal. `wtp list --json` prints them as JSON for scripts and coding agents.
 - **Global shortcut.** ⌥⌘P opens the popover.
+- **Interface language.** English and Simplified Chinese, selected in Settings → General → Language. Restart to apply; terminal output and user data are unchanged.
 - **Native.** Written in Swift. No Electron, no Dock icon. Light and dark mode.
 
 ## Install

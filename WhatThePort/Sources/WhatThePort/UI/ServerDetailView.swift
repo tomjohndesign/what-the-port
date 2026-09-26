@@ -45,7 +45,7 @@ struct ServerDetailView: View {
                 Spacer()
                 HStack(spacing: 10) {
                     if let uptime = server.uptime {
-                        Text("Running for \(Format.duration(uptime))").font(Theme.body).foregroundStyle(Theme.text3)
+                        Text(L10n.format("Running for %@", L10n.duration(uptime))).font(Theme.body).foregroundStyle(Theme.text3)
                     }
                     HStack(spacing: 6) {
                         IconButton(systemName: "arrow.clockwise", help: restartHelp) {
@@ -53,7 +53,7 @@ struct ServerDetailView: View {
                             monitor.restart(server)
                         }
                         .disabled(server.launch == nil || !server.cwdExists)
-                        IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: "Stop \(server.processes.count) processes") {
+                        IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: L10n.format("Stop %d processes", server.processes.count)) {
                             Usage.record(.stop)
                             monitor.stop(server)
                             back()
@@ -67,9 +67,9 @@ struct ServerDetailView: View {
 
     private var restartHelp: String {
         if let agent = server.agent {
-            return "Restart. It will run outside the \(agent.kind.rawValue) session."
+            return L10n.format("Restart. It will run outside the %@ session.", agent.kind.rawValue)
         }
-        return "Restart with the same command"
+        return L10n.text("Restart with the same command")
     }
 
     // MARK: - Info
@@ -85,7 +85,7 @@ struct ServerDetailView: View {
             if !secondary.isEmpty {
                 HStack(spacing: 12) {
                     Spacer().frame(width: 64)
-                    Disclosure(title: infoExpanded ? "Less" : "\(secondary.count) more", expanded: infoExpanded) {
+                    Disclosure(title: infoExpanded ? L10n.text("Less") : L10n.format("%d more", secondary.count), expanded: infoExpanded) {
                         withAnimation(.snappy(duration: 0.2)) { infoExpanded.toggle() }
                     }
                 }
@@ -99,13 +99,13 @@ struct ServerDetailView: View {
     private var primaryRows: [InfoRow] {
         var rows: [InfoRow] = []
         if let agent = server.agent {
-            rows.append(InfoRow(label: "Session", tooltip: agent.title) { SessionValue(session: agent, server: server) })
+            rows.append(InfoRow(label: L10n.text("Session"), tooltip: agent.title) { SessionValue(session: agent, server: server) })
         }
         if let branch = server.project.branch {
-            rows.append(InfoRow(label: "Branch", tooltip: branch) { Text(branch).font(Theme.body).foregroundStyle(Theme.text1) })
+            rows.append(InfoRow(label: L10n.text("Branch"), tooltip: branch) { Text(branch).font(Theme.body).foregroundStyle(Theme.text1) })
         }
         if rows.count < 2, let folder = folderText {
-            rows.append(InfoRow(label: "Folder", tooltip: server.cwd) { Text(folder).font(Theme.mono).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Folder"), tooltip: server.cwd) { Text(folder).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         return rows
     }
@@ -113,27 +113,27 @@ struct ServerDetailView: View {
     private var secondaryRows: [InfoRow] {
         var rows: [InfoRow] = []
         if let workspace = server.conductorWorkspace {
-            rows.append(InfoRow(label: "Workspace", tooltip: "Conductor · \(workspace)") { Text("Conductor · \(workspace)").font(Theme.body).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Workspace"), tooltip: "Conductor · \(workspace)") { Text("Conductor · \(workspace)").font(Theme.body).foregroundStyle(Theme.text2) })
         }
         if server.agent != nil || server.project.branch != nil, let folder = folderText {
-            rows.append(InfoRow(label: "Folder", tooltip: server.cwd) { Text(folder).font(Theme.mono).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Folder"), tooltip: server.cwd) { Text(folder).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         if let framework = server.project.framework {
-            rows.append(InfoRow(label: "Framework", tooltip: framework) { Text(framework).font(Theme.body).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Framework"), tooltip: framework) { Text(framework).font(Theme.body).foregroundStyle(Theme.text2) })
         }
         if let command = server.command {
-            rows.append(InfoRow(label: "Command", tooltip: command) { Text(command).font(Theme.mono).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Command"), tooltip: command) { Text(command).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         if let started = server.startedAt {
-            rows.append(InfoRow(label: "Started") { Text(Format.time(started)).font(Theme.mono).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Started")) { Text(L10n.time(started)).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         if let pr = github.result(for: server)?.pullRequest {
-            rows.append(InfoRow(label: "Pull request", tooltip: "#\(pr.number) \(pr.title)") {
+            rows.append(InfoRow(label: L10n.text("Pull request"), tooltip: "#\(pr.number) \(pr.title)") {
                 Link(destination: pr.url) {
                     HStack(spacing: 6) {
                         Text("#\(pr.number)").font(Theme.mono).foregroundStyle(Theme.text1)
                         Text(pr.title).font(Theme.body).foregroundStyle(Theme.text2).lineLimit(1).truncationMode(.tail)
-                        Text(pr.state).font(Theme.caption).foregroundStyle(Theme.text3).fixedSize()
+                        Text(L10n.text(pr.state)).font(Theme.caption).foregroundStyle(Theme.text3).fixedSize()
                     }
                 }
                 .buttonStyle(.plain)
@@ -141,10 +141,10 @@ struct ServerDetailView: View {
             })
         }
         if let agent = server.agent {
-            rows.append(InfoRow(label: "Session ID", tooltip: agent.id) { Text(agent.id).font(Theme.mono).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Session ID"), tooltip: agent.id) { Text(agent.id).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         if !server.addresses.isEmpty {
-            rows.append(InfoRow(label: "Address", tooltip: server.addresses.joined(separator: " · ")) { Text(server.addresses.joined(separator: " · ")).font(Theme.mono).foregroundStyle(Theme.text2) })
+            rows.append(InfoRow(label: L10n.text("Address"), tooltip: server.addresses.joined(separator: " · ")) { Text(server.addresses.joined(separator: " · ")).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         return rows
     }
@@ -176,7 +176,7 @@ struct ServerDetailView: View {
             } label: {
                 HStack {
                     HStack(spacing: 4) {
-                        Text("Processes").font(Theme.body).foregroundStyle(Theme.text2)
+                        Text(L10n.text("Processes")).font(Theme.body).foregroundStyle(Theme.text2)
                         Image(systemName: processesExpanded ? "chevron.down" : "chevron.right")
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(Theme.text3)
@@ -229,7 +229,7 @@ struct ServerDetailView: View {
                 Usage.record(.openBrowser)
                 NSWorkspace.shared.open(server.url)
             } label: {
-                Text("Open localhost:\(String(server.port))").frame(maxWidth: .infinity)
+                Text(L10n.format("Open localhost:%@", String(server.port))).frame(maxWidth: .infinity)
             }
             .buttonStyle(PillButtonStyle(kind: .primary))
             .keyboardShortcut(.defaultAction)
@@ -241,24 +241,24 @@ struct ServerDetailView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "triangle.fill").font(.system(size: 9))
-                        Text(preview.state == .building ? "Building" : "Preview")
+                        Text(preview.state == .building ? L10n.text("Building") : L10n.text("Preview"))
                     }
                     .foregroundStyle(preview.state == .failed ? Theme.softRed : Theme.text1)
                 }
                 .buttonStyle(PillButtonStyle())
-                .help(preview.state == .failed ? "Preview build failed · \(preview.url.host ?? "")" : preview.url.absoluteString)
+                .help(preview.state == .failed ? L10n.format("Preview build failed · %@", preview.url.host ?? "") : preview.url.absoluteString)
             }
 
             Menu {
-                Button("Copy URL") { copy(server.url.absoluteString) }
-                if let command = server.command { Button("Copy command") { copy(command) } }
+                Button(L10n.text("Copy URL")) { copy(server.url.absoluteString) }
+                if let command = server.command { Button(L10n.text("Copy command")) { copy(command) } }
                 Divider()
                 if let root = server.project.root ?? server.cwd, server.cwdExists {
-                    Button("Open in editor") {
+                    Button(L10n.text("Open in editor")) {
                         Usage.record(.openEditor)
                         EditorLauncher.open(root)
                     }
-                    Button("Reveal in Finder") { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: root) }
+                    Button(L10n.text("Reveal in Finder")) { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: root) }
                 }
             } label: {
                 Image(systemName: "ellipsis")
@@ -312,19 +312,19 @@ struct SessionValue: View {
 
     var body: some View {
         Menu {
-            Section("\(session.kind.rawValue)\(session.startedAt.map { " · started \(Format.time($0))" } ?? "")") {
+            Section("\(session.kind.rawValue)\(session.startedAt.map { L10n.format(" · started %@", L10n.time($0)) } ?? "")") {
                 if let workspace = server.conductorWorkspace {
-                    Button("Reveal \(workspace) workspace") { reveal(server.project.root ?? server.cwd) }
+                    Button(L10n.format("Reveal %@ workspace", workspace)) { reveal(server.project.root ?? server.cwd) }
                 }
-                Button("Resume in \(TerminalLauncher.current.name)") {
+                Button(L10n.format("Resume in %@", TerminalLauncher.current.name)) {
                     Usage.record(.resumeSession)
                     SessionLauncher.resume(session, fallbackDirectory: server.cwd)
                 }
                 if let transcript = session.transcript {
-                    Button("Show transcript") { NSWorkspace.shared.selectFile(transcript.path, inFileViewerRootedAtPath: "") }
+                    Button(L10n.text("Show transcript")) { NSWorkspace.shared.selectFile(transcript.path, inFileViewerRootedAtPath: "") }
                 }
                 Divider()
-                Button("Copy session ID") {
+                Button(L10n.text("Copy session ID")) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(session.id, forType: .string)
                 }
@@ -369,32 +369,32 @@ struct MemoryChart: View {
         let hovered = ChartHover.sample(in: server.history, near: hoverTime)
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Memory").font(Theme.body).foregroundStyle(Theme.text2)
+                Text(L10n.text("Memory")).font(Theme.body).foregroundStyle(Theme.text2)
                 Text(Format.bytesString(hovered?.memory ?? server.memory)).font(Theme.monoMedium).foregroundStyle(Theme.text1)
                 Spacer()
-                Text(hovered.map { ChartHover.timestamp($0.time) } ?? "10 min")
+                Text(hovered.map { ChartHover.timestamp($0.time) } ?? L10n.text("10 min"))
                     .font(Theme.monoCaption)
                     .foregroundStyle(hovered == nil ? Theme.text3 : Theme.text2)
             }
             Chart {
-                RuleMark(y: .value("Alert", thresholdGB))
+                RuleMark(y: .value(L10n.text("Alert"), thresholdGB))
                     .foregroundStyle(Theme.amber.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                 ForEach(Array(values.enumerated()), id: \.offset) { _, value in
-                    LineMark(x: .value("Time", value.time), y: .value("GB", value.gb))
+                    LineMark(x: .value(L10n.text("Time"), value.time), y: .value("GB", value.gb))
                         .foregroundStyle(Theme.text1.opacity(0.9))
                         .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
                         .interpolationMethod(.monotone)
                 }
                 if let hovered {
-                    RuleMark(x: .value("Time", hovered.time))
+                    RuleMark(x: .value(L10n.text("Time"), hovered.time))
                         .foregroundStyle(Theme.text1.opacity(0.25))
                         .lineStyle(StrokeStyle(lineWidth: 1))
-                    PointMark(x: .value("Time", hovered.time), y: .value("GB", Double(hovered.memory) / Format.gigabyte))
+                    PointMark(x: .value(L10n.text("Time"), hovered.time), y: .value("GB", Double(hovered.memory) / Format.gigabyte))
                         .foregroundStyle(Theme.text1)
                         .symbolSize(30)
                 } else if let last = values.last {
-                    PointMark(x: .value("Time", last.time), y: .value("GB", last.gb))
+                    PointMark(x: .value(L10n.text("Time"), last.time), y: .value("GB", last.gb))
                         .foregroundStyle(Theme.text1)
                         .symbolSize(24)
                 }
@@ -446,12 +446,12 @@ struct CPUChart: View {
             Chart {
                 ForEach(Array(samples.enumerated()), id: \.offset) { index, sample in
                     let isHighlighted = hovered.map { $0.time == sample.time } ?? (index == samples.count - 1)
-                    BarMark(x: .value("Time", sample.time, unit: .second), y: .value("CPU", min(sample.cpu, 100)), width: .fixed(3))
+                    BarMark(x: .value(L10n.text("Time"), sample.time, unit: .second), y: .value("CPU", min(sample.cpu, 100)), width: .fixed(3))
                         .foregroundStyle(Theme.text1.opacity(isHighlighted ? 0.85 : 0.32))
                         .clipShape(RoundedRectangle(cornerRadius: 1))
                 }
                 if let hovered {
-                    RuleMark(x: .value("Time", hovered.time, unit: .second))
+                    RuleMark(x: .value(L10n.text("Time"), hovered.time, unit: .second))
                         .foregroundStyle(Theme.text1.opacity(0.25))
                         .lineStyle(StrokeStyle(lineWidth: 1))
                 }

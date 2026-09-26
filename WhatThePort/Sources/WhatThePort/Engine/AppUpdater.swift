@@ -20,14 +20,14 @@ final class AppUpdater: NSObject, ObservableObject, SPUStandardUserDriverDelegat
         super.init()
         guard !CommandLine.arguments.contains("--snapshot"),
               Bundle.main.bundleURL.pathExtension == "app" else {
-            unavailableReason = "Updates are available in the installed app."
+            unavailableReason = L10n.text("Updates are available in the installed app.")
             return
         }
         guard let feed = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String,
               let url = URL(string: feed), url.scheme == "https", url.host != nil,
               let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String,
               Data(base64Encoded: key)?.count == 32 else {
-            unavailableReason = "Automatic updates aren’t configured for this build."
+            unavailableReason = L10n.text("Automatic updates aren’t configured for this build.")
             return
         }
 
@@ -41,7 +41,7 @@ final class AppUpdater: NSObject, ObservableObject, SPUStandardUserDriverDelegat
         do {
             try updater.start()
         } catch {
-            unavailableReason = "The updater couldn’t start: \(error.localizedDescription)"
+            unavailableReason = L10n.format("The updater couldn’t start: %@", error.localizedDescription)
         }
     }
 
