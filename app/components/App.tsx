@@ -316,7 +316,7 @@ function ListView({ demo }: { demo: Demo }) {
           <div className={styles.emptyState}>
             <DotGrid size={48} />
             <span className={styles.t2}>Nothing listening</span>
-            <span className={`${styles.caption} ${styles.t3}`}>Dev servers on ports 3000–9999 show up here.</span>
+            <span className={`${styles.caption} ${styles.t3}`}>Dev servers on ports 3000–65535 show up here.</span>
           </div>
         )}
         {demo.running.map((s) => (

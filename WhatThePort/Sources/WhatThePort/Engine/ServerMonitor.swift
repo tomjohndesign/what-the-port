@@ -27,7 +27,7 @@ final class ServerMonitor: ObservableObject {
     var handlesAlerts = true
 
     var minPort: Int = 3000
-    var maxPort: Int = 9999
+    var maxPort: Int = 65535
 
     static let defaultAllowlist: Set<String> = [
         "node", "npm", "npx", "deno", "bun",

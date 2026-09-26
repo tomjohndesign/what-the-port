@@ -47,7 +47,7 @@ wtp --version     Print the version
 
 WhatThePort reads listening TCP sockets with `lsof`, then inspects each server’s process tree through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest (package.json, pyproject.toml, Cargo.toml, go.mod, Gemfile), framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex’s session files. It rescans every 2 seconds.
 
-By default it watches ports 3000–9999 and processes that look like dev servers: node, bun, deno, python, uvicorn, gunicorn, ruby, rails, puma, php, java, go, cargo, dotnet, elixir, nginx, postgres, redis, mongod, mysql and more. Both are configurable in Settings → Ports & processes.
+By default it watches ports 3000–65535 and processes that look like dev servers: node, bun, deno, python, uvicorn, gunicorn, ruby, rails, puma, php, java, go, cargo, dotnet, elixir, nginx, postgres, redis, mongod, mysql and more. Both are configurable in Settings → Ports & processes.
 
 Frameworks it recognizes include Next.js, Nuxt, Remix, Astro, SvelteKit, Vite, Expo, Angular, Create React App, Hono, Express, Storybook, Django, FastAPI, Flask, Rails, Rust and Go.
 
