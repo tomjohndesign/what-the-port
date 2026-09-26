@@ -113,12 +113,9 @@ export function guideMarkdown(guide: Guide) {
   ].join('\n\n')
 }
 
-// The app version from the Mac app's Info.plist, when the source is present at build time.
+// The app version, read from the Mac app's Info.plist by next.config.js at build time.
+// Reading the plist here would make Vercel trace it into the deployment, but
+// .vercelignore leaves WhatThePort/ out, so the deploy would fail.
 export function appVersion() {
-  try {
-    const plist = fs.readFileSync(path.join(process.cwd(), 'WhatThePort/Info.plist'), 'utf8')
-    return plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/)?.[1]
-  } catch {
-    return undefined
-  }
+  return process.env.APP_VERSION || undefined
 }
