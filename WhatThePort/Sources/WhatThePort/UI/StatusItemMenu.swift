@@ -20,9 +20,9 @@ enum StatusItemMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        menu.addItem(ActionItem("Open WhatThePort") { StatusItemOpener.open() })
+        menu.addItem(ActionItem(L10n.text("Open WhatThePort")) { StatusItemOpener.open() })
 
-        let browser = NSMenuItem(title: "Open in Browser", action: nil, keyEquivalent: "")
+        let browser = NSMenuItem(title: L10n.text("Open in Browser"), action: nil, keyEquivalent: "")
         let servers = NSMenu()
         for server in monitor.servers {
             servers.addItem(ActionItem("localhost:\(String(server.port))  \(server.project.branch ?? server.project.name)") {
@@ -35,21 +35,21 @@ enum StatusItemMenu {
         menu.addItem(browser)
 
         menu.addItem(.separator())
-        let settings = ActionItem("Settings…", action: openSettings)
+        let settings = ActionItem(L10n.text("Settings…"), action: openSettings)
         settings.keyEquivalent = ","
         menu.addItem(settings)
-        let updates = ActionItem("Check for Updates…") { AppUpdater.shared.checkForUpdates() }
+        let updates = ActionItem(L10n.text("Check for Updates…")) { AppUpdater.shared.checkForUpdates() }
         updates.isEnabled = AppUpdater.shared.canCheckForUpdates
         menu.addItem(updates)
 
-        let feedback = NSMenuItem(title: "Send Feedback", action: nil, keyEquivalent: "")
+        let feedback = NSMenuItem(title: L10n.text("Send Feedback"), action: nil, keyEquivalent: "")
         feedback.submenu = NSMenu()
-        feedback.submenu?.addItem(ActionItem("Report a Bug…") { NSWorkspace.shared.open(FeedbackLink.issue(.bug)) })
-        feedback.submenu?.addItem(ActionItem("Suggest a Feature…") { NSWorkspace.shared.open(FeedbackLink.issue(.feature)) })
+        feedback.submenu?.addItem(ActionItem(L10n.text("Report a Bug…")) { NSWorkspace.shared.open(FeedbackLink.issue(.bug)) })
+        feedback.submenu?.addItem(ActionItem(L10n.text("Suggest a Feature…")) { NSWorkspace.shared.open(FeedbackLink.issue(.feature)) })
         menu.addItem(feedback)
 
         menu.addItem(.separator())
-        let quit = ActionItem("Quit WhatThePort") { NSApp.terminate(nil) }
+        let quit = ActionItem(L10n.text("Quit WhatThePort")) { NSApp.terminate(nil) }
         quit.keyEquivalent = "q"
         menu.addItem(quit)
 

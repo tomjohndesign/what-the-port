@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "WhatThePort",
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
@@ -16,6 +17,7 @@ let package = Package(
                 .product(name: "Sparkle", package: "Sparkle"),
                 .product(name: "FlickerDot", package: "flicker-dot"),
             ],
+            resources: [.process("Resources")],
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
         .testTarget(name: "WhatThePortTests", dependencies: ["WhatThePort"])

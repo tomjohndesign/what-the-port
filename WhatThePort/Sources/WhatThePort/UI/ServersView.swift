@@ -78,7 +78,7 @@ struct ServersView: View {
     @ViewBuilder private var summaryTitle: some View {
         switch focus {
         case .server(let port):
-            PageHeader(title: monitor.server(port: port).map { "\($0.project.name) :\(String($0.port))" } ?? "Servers")
+            PageHeader(title: monitor.server(port: port).map { "\($0.project.name) :\(String($0.port))" } ?? L10n.text("Servers"))
         case .app(let id):
             let app = monitor.otherApps.first { $0.id == id }
             HStack(spacing: 6) {
@@ -89,19 +89,19 @@ struct ServersView: View {
                 } else {
                     Image(systemName: "terminal").font(.system(size: 11)).foregroundStyle(Theme.text2)
                 }
-                Text(app?.name ?? "App").font(Theme.bodyMedium).foregroundStyle(Theme.text1).lineLimit(1)
+                Text(app?.name ?? L10n.text("App")).font(Theme.bodyMedium).foregroundStyle(Theme.text1).lineLimit(1)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 20)
         case .rest:
             HStack(spacing: 6) {
                 Image(systemName: "macbook").font(.system(size: 12)).foregroundStyle(Theme.text2)
-                Text("Everything else").font(Theme.bodyMedium).foregroundStyle(Theme.text1)
+                Text(L10n.text("Everything else")).font(Theme.bodyMedium).foregroundStyle(Theme.text1)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 20)
         case nil:
-            PageHeader(title: isCleaning ? "Clean up" : "Servers")
+            PageHeader(title: isCleaning ? L10n.text("Clean up") : L10n.text("Servers"))
         }
     }
 
@@ -121,18 +121,18 @@ struct ServersView: View {
         switch focus {
         case .server(let port):
             if let server = monitor.server(port: port) {
-                Text("\(share(server.memory, of: ram)) of RAM · CPU \(Format.percent(server.cpu))")
+                Text(L10n.format("%@ of RAM · CPU %@", share(server.memory, of: ram), Format.percent(server.cpu)))
                     .font(Theme.mono).foregroundStyle(Theme.text2)
             }
         case .app(let id):
             if let app = monitor.otherApps.first(where: { $0.id == id }) {
-                Text("\(share(app.memory, of: ram)) of RAM").font(Theme.mono).foregroundStyle(Theme.text2)
+                Text(L10n.format("%@ of RAM", share(app.memory, of: ram))).font(Theme.mono).foregroundStyle(Theme.text2)
             }
         case .rest:
-            Text("System and smaller apps").font(Theme.body).foregroundStyle(Theme.text2)
+            Text(L10n.text("System and smaller apps")).font(Theme.body).foregroundStyle(Theme.text2)
         case nil:
             if isCleaning {
-                Text(selection.isEmpty ? "Pick servers to stop" : "freed by stopping \(selectedServers.count)")
+                Text(selection.isEmpty ? L10n.text("Pick servers to stop") : L10n.format("freed by stopping %d", selectedServers.count))
                     .font(Theme.body).foregroundStyle(Theme.text2)
             } else {
                 CPUToggle(monitor: monitor)
@@ -164,10 +164,10 @@ struct ServersView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             DotGridView(glyph: .idle, size: 48)
-            Text(monitor.hasScanned ? "Nothing listening" : "Scanning…")
+            Text(monitor.hasScanned ? L10n.text("Nothing listening") : L10n.text("Scanning…"))
                 .font(Theme.body)
                 .foregroundStyle(Theme.text2)
-            Text("Dev servers on ports \(monitor.minPort)–\(monitor.maxPort) show up here.")
+            Text(L10n.format("Dev servers on ports %d–%d show up here.", monitor.minPort, monitor.maxPort))
                 .font(Theme.caption)
                 .foregroundStyle(Theme.text3)
         }
@@ -180,7 +180,7 @@ struct ServersView: View {
     @ViewBuilder private var footer: some View {
         if isCleaning {
             HStack(spacing: 8) {
-                Button("Cancel") { setCleaning(false) }
+                Button(L10n.text("Cancel")) { setCleaning(false) }
                     .buttonStyle(PillButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Button {
@@ -189,8 +189,8 @@ struct ServersView: View {
                     setCleaning(false)
                 } label: {
                     Text(selection.isEmpty
-                         ? "Stop servers"
-                         : "Stop \(selectedServers.count) \(selectedServers.count == 1 ? "server" : "servers") · free \(Format.bytesString(selectedServers.reduce(0) { $0 + $1.memory }))")
+                         ? L10n.text("Stop servers")
+                         : L10n.format("Stop %d %@ · free %@", selectedServers.count, L10n.text(selectedServers.count == 1 ? "server" : "servers"), Format.bytesString(selectedServers.reduce(0) { $0 + $1.memory })))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PillButtonStyle(kind: .destructive))
@@ -205,7 +205,7 @@ struct ServersView: View {
                     HStack(spacing: 7) {
                         Image(systemName: "paintbrush")
                             .font(.system(size: 11, weight: .medium))
-                        Text("Clean up")
+                        Text(L10n.text("Clean up"))
                         let count = monitor.suggestedCleanUpCount
                         if count > 0 {
                             Text(String(count)).font(Theme.monoCaption).foregroundStyle(Theme.text2)
@@ -226,7 +226,7 @@ struct ServersView: View {
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(",", modifiers: .command)
-                .help("Settings")
+                .help(L10n.text("Settings"))
             }
             .padding(12)
             .transition(.opacity)
@@ -267,7 +267,7 @@ private struct CPUToggle: View {
             showsAll.toggle()
         } label: {
             HStack(spacing: 6) {
-                Text(showsAll ? "CPU (all)" : "CPU (servers)").font(Theme.body).foregroundStyle(Theme.text3)
+                Text(showsAll ? L10n.text("CPU (all)") : L10n.text("CPU (servers)")).font(Theme.body).foregroundStyle(Theme.text3)
                 Text(Format.percent(showsAll ? (monitor.systemCPU ?? 0) : monitor.serversShareOfCPU))
                     .font(Theme.mono)
                     .foregroundStyle(Theme.text2)
@@ -276,7 +276,7 @@ private struct CPUToggle: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(showsAll ? "Whole Mac. Click for servers only." : "Dev servers, as a share of the whole Mac. Click for all.")
+        .help(showsAll ? L10n.text("Whole Mac. Click for servers only.") : L10n.text("Dev servers, as a share of the whole Mac. Click for all."))
     }
 }
 
@@ -335,11 +335,11 @@ struct ServerRow: View {
             Group {
                 if isHovered && cleaning == nil {
                     HStack(spacing: 2) {
-                        IconButton(systemName: "arrow.up.right", size: 22, help: "Open in browser") {
+                        IconButton(systemName: "arrow.up.right", size: 22, help: L10n.text("Open in browser")) {
                             Usage.record(.openBrowser)
                             NSWorkspace.shared.open(server.url)
                         }
-                        IconButton(systemName: "stop.fill", tint: Theme.text1.opacity(0.8), background: .clear, size: 22, help: "Stop") {
+                        IconButton(systemName: "stop.fill", tint: Theme.text1.opacity(0.8), background: .clear, size: 22, help: L10n.text("Stop")) {
                             Usage.record(.stop)
                             monitor.stop(server)
                         }
@@ -372,11 +372,11 @@ struct ServerRow: View {
 
     @ViewBuilder private func context(status: ServerStatus) -> some View {
         if status == .attention, server.isLeaking() {
-            Text("+\(Format.bytesString(UInt64(server.memoryGrowth))) in \(Format.duration(historySpan))")
+            Text(L10n.format("+%@ in %@", Format.bytesString(UInt64(server.memoryGrowth)), L10n.duration(historySpan)))
                 .font(Theme.caption)
                 .foregroundStyle(Theme.amber)
         } else if status == .attention {
-            Text("Over \(MemoryChart.trim(Double(monitor.alertThreshold) / Format.gigabyte)) GB")
+            Text(L10n.format("Over %@ GB", MemoryChart.trim(Double(monitor.alertThreshold) / Format.gigabyte)))
                 .font(Theme.caption)
                 .foregroundStyle(Theme.amber)
         } else {
@@ -403,10 +403,10 @@ struct ServerRow: View {
 
     /// Uptime or idle time, prefixed with the location when there's no branch.
     private var contextText: String {
-        if !server.cwdExists { return "Worktree deleted · idle \(Format.shortDuration(server.idleFor))" }
+        if !server.cwdExists { return L10n.format("Worktree deleted · idle %@", L10n.duration(server.idleFor, short: true)) }
         let time = server.idleFor > 60 * 60
-            ? "idle \(Format.shortDuration(server.idleFor))"
-            : server.uptime.map { "up \(Format.shortDuration($0))" } ?? ""
+            ? L10n.format("idle %@", L10n.duration(server.idleFor, short: true))
+            : server.uptime.map { L10n.format("up %@", L10n.duration($0, short: true)) } ?? ""
         if server.project.branch != nil { return time }
         return [server.locationLabel, time].filter { !$0.isEmpty }.joined(separator: " · ")
     }
@@ -451,10 +451,10 @@ extension CleanUpReason {
 
     var label: String {
         switch self {
-        case .worktreeDeleted: return "Worktree deleted"
-        case .idle(let duration): return "Idle \(Format.shortDuration(duration)) · no connections"
-        case .longRunning(let duration): return "Running for \(Format.shortDuration(duration))"
-        case .leaking(let growth): return "Leaking · +\(Format.bytesString(growth))"
+        case .worktreeDeleted: return L10n.text("Worktree deleted")
+        case .idle(let duration): return L10n.format("Idle %@ · no connections", L10n.duration(duration, short: true))
+        case .longRunning(let duration): return L10n.format("Running for %@", L10n.duration(duration, short: true))
+        case .leaking(let growth): return L10n.format("Leaking · +%@", Format.bytesString(growth))
         }
     }
 }
@@ -494,7 +494,7 @@ struct MemoryShareBar: View {
                 Capsule()
                     .fill(Theme.memoryTrack)
                     .frame(height: 4)
-                    .help("Free · \(Format.bytesString(breakdown.free))")
+                    .help(L10n.format("Free · %@", Format.bytesString(breakdown.free)))
                 HStack(spacing: spacing) {
                     ForEach(servers) { server in
                         serverSegment(server, width: max(unit * CGFloat(server.memory), 2), height: geometry.size.height)
@@ -505,7 +505,7 @@ struct MemoryShareBar: View {
                     }
                     if breakdown.everythingElse > 0 {
                         baselineSegment(focus: .rest, width: unit * CGFloat(breakdown.everythingElse), height: geometry.size.height,
-                                        help: "Everything else · \(Format.bytesString(breakdown.everythingElse))")
+                                        help: L10n.format("Everything else · %@", Format.bytesString(breakdown.everythingElse)))
                     }
                 }
             }
@@ -590,10 +590,10 @@ struct MemoryLegend: View {
     var body: some View {
         let breakdown = MemoryBreakdown(monitor: monitor)
         HStack(spacing: 10) {
-            item(swatch: Theme.text1.opacity(0.95), label: "Servers", value: amount(breakdown.devServers))
-            item(swatch: Theme.text1.opacity(0.12), label: "Other apps", value: amount(breakdown.otherApps))
+            item(swatch: Theme.text1.opacity(0.95), label: L10n.text("Servers"), value: amount(breakdown.devServers))
+            item(swatch: Theme.text1.opacity(0.12), label: L10n.text("Other apps"), value: amount(breakdown.otherApps))
             if let total = breakdown.total {
-                item(swatch: Theme.memoryTrack, label: "Free", value: "\(Format.total(breakdown.free).number) of \(amount(total))")
+                item(swatch: Theme.memoryTrack, label: L10n.text("Free"), value: L10n.format("%@ of %@", Format.total(breakdown.free).number, amount(total)))
             }
             Spacer(minLength: 0)
         }
@@ -606,7 +606,7 @@ struct MemoryLegend: View {
 
     private func item(swatch: Color, label: String, value: String) -> some View {
         HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 1.5).fill(swatch).frame(width: 8, height: label == "Servers" ? 8 : 4)
+            RoundedRectangle(cornerRadius: 1.5).fill(swatch).frame(width: 8, height: label == L10n.text("Servers") ? 8 : 4)
             Text(label).font(Theme.caption).foregroundStyle(Theme.text2)
             Text(value).font(Theme.monoCaption).foregroundStyle(Theme.text3)
         }

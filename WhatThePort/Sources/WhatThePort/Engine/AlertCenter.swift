@@ -36,9 +36,9 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         let actions = [
-            UNNotificationAction(identifier: Action.details, title: "Details", options: [.foreground]),
-            UNNotificationAction(identifier: Action.stop, title: "Stop", options: [.destructive]),
-            UNNotificationAction(identifier: Action.snooze, title: "Snooze", options: []),
+            UNNotificationAction(identifier: Action.details, title: L10n.text("Details"), options: [.foreground]),
+            UNNotificationAction(identifier: Action.stop, title: L10n.text("Stop"), options: [.destructive]),
+            UNNotificationAction(identifier: Action.snooze, title: L10n.text("Snooze"), options: []),
         ]
         center.setNotificationCategories([UNNotificationCategory(identifier: Action.category, actions: actions, intentIdentifiers: [])])
         // Before onboarding, the Leaks step asks with context instead.
@@ -67,8 +67,8 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
                 if now.timeIntervalSince(since) >= sustainFor, !kinds.contains(.memory) {
                     kinds.insert(.memory)
                     post(server, kind: .memory,
-                         title: ":\(server.port) \(server.project.name) is using \(Format.bytesString(server.memory))",
-                         body: "That's over your \(MemoryChart.trim(Double(threshold) / Format.gigabyte)) GB alert. \(context(for: server))")
+                         title: L10n.format(":%d %@ is using %@", server.port, server.project.name, Format.bytesString(server.memory)),
+                         body: L10n.format("That's over your %@ GB alert. %@", MemoryChart.trim(Double(threshold) / Format.gigabyte), context(for: server)))
                 }
             } else if Double(server.memory) < Double(threshold) * 0.9 {
                 overSince[key] = nil
@@ -78,10 +78,10 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
             // Fast growth. Re-arm once growth drops back under half the trigger.
             if defaults.bool(forKey: Preferences.leakWarnings), server.isLeaking(), !kinds.contains(.leak) {
                 kinds.insert(.leak)
-                let window = server.history.first.map { Format.duration(now.timeIntervalSince($0.time)) } ?? "10m"
+                let window = server.history.first.map { L10n.duration(now.timeIntervalSince($0.time)) } ?? L10n.text("10 min")
                 post(server, kind: .leak,
-                     title: ":\(server.port) \(server.project.name) is leaking",
-                     body: "\(server.project.framework ?? "It") grew \(Format.bytesString(UInt64(max(server.memoryGrowth, 0)))) in \(window) and is now using \(Format.bytesString(server.memory)).")
+                     title: L10n.format(":%d %@ is leaking", server.port, server.project.name),
+                     body: L10n.format("%@ grew %@ in %@ and is now using %@.", server.project.framework ?? L10n.text("It"), Format.bytesString(UInt64(max(server.memoryGrowth, 0))), window, Format.bytesString(server.memory)))
             } else if server.memoryGrowth < 250_000_000 {
                 kinds.remove(.leak)
             }
@@ -118,14 +118,14 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         guard let known = knownPorts, isAvailable, UserDefaults.standard.bool(forKey: Preferences.startStop) else { return }
         for server in servers where !known.contains(server.port) {
             let content = UNMutableNotificationContent()
-            content.title = ":\(server.port) \(server.project.name) started"
+            content.title = L10n.format(":%d %@ started", server.port, server.project.name)
             content.body = context(for: server)
             content.userInfo = ["port": server.port]
             UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "start-\(server.port)", content: content, trigger: nil))
         }
         for port in known.subtracting(ports) {
             let content = UNMutableNotificationContent()
-            content.title = ":\(port) stopped"
+            content.title = L10n.format(":%d stopped", port)
             UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "stop-\(port)", content: content, trigger: nil))
         }
     }
@@ -135,9 +135,9 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         guard isAvailable, !servers.isEmpty else { return }
         let content = UNMutableNotificationContent()
         let names = servers.map { ":\($0.port) \($0.project.name)" }.joined(separator: ", ")
-        let count = servers.count == 1 ? "1 server" : "\(servers.count) servers"
-        content.title = stopped ? "Stopped \(count)" : "\(count) can be cleaned up"
-        content.body = names + " · " + Format.bytesString(servers.reduce(0) { $0 + $1.memory }) + (stopped ? " freed" : "")
+        let count = L10n.format("%d %@", servers.count, L10n.text(servers.count == 1 ? "server" : "servers"))
+        content.title = stopped ? L10n.format("Stopped %@", count) : L10n.format("%@ can be cleaned up", count)
+        content.body = names + " · " + Format.bytesString(servers.reduce(0) { $0 + $1.memory }) + (stopped ? L10n.text(" freed") : "")
         if servers.count == 1 { content.userInfo = ["port": servers[0].port] }
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "cleanup-\(Date().timeIntervalSince1970)", content: content, trigger: nil))
     }
@@ -155,17 +155,17 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
             let status = await center.notificationSettings().authorizationStatus
             guard status == .authorized || status == .provisional else { return }
             let content = UNMutableNotificationContent()
-            content.title = "WTP now has TUI"
+            content.title = L10n.text("WTP now has TUI")
             content.body = CommandLineTool.state == .installed
-                ? "Type wtp in any terminal to see and stop your servers."
-                : "See and stop your servers from any terminal. Click to add the wtp command."
+                ? L10n.text("Type wtp in any terminal to see and stop your servers.")
+                : L10n.text("See and stop your servers from any terminal. Click to add the wtp command.")
             content.userInfo = ["announcement": "tui"]
             try? await center.add(UNNotificationRequest(identifier: "announcement-tui", content: content, trigger: nil))
         }
     }
 
     private func context(for server: Server) -> String {
-        [server.project.branch, server.agent.map { "\($0.kind.rawValue) session" }].compactMap { $0 }.joined(separator: " · ")
+        [server.project.branch, server.agent.map { L10n.format("%@ session", $0.kind.rawValue) }].compactMap { $0 }.joined(separator: " · ")
     }
 
     // MARK: - UNUserNotificationCenterDelegate

@@ -37,7 +37,7 @@ struct SettingsView: View {
             List(SettingsPane.allCases, selection: $pane) { pane in
                 HStack(spacing: 10) {
                     DotGridView(glyph: pane.glyph, size: 16)
-                    Text(pane.rawValue).font(Theme.body)
+                    Text(L10n.text(pane.rawValue)).font(Theme.body)
                 }
                 .tag(pane)
             }
@@ -55,7 +55,7 @@ struct SettingsView: View {
             }
             .formStyle(.grouped)
             .font(Theme.body)
-            .navigationTitle(pane?.rawValue ?? "Settings")
+            .navigationTitle(L10n.text(pane?.rawValue ?? "Settings"))
         }
         .frame(width: 740, height: 560)
     }
@@ -64,6 +64,7 @@ struct SettingsView: View {
 // MARK: - General
 
 private struct GeneralPane: View {
+    @AppStorage(Preferences.language) private var language = InterfaceLanguage.system.rawValue
     @AppStorage(Preferences.iconStyle) private var iconStyle = Preferences.IconStyle.colonCount.rawValue
     @AppStorage(Preferences.editor) private var editor = "auto"
     @AppStorage(Preferences.terminal) private var terminal = "com.apple.Terminal"
@@ -75,7 +76,14 @@ private struct GeneralPane: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Launch at login", isOn: $launchAtLogin)
+                Picker(L10n.text("Language"), selection: $language) {
+                    ForEach(InterfaceLanguage.allCases, id: \.rawValue) { Text($0.label).tag($0.rawValue) }
+                }
+                Text(L10n.text("Restart WhatThePort to apply the language change."))
+                    .font(Theme.caption).foregroundStyle(.secondary)
+            }
+            Section {
+                Toggle(L10n.text("Launch at login"), isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, enabled in
                         do {
                             if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
@@ -84,47 +92,47 @@ private struct GeneralPane: View {
                         }
                     }
                 Picker(selection: $iconStyle) {
-                    ForEach(Preferences.IconStyle.allCases, id: \.rawValue) { Text($0.label).tag($0.rawValue) }
+                    ForEach(Preferences.IconStyle.allCases, id: \.rawValue) { Text(L10n.text($0.label)).tag($0.rawValue) }
                 } label: {
-                    SettingLabel("Menu bar icon", caption: "Unlit dots stay hidden until there's something to show")
+                    SettingLabel(L10n.text("Menu bar icon"), caption: L10n.text("Unlit dots stay hidden until there's something to show"))
                 }
                 .pickerStyle(.segmented)
             }
-            Section("Opening") {
-                Picker("Open code in", selection: $editor) {
-                    Text("Automatic").tag("auto")
+            Section(L10n.text("Opening")) {
+                Picker(L10n.text("Open code in"), selection: $editor) {
+                    Text(L10n.text("Automatic")).tag("auto")
                     ForEach(EditorLauncher.installedEditors, id: \.id) { Text($0.name).tag($0.id) }
                     Text("Finder").tag("finder")
                 }
                 Picker(selection: $terminal) {
                     ForEach(TerminalLauncher.installed, id: \.id) { Text($0.name).tag($0.id) }
                 } label: {
-                    SettingLabel("Resume sessions in", caption: "Terminal used by “Resume in Terminal”")
+                    SettingLabel(L10n.text("Resume sessions in"), caption: L10n.text("Terminal used by “Resume in Terminal”"))
                 }
                 Toggle(isOn: $hotkey) {
-                    SettingLabel("Show popover with ⌥⌘P", caption: "Global shortcut")
+                    SettingLabel(L10n.text("Show popover with ⌥⌘P"), caption: L10n.text("Global shortcut"))
                 }
                 .onChange(of: hotkey) { _, enabled in HotKey.shared.setEnabled(enabled) }
             }
-            Section("Terminal") {
+            Section(L10n.text("Terminal")) {
                 CommandLineToolRow()
             }
-            Section("Scanning") {
-                Picker("Scan every", selection: $scanInterval) {
-                    Text("1 second").tag(1.0)
-                    Text("2 seconds").tag(2.0)
-                    Text("5 seconds").tag(5.0)
-                    Text("10 seconds").tag(10.0)
+            Section(L10n.text("Scanning")) {
+                Picker(L10n.text("Scan every"), selection: $scanInterval) {
+                    Text(L10n.text("1 second")).tag(1.0)
+                    Text(L10n.text("2 seconds")).tag(2.0)
+                    Text(L10n.text("5 seconds")).tag(5.0)
+                    Text(L10n.text("10 seconds")).tag(10.0)
                 }
             }
             Section {
                 Toggle(isOn: Binding(get: { shareUsage }, set: Usage.setSharing)) {
-                    SettingLabel("Share anonymous usage", caption: "Once a day: that the app ran and which features you used")
+                    SettingLabel(L10n.text("Share anonymous usage"), caption: L10n.text("Once a day: that the app ran and which features you used"))
                 }
             } header: {
-                Text("Privacy")
+                Text(L10n.text("Privacy"))
             } footer: {
-                Text("Feature names only, like Clean up or Stop. Never your servers, projects, files or anything about your Mac.")
+                Text(L10n.text("Feature names only, like Clean up or Stop. Never your servers, projects, files or anything about your Mac."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
@@ -139,15 +147,15 @@ private struct CommandLineToolRow: View {
 
     var body: some View {
         HStack {
-            SettingLabel("wtp command", caption: caption)
+            SettingLabel(L10n.text("wtp command"), caption: caption)
             Spacer()
             switch state {
             case .installed:
-                Button("Remove") { run(CommandLineTool.uninstall) }
+                Button(L10n.text("Remove")) { run(CommandLineTool.uninstall) }
             case .other:
-                Button("Replace…") { run(CommandLineTool.install) }
+                Button(L10n.text("Replace…")) { run(CommandLineTool.install) }
             case .notInstalled, .unavailable:
-                Button("Install…") { run(CommandLineTool.install) }
+                Button(L10n.text("Install…")) { run(CommandLineTool.install) }
                     .disabled(state == .unavailable)
             }
         }
@@ -156,15 +164,15 @@ private struct CommandLineToolRow: View {
     }
 
     private var caption: String {
-        if let error { return "Couldn’t update \(CommandLineTool.linkPath): \(error)" }
+        if let error { return L10n.format("Couldn’t update %@: %@", CommandLineTool.linkPath, error) }
         switch state {
-        case .installed: return "Type wtp in any terminal to see and stop your servers"
-        case .notInstalled: return "Adds wtp to see and stop your servers from any terminal"
-        case .unavailable: return "Move WhatThePort to Applications to add the wtp command"
+        case .installed: return L10n.text("Type wtp in any terminal to see and stop your servers")
+        case .notInstalled: return L10n.text("Adds wtp to see and stop your servers from any terminal")
+        case .unavailable: return L10n.text("Move WhatThePort to Applications to add the wtp command")
         case .other(let path):
             return FileManager.default.fileExists(atPath: path)
-                ? "\(CommandLineTool.linkPath) is another program: \((path as NSString).abbreviatingWithTildeInPath)"
-                : "wtp points to a copy of WhatThePort that’s no longer there"
+                ? L10n.format("%@ is another program: %@", CommandLineTool.linkPath, (path as NSString).abbreviatingWithTildeInPath)
+                : L10n.text("wtp points to a copy of WhatThePort that’s no longer there")
         }
     }
 
@@ -184,8 +192,8 @@ private struct AlertsPane: View {
 
     var body: some View {
         Form {
-            Section("Memory") {
-                LabeledContent("Alert when a server uses more than") {
+            Section(L10n.text("Memory")) {
+                LabeledContent(L10n.text("Alert when a server uses more than")) {
                     HStack(spacing: 6) {
                         TextField("", value: $thresholdGB, format: .number.precision(.fractionLength(0...1)))
                             .textFieldStyle(.roundedBorder)
@@ -197,22 +205,22 @@ private struct AlertsPane: View {
                     }
                 }
                 Toggle(isOn: $leakWarnings) {
-                    SettingLabel("Warn about leaks", caption: "Grows more than 500 MB in 10 minutes")
+                    SettingLabel(L10n.text("Warn about leaks"), caption: L10n.text("Grows more than 500 MB in 10 minutes"))
                 }
-                Picker("Snooze for", selection: $snoozeMinutes) {
-                    Text("15 minutes").tag(15)
-                    Text("1 hour").tag(60)
-                    Text("4 hours").tag(240)
-                    Text("1 day").tag(1440)
+                Picker(L10n.text("Snooze for"), selection: $snoozeMinutes) {
+                    Text(L10n.text("15 minutes")).tag(15)
+                    Text(L10n.text("1 hour")).tag(60)
+                    Text(L10n.text("4 hours")).tag(240)
+                    Text(L10n.text("1 day")).tag(1440)
                 }
             }
-            Section("Activity") {
+            Section(L10n.text("Activity")) {
                 Toggle(isOn: $startStop) {
-                    SettingLabel("Server started or stopped", caption: "Off by default: dev servers restart a lot")
+                    SettingLabel(L10n.text("Server started or stopped"), caption: L10n.text("Off by default: dev servers restart a lot"))
                 }
             }
             Section {
-                Button("Open Notification Settings…") {
+                Button(L10n.text("Open Notification Settings…")) {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
                         NSWorkspace.shared.open(url)
                     }
@@ -237,37 +245,37 @@ private struct CleanUpPane: View {
         Form {
             Section {
                 Picker(selection: $mode) {
-                    ForEach(Preferences.CleanUpMode.allCases, id: \.rawValue) { Text($0.label).tag($0.rawValue) }
+                    ForEach(Preferences.CleanUpMode.allCases, id: \.rawValue) { Text(L10n.text($0.label)).tag($0.rawValue) }
                 } label: {
-                    SettingLabel("When servers qualify", caption: "Ask lists them under Clean up. Automatic stops them for you.")
+                    SettingLabel(L10n.text("When servers qualify"), caption: L10n.text("Ask lists them under Clean up. Automatic stops them for you."))
                 }
                 .pickerStyle(.segmented)
                 Toggle(isOn: $notify) {
-                    SettingLabel("Send a notification", caption: "When new servers qualify, or after they're stopped automatically")
+                    SettingLabel(L10n.text("Send a notification"), caption: L10n.text("When new servers qualify, or after they're stopped automatically"))
                 }
             }
-            Section("Suggest stopping servers that") {
-                Toggle("Belong to a deleted worktree", isOn: $deletedWorktree)
+            Section(L10n.text("Suggest stopping servers that")) {
+                Toggle(L10n.text("Belong to a deleted worktree"), isOn: $deletedWorktree)
                 Picker(selection: $idleHours) {
-                    ForEach([1, 2, 4, 8, 24], id: \.self) { Text($0 == 1 ? "1 hour" : "\($0) hours").tag($0) }
+                    ForEach([1, 2, 4, 8, 24], id: \.self) { Text($0 == 1 ? L10n.text("1 hour") : L10n.format("%d hours", $0)).tag($0) }
                 } label: {
-                    SettingLabel("Have been idle for", caption: "No CPU and no open connections")
+                    SettingLabel(L10n.text("Have been idle for"), caption: L10n.text("No CPU and no open connections"))
                 }
-                Picker("Have been running for", selection: $runningDays) {
-                    ForEach([1, 3, 7, 14], id: \.self) { Text($0 == 1 ? "1 day" : "\($0) days").tag($0) }
+                Picker(L10n.text("Have been running for"), selection: $runningDays) {
+                    ForEach([1, 3, 7, 14], id: \.self) { Text($0 == 1 ? L10n.text("1 day") : L10n.format("%d days", $0)).tag($0) }
                 }
             }
-            Section("Never stop") {
-                LabeledContent("Protected processes") {
+            Section(L10n.text("Never stop")) {
+                LabeledContent(L10n.text("Protected processes")) {
                     TokenEditor(tokens: $protected)
                 }
                 .onChange(of: protected) { _, value in UserDefaults.standard.set(value, forKey: Preferences.protectedProcesses) }
             }
-            Section("Stopping") {
+            Section(L10n.text("Stopping")) {
                 Picker(selection: $forceQuitSeconds) {
-                    ForEach([1.0, 3.0, 5.0, 10.0], id: \.self) { Text("\(Int($0)) seconds").tag($0) }
+                    ForEach([1.0, 3.0, 5.0, 10.0], id: \.self) { Text(L10n.format("%d seconds", Int($0))).tag($0) }
                 } label: {
-                    SettingLabel("Force quit after", caption: "Sends SIGTERM to the whole process tree first")
+                    SettingLabel(L10n.text("Force quit after"), caption: L10n.text("Sends SIGTERM to the whole process tree first"))
                 }
             }
         }
@@ -284,11 +292,11 @@ private struct PortsPane: View {
 
     var body: some View {
         Form {
-            Section("Ports") {
-                LabeledContent("Watch ports") {
+            Section(L10n.text("Ports")) {
+                LabeledContent(L10n.text("Watch ports")) {
                     HStack(spacing: 6) {
                         TextField("", value: $minPort, format: .number.grouping(.never)).frame(width: 64)
-                        Text("to").font(Theme.body).foregroundStyle(.secondary)
+                        Text(L10n.text("to")).font(Theme.body).foregroundStyle(.secondary)
                         TextField("", value: $maxPort, format: .number.grouping(.never)).frame(width: 64)
                     }
                     .textFieldStyle(.roundedBorder)
@@ -298,21 +306,21 @@ private struct PortsPane: View {
                 .onSubmit { commitPorts() }
             }
             Section {
-                LabeledContent("Watch processes") {
+                LabeledContent(L10n.text("Watch processes")) {
                     TokenEditor(tokens: $processes)
                 }
                 .onChange(of: processes) { old, new in
                     Set(old).subtracting(new).forEach(monitor.removeFromAllowlist)
                     Set(new).subtracting(old).forEach(monitor.addToAllowlist)
                 }
-                Button("Reset to defaults") {
+                Button(L10n.text("Reset to defaults")) {
                     monitor.resetAllowlist()
                     processes = monitor.allowlist.sorted()
                 }
             } header: {
-                Text("Processes")
+                Text(L10n.text("Processes"))
             } footer: {
-                Text("Only servers run by these processes show up.").foregroundStyle(.secondary)
+                Text(L10n.text("Only servers run by these processes show up.")).foregroundStyle(.secondary)
             }
         }
         .onAppear {
@@ -342,37 +350,37 @@ private struct IntegrationsPane: View {
 
     var body: some View {
         Form {
-            Section("Coding agents") {
+            Section(L10n.text("Coding agents")) {
                 Toggle(isOn: $claude) {
-                    SettingLabel("Claude Code", caption: ToolDetection.claude ? "Link servers to the session that started them" : "Not found in ~/.claude")
+                    SettingLabel("Claude Code", caption: ToolDetection.claude ? L10n.text("Link servers to the session that started them") : L10n.text("Not found in ~/.claude"))
                 }
                 Toggle(isOn: $codex) {
-                    SettingLabel("Codex", caption: ToolDetection.codex ? "Link servers to Codex threads" : "Not found in ~/.codex")
+                    SettingLabel("Codex", caption: ToolDetection.codex ? L10n.text("Link servers to Codex threads") : L10n.text("Not found in ~/.codex"))
                 }
                 Toggle(isOn: $conductor) {
-                    SettingLabel("Conductor", caption: ToolDetection.conductor ? "Show workspace names" : "Not installed")
+                    SettingLabel("Conductor", caption: ToolDetection.conductor ? L10n.text("Show workspace names") : L10n.text("Not installed"))
                 }
             }
             Section("Git") {
-                Toggle("Show branch names", isOn: $branches)
+                Toggle(L10n.text("Show branch names"), isOn: $branches)
             }
             Section {
                 Toggle(isOn: $previews) {
-                    SettingLabel("Vercel previews", caption: "Preview button for each branch, from Vercel's GitHub deployments")
+                    SettingLabel(L10n.text("Vercel previews"), caption: L10n.text("Preview button for each branch, from Vercel's GitHub deployments"))
                 }
                 Toggle(isOn: $pullRequests) {
-                    SettingLabel("Pull requests", caption: "Show the pull request for each branch")
+                    SettingLabel(L10n.text("Pull requests"), caption: L10n.text("Show the pull request for each branch"))
                 }
             } header: {
                 Text("GitHub")
             } footer: {
-                Text(GitHubLookup.isAvailable ? "Uses the GitHub CLI you're already signed in to." : "Needs the GitHub CLI (gh), which wasn't found.")
+                Text(GitHubLookup.isAvailable ? L10n.text("Uses the GitHub CLI you're already signed in to.") : L10n.text("Needs the GitHub CLI (gh), which wasn't found."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
             .disabled(!GitHubLookup.isAvailable)
             Section {
-                Text("Agent and Git details come from local files only. The GitHub options above and app update checks use the network.")
+                Text(L10n.text("Agent and Git details come from local files only. The GitHub options above and app update checks use the network."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
@@ -393,7 +401,7 @@ enum ToolDetection {
 private struct AboutPane: View {
     @ObservedObject private var updater = AppUpdater.shared
     private let links: [(label: String, value: String, url: String)] = [
-        ("Website", "tomjohn.design", "https://www.tomjohn.design"),
+        (L10n.text("Website"), "tomjohn.design", "https://www.tomjohn.design"),
         ("LinkedIn", "in/tomjohndesign", "https://www.linkedin.com/in/tomjohndesign"),
         ("X", "@tomjohndesign", "https://x.com/tomjohndesign"),
         ("GitHub", "tomjohndesign/what-the-port", "https://github.com/tomjohndesign/what-the-port"),
@@ -403,7 +411,7 @@ private struct AboutPane: View {
         let info = Bundle.main.infoDictionary
         let short = info?["CFBundleShortVersionString"] as? String ?? "dev"
         let build = info?["CFBundleVersion"] as? String
-        return build.map { "Version \(short) (\($0))" } ?? "Version \(short)"
+        return build.map { L10n.format("Version %@ (%@)", short, $0) } ?? L10n.format("Version %@", short)
     }
 
     var body: some View {
@@ -415,16 +423,16 @@ private struct AboutPane: View {
                         Text("WhatThePort").font(Theme.displaySans)
                         Text(version).font(Theme.monoCaption).foregroundStyle(.secondary)
                     }
-                    Text("Every dev server on your Mac, in the menu bar.").foregroundStyle(.secondary)
+                    Text(L10n.text("Every dev server on your Mac, in the menu bar.")).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
             }
-            Section("Updates") {
+            Section(L10n.text("Updates")) {
                 if let reason = updater.unavailableReason {
                     Text(reason).foregroundStyle(.secondary)
                 } else {
-                    Toggle("Automatically check for updates", isOn: Binding(
+                    Toggle(L10n.text("Automatically check for updates"), isOn: Binding(
                         get: { updater.automaticallyChecksForUpdates },
                         set: updater.setAutomaticallyChecksForUpdates
                     ))
@@ -432,42 +440,42 @@ private struct AboutPane: View {
                         get: { updater.automaticallyDownloadsUpdates },
                         set: updater.setAutomaticallyDownloadsUpdates
                     )) {
-                        SettingLabel("Download and install updates automatically", caption: "Installs when you quit. Some updates may ask to restart the app.")
+                        SettingLabel(L10n.text("Download and install updates automatically"), caption: L10n.text("Installs when you quit. Some updates may ask to restart the app."))
                     }
                     .disabled(!updater.automaticallyChecksForUpdates)
                 }
                 HStack {
-                    Button("Check for Updates…", action: updater.checkForUpdates)
+                    Button(L10n.text("Check for Updates…"), action: updater.checkForUpdates)
                         .disabled(!updater.canCheckForUpdates)
                     Spacer()
                     if let date = updater.lastUpdateCheckDate {
-                        Text("Last checked \(date.formatted(date: .abbreviated, time: .shortened))")
+                        Text(L10n.format("Last checked %@", date.formatted(.dateTime.locale(L10n.locale))))
                             .font(Theme.caption).foregroundStyle(.secondary)
                     }
                 }
             }
             Section {
-                ExternalLinkRow(label: "Report a bug", value: "GitHub Issues", url: FeedbackLink.issue(.bug))
-                ExternalLinkRow(label: "Suggest a feature", value: "GitHub Issues", url: FeedbackLink.issue(.feature))
+                ExternalLinkRow(label: L10n.text("Report a bug"), value: "GitHub Issues", url: FeedbackLink.issue(.bug))
+                ExternalLinkRow(label: L10n.text("Suggest a feature"), value: "GitHub Issues", url: FeedbackLink.issue(.feature))
             } header: {
-                Text("Feedback")
+                Text(L10n.text("Feedback"))
             } footer: {
-                Text("Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it.")
+                Text(L10n.text("Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
             Section {
-                ExternalLinkRow(label: "Enjoying WTP?", value: "Tip jar", url: FeedbackLink.tip)
+                ExternalLinkRow(label: L10n.text("Enjoying WTP?"), value: L10n.text("Tip jar"), url: FeedbackLink.tip)
             } header: {
-                Text("Support")
+                Text(L10n.text("Support"))
             } footer: {
-                Text("WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe.")
+                Text(L10n.text("WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Made by Tomjohn") {
+            Section(L10n.text("Made by Tomjohn")) {
                 ForEach(links, id: \.label) { link in
-                    ExternalLinkRow(label: link.label, value: link.value, url: URL(string: link.url)!)
+                    ExternalLinkRow(label: L10n.text(link.label), value: link.value, url: URL(string: link.url)!)
                 }
             }
         }
@@ -616,7 +624,7 @@ struct TokenEditor: View {
                 .padding(.vertical, 3)
                 .background(Theme.fill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
-            TextField("Add…", text: $draft)
+            TextField(L10n.text("Add…"), text: $draft)
                 .textFieldStyle(.roundedBorder)
                 .font(Theme.body)
                 .lineLimit(1)

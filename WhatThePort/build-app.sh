@@ -35,6 +35,7 @@ cp "${BIN_DIR}/${APP_NAME}" "${CONTENTS_DIR}/MacOS/"
 cp .build/configured-Info.plist "${CONTENTS_DIR}/Info.plist"
 cp -R "Resources/Fonts" "${CONTENTS_DIR}/Resources/"
 cp "Resources/AppIcon.icns" "${CONTENTS_DIR}/Resources/"
+ditto "${BIN_DIR}/WhatThePort_WhatThePort.bundle" "${CONTENTS_DIR}/Resources/WhatThePort_WhatThePort.bundle"
 ditto "${FRAMEWORK}" "${CONTENTS_DIR}/Frameworks/Sparkle.framework"
 
 # Sign from the inside out. Preserve Sparkle's helper entitlements.
