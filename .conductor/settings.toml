@@ -1,0 +1,11 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+archive = ""
+setup = "cd WhatThePort && swift build"
+
+[scripts.run.run]
+available_in = "local"
+command = "cd WhatThePort && swift run"
+default = true
+icon = "play"
