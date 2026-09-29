@@ -15,7 +15,7 @@
 "%d hours" = "%d 小时";
 "%d more" = "另外 %d 项";
 "%d of 2 ready" = "%d / 2 项已就绪";
-"%d of 4 found" = "已找到 %d / 4 项";
+"%d of %d found" = "已找到 %d / %d 项";
 "%d seconds" = "%d 秒";
 "%dd" = "%d 天";
 "%dh" = "%d 小时";

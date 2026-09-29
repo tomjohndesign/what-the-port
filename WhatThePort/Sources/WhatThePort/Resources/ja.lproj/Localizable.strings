@@ -15,7 +15,7 @@
 "%d hours" = "%d 時間";
 "%d more" = "ほか %d 件";
 "%d of 2 ready" = "2 件中 %d 件が完了";
-"%d of 4 found" = "4 件中 %d 件を検出";
+"%d of %d found" = "%2$d 件中 %1$d 件を検出";
 "%d seconds" = "%d 秒";
 "%dd" = "%d日";
 "%dh" = "%d時間";

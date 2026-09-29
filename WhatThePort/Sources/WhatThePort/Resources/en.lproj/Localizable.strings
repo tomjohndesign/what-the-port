@@ -15,7 +15,7 @@
 "%d hours" = "%d hours";
 "%d more" = "%d more";
 "%d of 2 ready" = "%d of 2 ready";
-"%d of 4 found" = "%d of 4 found";
+"%d of %d found" = "%d of %d found";
 "%d seconds" = "%d seconds";
 "%dd" = "%dd";
 "%dh" = "%dh";
