@@ -2,6 +2,7 @@
 title: Dev servers eating your Mac’s RAM: finding leaks in Next.js, Vite and Node
 description: Why local dev servers grow to gigabytes of memory, how to measure a whole server’s process tree on macOS, how to tell a leak from normal growth, and what to do about it.
 published: 2026-09-25
+updated: 2026-09-29
 order: 7
 keywords: next dev memory leak, next.js dev server high memory usage, turbopack memory usage, too many node processes mac, kill all node processes mac, your system has run out of application memory, node memory leak mac
 ---
@@ -64,7 +65,7 @@ This stops every process named `node` that you own: every dev server, but also a
 
 ## Get told before your fans do
 
-[WhatThePort](/) is a free menu bar app that tracks the memory and CPU of every dev server on your Mac, summed across its whole process tree, with ten minutes of history per server. When a server passes 2 GB, or grows more than 500 MB in ten minutes, its memory reading and the menu bar icon turn amber and you get one notification with **Details**, **Stop** and **Snooze**. The thresholds are adjustable in Settings.
+[WhatThePort](/) is a free menu bar app that tracks the memory and CPU of every dev server on your Mac, summed across its own process tree, with ten minutes of history per server. When a server passes 2 GB, or grows more than 500 MB in ten minutes, its memory reading and the menu bar icon turn amber and you get one notification with **Details**, **Stop** and **Snooze**. The thresholds are adjustable in Settings. Sibling servers under a shared monorepo runner are measured separately. If one process listens on several ports, its usage appears in each corresponding row but is counted only once in the total. The readings use macOS physical footprint, so they can differ from the RSS figures printed by `ps`.
 
 The popover also shows a whole-Mac memory bar split into dev servers, other apps and free memory, so you can see at a glance how much of your RAM your servers are using.
 

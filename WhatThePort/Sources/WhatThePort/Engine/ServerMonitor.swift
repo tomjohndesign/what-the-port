@@ -154,8 +154,8 @@ final class ServerMonitor: ObservableObject {
 
     // MARK: - Derived
 
-    var totalMemory: UInt64 { servers.reduce(0) { $0 + $1.memory } }
-    var totalCPU: Double { servers.reduce(0) { $0 + $1.cpu } }
+    var totalMemory: UInt64 { ServerResources(servers).memory }
+    var totalCPU: Double { ServerResources(servers).cpu }
     /// Servers' CPU as a share of the whole Mac, comparable with `systemCPU`.
     var serversShareOfCPU: Double { totalCPU / Double(max(ProcessInfo.processInfo.activeProcessorCount, 1)) }
     var needsAttention: Bool { servers.contains { $0.status(alertThreshold: alertThreshold) == .attention } }

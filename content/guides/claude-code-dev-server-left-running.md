@@ -2,6 +2,7 @@
 title: Claude Code left a dev server running? Find and clean up agent-started servers
 description: Coding agents like Claude Code, Codex and Cursor start dev servers in the background and leave them running. How to find which agent session started each server, stop the leftovers, and stop agents starting duplicates.
 published: 2026-09-25
+updated: 2026-09-29
 order: 4
 keywords: claude code dev server still running, claude code background process, claude code port already in use, codex dev server, cursor agent starts new dev server, zombie node processes, orphaned dev servers
 ---
@@ -78,7 +79,7 @@ Two more things help:
 
 ## With WhatThePort
 
-[WhatThePort](/) is a free menu bar app built for this. It links every server to the Claude Code, Codex or Conductor session that started it, using the same environment variables and session files described above. Click a server to see its session, branch, folder and command, then resume the conversation or stop the server and its whole process tree.
+[WhatThePort](/) is a free menu bar app built for this. It links every server to the Claude Code, Codex or Conductor session that started it, using the same environment variables and session files described above. Click a server to see its session, branch, folder and command, then resume the conversation or stop the server and its own process tree.
 
 **Clean up** preselects servers from deleted worktrees and servers that have been idle for hours, so the leftovers from last week’s agent sessions go in one click. You can set it to ask first or to run automatically; servers that are leaking memory are never stopped automatically, and Postgres and Redis are protected by default.
 

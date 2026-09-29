@@ -11,6 +11,7 @@ struct ServerProcess: Identifiable, Equatable {
     let name: String
     let depth: Int
     let memory: UInt64
+    var cpu: Double = 0
     var id: pid_t { pid }
 }
 

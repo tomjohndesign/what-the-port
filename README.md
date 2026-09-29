@@ -22,13 +22,13 @@ Servers launched by Claude Code, Codex, or Conductor link back to the session th
 
 ### Notices before your fans do
 
-When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the whole process tree. Adjust thresholds and snooze alerts in Settings.
+When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the server’s own process tree. Adjust thresholds and snooze alerts in Settings.
 
 ![Marketing demo showing a rising memory chart and the amber alert threshold for a development server](docs/images/leaks.jpg)
 
 ### Stops the ones you forgot
 
-**Clean up** adds checkboxes to the server list and preselects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops each whole process tree. Database processes such as Postgres and Redis are protected by default.
+**Clean up** adds checkboxes to the server list and preselects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops each server’s own process tree. Database processes such as Postgres and Redis are protected by default.
 
 Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Leaking servers are never stopped automatically.
 
@@ -48,10 +48,10 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 
 - **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with stable port colors and a whole-Mac memory bar for servers, other apps, and free RAM
 - **Knows what started it** - Links servers to the Claude Code, Codex or Conductor session that launched them
-- **Resource charts** - 10 minutes of memory and CPU history per server, summed across its whole process tree
+- **Resource charts** - 10 minutes of memory and CPU history per server, summed across its own process tree
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
-- **Stop and restart** - Stops the whole process tree; restart reruns the original command in the same folder
+- **Stop and restart** - Stops the server’s own process tree; restart reruns the original command in the same folder
 - **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
 - **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
@@ -116,7 +116,7 @@ Open Settings from the gear in the popover (⌘,):
 
 ## How It Works
 
-WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds.
+WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Stopping or restarting that process affects all ports it serves.
 
 ## Privacy
 

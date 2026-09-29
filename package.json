@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
+    "test:resources": "node --experimental-strip-types scripts/check-server-resources.mjs",
     "prebuild": "node scripts/check-download.mjs && node scripts/app-strings.mjs --check && node scripts/check-usage-features.mjs && node scripts/check-tip.mjs",
     "build": "next build",
     "start": "next start"

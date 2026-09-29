@@ -10,6 +10,8 @@ struct ListeningSocket {
 
 struct SocketScan {
     var listening: [ListeningSocket] = []
+    /// Keep all owners of shared sockets, even though the UI has one row per port.
+    var listenerPidsByPort: [Int: Set<pid_t>] = [:]
     /// Inbound established connections, keyed by local port.
     var inboundConnections: [Int: Int] = [:]
 }
@@ -17,7 +19,10 @@ struct SocketScan {
 /// Reads TCP sockets via `lsof`'s machine-readable output.
 enum SocketScanner {
     static func scan() -> SocketScan {
-        let output = runLsof()
+        parse(runLsof())
+    }
+
+    static func parse(_ output: String) -> SocketScan {
         var result = SocketScan()
         var byPort: [Int: ListeningSocket] = [:]
 
@@ -30,6 +35,7 @@ enum SocketScanner {
             guard !name.isEmpty else { return }
             if state == "LISTEN" {
                 if let port = localPort(of: name) {
+                    result.listenerPidsByPort[port, default: []].insert(pid)
                     let address = String(name[..<(name.lastIndex(of: ":") ?? name.endIndex)])
                     if var existing = byPort[port] {
                         if existing.pid == pid, !existing.addresses.contains(address) {

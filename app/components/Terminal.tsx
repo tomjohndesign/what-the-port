@@ -14,6 +14,8 @@ import {
   formatTotal,
   memoryChart,
   portColor,
+  serverResources,
+  stoppedPorts,
 } from './servers'
 
 // `wtp` in a draggable terminal window, working on the demo's sample servers.
@@ -429,7 +431,8 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
 
   // MARK: Actions
 
-  const stop = (ports: string[]) => {
+  const stop = (selectedPorts: string[]) => {
+    const ports = stoppedPorts(servers, selectedPorts)
     setRunning((current) => current.filter((port) => !ports.includes(port)))
     setChecked((current) => current.filter((port) => !ports.includes(port)))
     if (page.name === 'detail' && ports.includes(page.port)) setPage({ name: 'list' })
@@ -616,7 +619,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
           if (!chosen.length) return true
           stop(chosen.map((s) => s.port))
           setCleaning(false)
-          const freed = formatMemory(chosen.reduce((sum, s) => sum + s.memory, 0))
+          const freed = formatMemory(serverResources(chosen).memory)
           show(`Stopping ${chosen.length} ${chosen.length === 1 ? 'server' : 'servers'} · freeing ${freed}`)
           return true
         }
@@ -791,9 +794,10 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
 
   function listLines(): [ReactNode[], ReactNode[]] {
     const chosen = servers.filter((s) => checked.includes(s.port))
-    const total = servers.reduce((sum, s) => sum + s.memory, 0)
-    const [number, unit] = formatTotal(cleaning ? chosen.reduce((sum, s) => sum + s.memory, 0) : total).split(' ')
-    const cpu = Math.round(servers.reduce((sum, s) => sum + s.cpu, 0) / 8)
+    const resources = serverResources(servers)
+    const total = resources.memory
+    const [number, unit] = formatTotal(cleaning ? serverResources(chosen).memory : total).split(' ')
+    const cpu = Math.round(resources.cpu / 8)
     const free = SYSTEM_MEMORY - total - OTHER_MEMORY
     const share = 100 / SYSTEM_MEMORY
 
@@ -825,7 +829,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
               className={styles.tuiSegment}
               data-selected={focus}
               data-lit={cleaning ? checked.includes(s.port) || focus : focus}
-              style={{ width: `${Math.max(s.memory * share, 1.2)}%`, background: portColor(s.port) }}
+              style={{ width: `${Math.max((resources.memoryByPort.get(s.port) ?? 0) * share, 1.2)}%`, background: portColor(s.port) }}
               onClick={() => setSelected(s.port)}
             />
           )
@@ -1230,7 +1234,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     if (cleaning) {
       const chosen = servers.filter((s) => checked.includes(s.port))
       const label = chosen.length
-        ? `Stop ${chosen.length} ${chosen.length === 1 ? 'server' : 'servers'} · free ${formatMemory(chosen.reduce((sum, s) => sum + s.memory, 0))}`
+        ? `Stop ${chosen.length} ${chosen.length === 1 ? 'server' : 'servers'} · free ${formatMemory(serverResources(chosen).memory)}`
         : 'Stop servers'
       return hints([['space', 'Select'], ['a', 'All'], ['⏎', label, chosen.length ? 'red' : 'off'], ['esc', 'Cancel']], 'f', inner)
     }

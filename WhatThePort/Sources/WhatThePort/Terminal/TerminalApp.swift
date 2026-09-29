@@ -292,7 +292,7 @@ final class TerminalApp {
         case .enter:
             let servers = visibleServers.filter { selection.contains($0.port) }
             guard !servers.isEmpty else { return }
-            let memory = servers.reduce(0) { $0 + $1.memory }
+            let memory = ServerResources(servers).memory
             servers.forEach { monitor.stop($0) }
             setCleaning(false)
             show("Stopping \(servers.count) \(servers.count == 1 ? "server" : "servers") · freeing \(Format.bytesString(memory))")
@@ -601,7 +601,7 @@ final class TerminalApp {
         let amount: (number: String, unit: String)
         let selected = visibleServers.filter { selection.contains($0.port) }
         if isCleaning {
-            amount = Format.total(selected.reduce(0) { $0 + $1.memory })
+            amount = Format.total(ServerResources(selected).memory)
         } else {
             amount = Format.total(monitor.totalMemory)
         }
@@ -638,7 +638,8 @@ final class TerminalApp {
         let capacity = Double(max(breakdown.total ?? filled, filled, 1))
         let columns = inner
 
-        var serverColumns = servers.map { max(Int((Double($0.memory) / capacity * Double(columns)).rounded()), 1) }
+        let shares = ServerResources(servers).memoryByPort
+        var serverColumns = servers.map { max(Int(((shares[$0.port] ?? 0) / capacity * Double(columns)).rounded()), 1) }
         var otherColumns = Int((Double(others) / capacity * Double(columns)).rounded())
         while serverColumns.reduce(0, +) + otherColumns > columns {
             if otherColumns > 0 {
@@ -808,7 +809,7 @@ final class TerminalApp {
             let selected = visibleServers.filter { selection.contains($0.port) }
             let stopLabel = selected.isEmpty
                 ? "Stop servers"
-                : "Stop \(selected.count) \(selected.count == 1 ? "server" : "servers") · free \(Format.bytesString(selected.reduce(0) { $0 + $1.memory }))"
+                : "Stop \(selected.count) \(selected.count == 1 ? "server" : "servers") · free \(Format.bytesString(ServerResources(selected).memory))"
             return hintsFooter([("space", "Select"), ("a", "All"), ("⏎", stopLabel), ("esc", "Cancel")],
                                destructive: selected.isEmpty ? nil : "⏎", disabled: selected.isEmpty ? "⏎" : nil)
         }

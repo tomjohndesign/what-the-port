@@ -111,7 +111,7 @@ struct ServersView: View {
         case .app(let id): return Format.bytes(monitor.otherApps.first { $0.id == id }?.memory ?? 0)
         case .rest: return Format.total(MemoryBreakdown(monitor: monitor).everythingElse)
         case nil:
-            if isCleaning { return Format.total(selectedServers.reduce(0) { $0 + $1.memory }) }
+            if isCleaning { return Format.total(ServerResources(selectedServers).memory) }
             return Format.total(monitor.totalMemory)
         }
     }
@@ -190,7 +190,7 @@ struct ServersView: View {
                 } label: {
                     Text(selection.isEmpty
                          ? L10n.text("Stop servers")
-                         : L10n.format("Stop %d %@ · free %@", selectedServers.count, L10n.counted("server", "servers", count: selectedServers.count), Format.bytesString(selectedServers.reduce(0) { $0 + $1.memory })))
+                         : L10n.format("Stop %d %@ · free %@", selectedServers.count, L10n.counted("server", "servers", count: selectedServers.count), Format.bytesString(ServerResources(selectedServers).memory)))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PillButtonStyle(kind: .destructive))
@@ -486,6 +486,7 @@ struct MemoryShareBar: View {
         GeometryReader { geometry in
             let breakdown = MemoryBreakdown(monitor: monitor)
             let apps = breakdown.topApps
+            let shares = ServerResources(servers).memoryByPort
             let segmentCount = servers.count + apps.count + (breakdown.everythingElse > 0 ? 1 : 0)
             let filled = breakdown.devServers + apps.reduce(0) { $0 + $1.memory } + breakdown.everythingElse
             let capacity = max(breakdown.total ?? filled, filled, 1)
@@ -497,7 +498,7 @@ struct MemoryShareBar: View {
                     .help(L10n.format("Free · %@", Format.bytesString(breakdown.free)))
                 HStack(spacing: spacing) {
                     ForEach(servers) { server in
-                        serverSegment(server, width: max(unit * CGFloat(server.memory), 2), height: geometry.size.height)
+                        serverSegment(server, width: max(unit * CGFloat(shares[server.port] ?? 0), 2), height: geometry.size.height)
                     }
                     ForEach(apps) { app in
                         baselineSegment(focus: .app(app.id), width: unit * CGFloat(app.memory), height: geometry.size.height,

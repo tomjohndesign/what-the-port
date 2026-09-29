@@ -118,7 +118,7 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <h2 className={styles.headline}>Stops the ones you forgot.</h2>
           <p className={styles.body}>
             Clean up selects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops
-            each whole process tree. Postgres and Redis are protected by default.
+            each server’s own process tree, keeping sibling servers separate. Postgres and Redis are protected by default.
           </p>
         </div>
       )

@@ -2,6 +2,7 @@
 title: How to see every dev server running on your Mac
 description: List every localhost server and listening port on macOS from the terminal, work out which project each one belongs to, and keep them in view from the menu bar.
 published: 2026-09-25
+updated: 2026-09-29
 order: 3
 keywords: what is running on localhost mac, list listening ports mac, see all localhost servers mac, lsof listening ports, which process is using which port macos, localhost manager mac
 ---
@@ -62,12 +63,12 @@ Add up the `rss` column (in kilobytes) for a rough total. Next.js and Storybook 
 
 The commands above answer the question once. If you run more than a couple of servers, or let coding agents start them for you, you’ll want the answer all the time.
 
-[WhatThePort](/) is a free, open-source menu bar app that does exactly what the loop above does, every two seconds: it reads listening sockets with `lsof`, then inspects each process tree for its folder, command, memory and CPU. For each server it shows:
+[WhatThePort](/) is a free, open-source menu bar app that does exactly what the loop above does, every two seconds: it reads listening sockets with `lsof`, then inspects each process tree for its folder, command, memory and CPU. Shared monorepo runners do not combine sibling servers into one tree, and totals count processes shared across ports only once. Standard Homebrew and python.org Python framework interpreters are detected too. For each server it shows:
 
 - the port, with a stable color so `:3000` always looks the same
 - the project name from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` or `Gemfile`, and the framework
 - the git branch, and whether its worktree has been deleted
-- uptime, memory and CPU for the whole process tree, with ten minutes of history
+- uptime, memory and CPU for each server’s own process tree, with ten minutes of history
 - the Claude Code, Codex or Conductor session that started it, if any
 
 Press ⌥⌘P to open it, click a server to open it in the browser, or stop it. Prefer the terminal? `wtp` shows the same list there, and `wtp list --json` prints it for scripts.

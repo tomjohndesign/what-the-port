@@ -2,6 +2,7 @@
 title: Port 3000 already in use on Mac: find what’s using it and stop it
 description: How to find the process holding port 3000 (or any port) on macOS with lsof, stop it safely, and keep forgotten dev servers from taking your ports again.
 published: 2026-09-25
+updated: 2026-09-29
 order: 1
 keywords: port 3000 already in use mac, kill process on port 3000 mac, lsof -i :3000, find process using port macos, kill-port, address already in use
 ---
@@ -119,6 +120,6 @@ The error is a symptom. The cause is that dev servers are invisible once their t
 
 ## With WhatThePort
 
-WhatThePort lives in your Mac’s menu bar and lists every dev server that’s running, by port, project name and git branch, with memory and CPU for its whole process tree. Press ⌥⌘P, find `:3000`, and you can see it’s `marketing-site` on `main`, up for two days. Hover the row and click stop: WhatThePort sends `SIGTERM` to every process in the tree, then `SIGKILL` if anything is still running a few seconds later.
+WhatThePort lives in your Mac’s menu bar and lists every dev server that’s running, by port, project name and git branch, with memory and CPU for its own process tree. Press ⌥⌘P, find `:3000`, and you can see it’s `marketing-site` on `main`, up for two days. Hover the row and click stop: WhatThePort sends `SIGTERM` to every process in the tree, then `SIGKILL` if anything is still running a few seconds later.
 
 It’s free and open source. [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later.

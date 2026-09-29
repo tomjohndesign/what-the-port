@@ -20,7 +20,7 @@ export type Server = {
   session?: { agent: Agent; title: string; id: string }
   chart: 'steady' | 'leaking' | 'flat'
   spark: string
-  processes: { command: string; memory: number }[]
+  processes: { pid: number; command: string; memory: number; cpu: number }[]
   info: [label: string, value: string][]
   cleanUp?: { reason: CleanUpReason; note: string; suggested: boolean }
   // The popover's row context, clean-up reason and running time, in the app's own phrases.
@@ -43,9 +43,9 @@ export const SERVERS: Server[] = [
     chart: 'steady',
     spark: 'M0 13 L4 12 L8 12.5 L12 10 L16 11 L20 8 L24 9 L28 7 L32 8 L36 6 L40 6.5 L44 5',
     processes: [
-      { command: 'node next dev', memory: 796 },
-      { command: 'next-server', memory: 418 },
-      { command: 'tailwindcss --watch', memory: 26 },
+      { pid: 48212, command: 'node next dev', memory: 796, cpu: 9 },
+      { pid: 48213, command: 'next-server', memory: 418, cpu: 3 },
+      { pid: 48214, command: 'tailwindcss --watch', memory: 26, cpu: 0 },
     ],
     info: [
       ['Folder', '~/conductor/workspaces/what-the-port/providence'],
@@ -70,8 +70,8 @@ export const SERVERS: Server[] = [
     chart: 'steady',
     spark: 'M0 10 L4 10.5 L8 9.5 L12 10 L16 9 L20 10 L24 9.5 L28 10 L32 9 L36 9.5 L40 9 L44 9.5',
     processes: [
-      { command: 'astro dev', memory: 571 },
-      { command: 'esbuild', memory: 41 },
+      { pid: 30877, command: 'astro dev', memory: 571, cpu: 2 },
+      { pid: 30878, command: 'esbuild', memory: 41, cpu: 0 },
     ],
     info: [
       ['Folder', '~/Sites/tomjohn.design'],
@@ -101,8 +101,8 @@ export const SERVERS: Server[] = [
     chart: 'flat',
     spark: 'M0 13 L4 13 L8 12.5 L12 13 L16 13 L20 13 L24 12.5 L28 13 L32 13 L36 13 L40 13 L44 13',
     processes: [
-      { command: 'vite', memory: 142 },
-      { command: 'esbuild', memory: 42 },
+      { pid: 51092, command: 'vite', memory: 142, cpu: 0 },
+      { pid: 51093, command: 'esbuild', memory: 42, cpu: 0 },
     ],
     info: [
       ['Folder', '~/conductor/workspaces/paper-plugins/lisbon'],
@@ -133,9 +133,9 @@ export const SERVERS: Server[] = [
     chart: 'leaking',
     spark: 'M0 16 L4 15.5 L8 14.5 L12 14 L16 12.5 L20 12 L24 10 L28 9 L32 7 L36 5.5 L40 4 L44 2',
     processes: [
-      { command: 'storybook dev -p 6006', memory: 2210 },
-      { command: 'webpack', memory: 548 },
-      { command: 'node', memory: 52 },
+      { pid: 61540, command: 'storybook dev -p 6006', memory: 2210, cpu: 30 },
+      { pid: 61541, command: 'webpack', memory: 548, cpu: 4 },
+      { pid: 61542, command: 'node', memory: 52, cpu: 0 },
     ],
     info: [
       ['Folder', '~/Code/design-system'],
@@ -164,7 +164,7 @@ export const SERVERS: Server[] = [
     }),
     chart: 'flat',
     spark: 'M0 12 L44 12',
-    processes: [{ command: 'uvicorn main:app', memory: 96 }],
+    processes: [{ pid: 22718, command: 'uvicorn main:app', memory: 96, cpu: 0 }],
     info: [
       ['Folder', '~/Code/api-fix-auth (deleted)'],
       ['Framework', 'FastAPI'],
@@ -176,6 +176,39 @@ export const SERVERS: Server[] = [
     cleanUp: { reason: 'deleted', note: 'Worktree deleted', suggested: true },
   },
 ]
+
+// Match ServerResources.swift: shared processes count once in totals and
+// contribute equal shares to each port's memory-bar segment.
+export function serverResources(servers: Server[]) {
+  const processes = new Map<number, Server['processes'][number]>()
+  const ports = new Map<number, Set<string>>()
+  for (const server of servers) {
+    for (const process of server.processes) {
+      processes.set(process.pid, process)
+      const owners = ports.get(process.pid) ?? new Set<string>()
+      owners.add(server.port)
+      ports.set(process.pid, owners)
+    }
+  }
+  let memory = 0
+  let cpu = 0
+  const memoryByPort = new Map<string, number>()
+  processes.forEach((process, pid) => {
+    memory += process.memory
+    cpu += process.cpu
+    const owners = ports.get(pid)!
+    owners.forEach((port) => {
+      memoryByPort.set(port, (memoryByPort.get(port) ?? 0) + process.memory / owners.size)
+    })
+  })
+  return { memory, cpu, memoryByPort }
+}
+
+// Closing a process closes all its listening ports. Independent siblings stay up.
+export function stoppedPorts(servers: Server[], selected: string[]) {
+  const targets = new Set(servers.filter((s) => selected.includes(s.port)).flatMap((s) => s.processes.map((p) => p.pid)))
+  return servers.filter((s) => s.processes.some((p) => targets.has(p.pid))).map((s) => s.port)
+}
 
 // Stable identities: stopping a server must not recolor the remaining ports.
 const PORT_COLORS = ['#6EC7ED', '#B599F0', '#EB9CD4', '#7D9CF2', '#7DDBE0', '#D9A3F2', '#ABC2E0']

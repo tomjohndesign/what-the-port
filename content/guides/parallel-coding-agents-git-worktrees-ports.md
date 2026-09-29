@@ -2,6 +2,7 @@
 title: Running parallel coding agents in git worktrees without port chaos
 description: When several Claude Code, Codex or Conductor agents each run a dev server from their own git worktree, ports collide and old servers pile up. How to give every worktree its own port and clean up after deleted ones.
 published: 2026-09-25
+updated: 2026-09-29
 order: 5
 keywords: git worktrees parallel agents ports, parallel claude code agents port conflict, conductor CONDUCTOR_PORT, codex concurrent sessions ports, git worktree dev server, deleted worktree process still running
 ---
@@ -73,7 +74,7 @@ Five worktrees means five copies of your framework’s dev server, each with its
 
 [WhatThePort](/) was built for exactly this setup. Its menu bar list shows every server with its port, project and **branch**, so `:55390 feat/pricing` and `:55400 fix/nav` are easy to tell apart. Each server links back to the Conductor workspace or the Claude Code or Codex session that started it, and a server whose worktree has been deleted is labelled “Worktree deleted”.
 
-**Clean up** preselects those servers, plus any that have been idle for hours, and stops their whole process trees together. Set it to Ask and WhatThePort notifies you when there’s something to clean up; set it to Automatic and it just happens.
+**Clean up** preselects those servers, plus any that have been idle for hours, and stops their own process trees together. Set it to Ask and WhatThePort notifies you when there’s something to clean up; set it to Automatic and it just happens.
 
 For agents, `wtp list --json` returns every server with its `folder`, `branch`, `url` and `session`, so an agent can find the server for its own worktree instead of starting another.
 
