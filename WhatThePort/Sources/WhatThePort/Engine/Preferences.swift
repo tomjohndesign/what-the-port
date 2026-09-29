@@ -36,6 +36,7 @@ enum Preferences {
     static let linkClaude = "integrations.claude"
     static let linkCodex = "integrations.codex"
     static let linkConductor = "integrations.conductor"
+    static let linkPane = "integrations.pane"
     static let showBranches = "integrations.branches"
     static let vercelPreviews = "integrations.vercelPreviews"
     static let githubPullRequests = "integrations.githubPullRequests"
@@ -81,6 +82,7 @@ enum Preferences {
             linkClaude: true,
             linkCodex: true,
             linkConductor: true,
+            linkPane: true,
             showBranches: true,
             // Both make network calls through `gh`, so they're opt-in.
             vercelPreviews: false,

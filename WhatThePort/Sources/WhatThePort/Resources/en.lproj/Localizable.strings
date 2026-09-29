@@ -126,6 +126,7 @@
 "Less" = "Less";
 "Link servers to Codex threads" = "Link servers to Codex threads";
 "Link servers to the session that started them" = "Link servers to the session that started them";
+"Link servers to the terminal that started them" = "Link servers to the terminal that started them";
 "MERGED" = "MERGED";
 "Made by Tomjohn" = "Made by Tomjohn";
 "Memory" = "Memory";
@@ -159,6 +160,7 @@
 "Open in Browser" = "Open in Browser";
 "Open in browser" = "Open in browser";
 "Open in editor" = "Open in editor";
+"Open in Pane" = "Open in Pane";
 "Open localhost:%@" = "Open localhost:%@";
 "Opening" = "Opening";
 "Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it." = "Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it.";

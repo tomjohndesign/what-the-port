@@ -547,7 +547,6 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
       ]
   const hiddenInfo: [string, string][] = server.info
     .filter(([label]) => !(label === 'Folder' && !server.session) && label !== 'PID' && label !== 'Git')
-    .map(([label, value]) => [label, label === 'Workspace' ? `Conductor · ${value}` : value])
   if (server.session) hiddenInfo.push(['Session ID', server.session.id])
 
   return (

@@ -356,6 +356,9 @@ final class TerminalApp {
             items.append(ServerAction(label: "Open in editor", key: "e") { EditorLauncher.open(root) })
             items.append(ServerAction(label: "Reveal in Finder", key: "f") { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: root) })
         }
+        if let workspace = server.paneWorkspace {
+            items.append(ServerAction(label: "Open in Pane", key: nil) { NSWorkspace.shared.open(workspace.link) })
+        }
         if let transcript = server.agent?.transcript {
             items.append(ServerAction(label: "Show transcript", key: nil) { NSWorkspace.shared.selectFile(transcript.path, inFileViewerRootedAtPath: "") })
         }
@@ -867,6 +870,9 @@ final class TerminalApp {
         var secondary: [Line] = []
         if let workspace = server.conductorWorkspace {
             secondary.append(row("Workspace", [Span("Conductor · \(workspace)", palette.text2)]))
+        }
+        if let workspace = server.paneWorkspace {
+            secondary.append(row("Workspace", [Span("Pane · \(workspace.name)", palette.text2)]))
         }
         // Folder moves here when Session and Branch fill the first two rows.
         if !folderIsPrimary, let folder {

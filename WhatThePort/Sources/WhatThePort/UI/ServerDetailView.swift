@@ -115,6 +115,9 @@ struct ServerDetailView: View {
         if let workspace = server.conductorWorkspace {
             rows.append(InfoRow(label: L10n.text("Workspace"), tooltip: "Conductor · \(workspace)") { Text("Conductor · \(workspace)").font(Theme.body).foregroundStyle(Theme.text2) })
         }
+        if let workspace = server.paneWorkspace {
+            rows.append(InfoRow(label: L10n.text("Workspace"), tooltip: "Pane · \(workspace.name)") { Text("Pane · \(workspace.name)").font(Theme.body).foregroundStyle(Theme.text2) })
+        }
         if server.agent != nil || server.project.branch != nil, let folder = folderText {
             rows.append(InfoRow(label: L10n.text("Folder"), tooltip: server.cwd) { Text(folder).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
@@ -261,6 +264,9 @@ struct ServerDetailView: View {
                     }
                     Button(L10n.text("Reveal in Finder")) { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: root) }
                 }
+                if let workspace = server.paneWorkspace {
+                    Button(L10n.text("Open in Pane")) { NSWorkspace.shared.open(workspace.link) }
+                }
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 12, weight: .semibold))
@@ -319,6 +325,9 @@ struct SessionValue: View {
             Section("\(session.kind.rawValue)\(session.startedAt.map { L10n.format(" · started %@", L10n.time($0)) } ?? "")") {
                 if let workspace = server.conductorWorkspace {
                     Button(L10n.format("Reveal %@ workspace", workspace)) { reveal(server.project.root ?? server.cwd) }
+                }
+                if let workspace = server.paneWorkspace {
+                    Button(L10n.text("Open in Pane")) { NSWorkspace.shared.open(workspace.link) }
                 }
                 Button(L10n.format("Resume in %@", TerminalLauncher.current.name)) {
                     Usage.record(.resumeSession)

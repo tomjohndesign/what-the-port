@@ -10,7 +10,7 @@ export const SITE_URL = 'https://whattheport.dev'
 export const SITE_NAME = 'WhatThePort'
 export const SITE_TITLE = 'WhatThePort: see every dev server and port on your Mac'
 export const SITE_DESCRIPTION =
-  'A free, open-source macOS menu bar app that shows what’s running on localhost: every dev server’s port, project, git branch, memory and the Claude Code, Codex or Conductor session that started it. Stop the ones you forgot in one click.'
+  'A free, open-source macOS menu bar app that shows what’s running on localhost: every dev server’s port, project, git branch, memory and the Claude Code, Codex, Conductor or Pane session that started it. Stop the ones you forgot in one click.'
 export const AUTHOR = { name: 'Tom John', url: 'https://tomjohn.design' }
 export const GITHUB_URL = 'https://github.com/tomjohndesign/what-the-port'
 export const OG_IMAGE = {

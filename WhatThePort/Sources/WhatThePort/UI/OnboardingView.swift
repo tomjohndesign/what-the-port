@@ -245,6 +245,7 @@ struct OnboardingView: View {
         case .claude: ToolIcon(agent: .claudeCode)
         case .codex: ToolIcon(agent: .codex)
         case .conductor: ToolIcon(systemName: "square.grid.2x2")
+        case .pane: ToolIcon(systemName: "rectangle.split.2x1")
         case .github: ToolIcon(systemName: "arrow.triangle.branch")
         }
     }

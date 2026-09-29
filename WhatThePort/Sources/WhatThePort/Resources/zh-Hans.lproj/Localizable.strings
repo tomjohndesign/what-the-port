@@ -126,6 +126,7 @@
 "Less" = "收起";
 "Link servers to Codex threads" = "关联服务器与 Codex 会话";
 "Link servers to the session that started them" = "关联启动服务器的会话";
+"Link servers to the terminal that started them" = "关联启动服务器的终端";
 "MERGED" = "已合并";
 "Made by Tomjohn" = "作者 Tomjohn";
 "Memory" = "内存";
@@ -159,6 +160,7 @@
 "Open in Browser" = "在浏览器中打开";
 "Open in browser" = "在浏览器中打开";
 "Open in editor" = "在编辑器中打开";
+"Open in Pane" = "在 Pane 中打开";
 "Open localhost:%@" = "打开 localhost:%@";
 "Opening" = "打开方式";
 "Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it." = "打开新问题并填写应用和 macOS 版本，提交前不会发送任何内容。";

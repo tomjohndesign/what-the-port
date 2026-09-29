@@ -57,7 +57,7 @@ These stay running and show your servers all the time, so you notice a stray ser
 
 [WhatThePort](/) is a free, open-source (MIT) menu bar app written in Swift. Like the others, it lists every dev server with its port, project, uptime, memory and CPU. It’s built around what matters once coding agents are starting servers for you:
 
-- **Agent sessions.** Each server links to the Claude Code, Codex or Conductor session that started it, so you can resume the conversation or find the workspace.
+- **Agent sessions.** Each server links to the Claude Code, Codex, Conductor or Pane session that started it, so you can resume the conversation, find the workspace, or open the Pane terminal.
 - **Branches and worktrees.** Each server shows its git branch, and servers whose worktree has been deleted are flagged.
 - **Leak alerts.** Memory is summed across each server’s own process tree, with ten minutes of history. A server that passes 2 GB or grows 500 MB in ten minutes turns amber in the menu bar and sends one notification.
 - **Clean up.** Preselects idle servers and servers from deleted worktrees, then stops each server’s own process tree. Databases are protected by default. It can run automatically.

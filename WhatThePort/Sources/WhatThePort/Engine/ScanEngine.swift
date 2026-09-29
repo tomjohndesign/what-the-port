@@ -8,6 +8,7 @@ struct ScanConfig {
     var linkClaude = true
     var linkCodex = true
     var linkConductor = true
+    var linkPane = true
     var showBranches = true
 }
 
@@ -146,6 +147,7 @@ final class ScanEngine: @unchecked Sendable {
                 startedAt: root.startTime,
                 project: project,
                 conductorWorkspace: config.linkConductor ? environment["CONDUCTOR_WORKSPACE_NAME"] : nil,
+                paneWorkspace: config.linkPane ? PaneWorkspace(environment: environment) : nil,
                 agent: agents.resolve(environment: environment, cwd: cwd, claude: config.linkClaude, codex: config.linkCodex),
                 processes: nodes,
                 processStarts: starts,

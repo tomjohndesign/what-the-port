@@ -69,7 +69,7 @@ The commands above answer the question once. If you run more than a couple of se
 - the project name from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` or `Gemfile`, and the framework
 - the git branch, and whether its worktree has been deleted
 - uptime, memory and CPU for each server’s own process tree, with ten minutes of history
-- the Claude Code, Codex or Conductor session that started it, if any
+- the Claude Code, Codex, Conductor or Pane session that started it, if any
 
 Press ⌥⌘P to open it, click a server to open it in the browser, or stop it. Prefer the terminal? `wtp` shows the same list there, and `wtp list --json` prints it for scripts.
 

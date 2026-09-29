@@ -178,6 +178,9 @@ enum TerminalCommand {
             object["command"] = server.command
             object["startedAt"] = server.startedAt.map(iso.string)
             object["conductorWorkspace"] = server.conductorWorkspace
+            if let pane = server.paneWorkspace {
+                object["pane"] = ["workspace": pane.name, "link": pane.link.absoluteString]
+            }
             if let agent = server.agent {
                 var session: [String: Any] = ["kind": agent.kind.rawValue, "id": agent.id]
                 session["title"] = agent.title

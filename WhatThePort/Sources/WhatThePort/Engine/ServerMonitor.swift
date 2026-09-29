@@ -85,6 +85,7 @@ final class ServerMonitor: ObservableObject {
                    linkClaude: defaults.bool(forKey: Preferences.linkClaude),
                    linkCodex: defaults.bool(forKey: Preferences.linkCodex),
                    linkConductor: defaults.bool(forKey: Preferences.linkConductor),
+                   linkPane: defaults.bool(forKey: Preferences.linkPane),
                    showBranches: defaults.bool(forKey: Preferences.showBranches))
     }
 

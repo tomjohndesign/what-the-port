@@ -126,6 +126,7 @@
 "Less" = "Moins";
 "Link servers to Codex threads" = "Associer les serveurs aux fils Codex";
 "Link servers to the session that started them" = "Associer les serveurs à la session qui les a démarrés";
+"Link servers to the terminal that started them" = "Associer les serveurs au terminal qui les a démarrés";
 "MERGED" = "FUSIONNÉE";
 "Made by Tomjohn" = "Créé par Tomjohn";
 "Memory" = "Mémoire";
@@ -159,6 +160,7 @@
 "Open in Browser" = "Ouvrir dans le navigateur";
 "Open in browser" = "Ouvrir dans le navigateur";
 "Open in editor" = "Ouvrir dans l’éditeur";
+"Open in Pane" = "Ouvrir dans Pane";
 "Open localhost:%@" = "Ouvrir localhost:%@";
 "Opening" = "Ouverture";
 "Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it." = "Ouvre un nouveau ticket avec les versions de l’application et de macOS. Rien n’est envoyé avant votre validation.";

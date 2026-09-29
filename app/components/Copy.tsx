@@ -8,6 +8,7 @@ import {
   type ColonState,
   ConductorIcon,
   GitHubIcon,
+  PaneIcon,
   VercelIcon,
 } from './icons'
 import { track } from '@vercel/analytics'
@@ -51,6 +52,7 @@ const TOOLS = [
   { name: 'Claude Code', detail: 'claude --resume', icon: <ClaudeIcon color="#F5F5F7" size={14} width={1.3} /> },
   { name: 'Codex', detail: 'codex resume', icon: <CodexIcon color="#F5F5F7" size={14} width={1.1} /> },
   { name: 'Conductor', detail: 'workspace name', icon: <ConductorIcon /> },
+  { name: 'Pane', detail: 'opens the terminal', icon: <PaneIcon /> },
   { name: 'Vercel', detail: 'preview per branch', icon: <VercelIcon /> },
 ]
 
@@ -86,8 +88,8 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <PortLabel port="3000" colon="on" label="Sessions" />
           <h2 className={styles.headline}>Knows which agent started it.</h2>
           <p className={styles.body}>
-            Servers launched by Claude Code, Codex or Conductor link back to the session that started them. Pick up the
-            conversation, check the branch, or open the Vercel preview for the same commit.
+            Servers launched by Claude Code, Codex, Conductor or Pane link back to the session that started them. Pick up
+            the conversation, check the branch, or open the Vercel preview for the same commit.
           </p>
           <ul className={styles.list}>
             {TOOLS.map((tool) => (

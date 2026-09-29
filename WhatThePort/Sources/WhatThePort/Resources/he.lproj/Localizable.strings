@@ -126,6 +126,7 @@
 "Less" = "פחות";
 "Link servers to Codex threads" = "קישור שרתים לשיחות Codex";
 "Link servers to the session that started them" = "קישור שרתים להפעלה שיצרה אותם";
+"Link servers to the terminal that started them" = "קישור שרתים למסוף שהפעיל אותם";
 "MERGED" = "מוזג";
 "Made by Tomjohn" = "נוצר על ידי Tomjohn";
 "Memory" = "זיכרון";
@@ -159,6 +160,7 @@
 "Open in Browser" = "פתיחה בדפדפן";
 "Open in browser" = "פתיחה בדפדפן";
 "Open in editor" = "פתיחה בעורך";
+"Open in Pane" = "פתיחה ב־Pane";
 "Open localhost:%@" = "פתיחת ⁦localhost:%@⁩";
 "Opening" = "פתיחה";
 "Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it." = "פותח דיווח חדש עם גרסאות היישום ו־macOS. דבר לא נשלח עד להגשת הדיווח.";

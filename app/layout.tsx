@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     'Claude Code',
     'Codex',
     'Conductor',
+    'Pane',
     'git worktrees',
     'memory leak',
   ],

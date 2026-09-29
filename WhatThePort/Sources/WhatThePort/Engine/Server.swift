@@ -28,6 +28,24 @@ enum CleanUpReason: Equatable {
     case leaking(UInt64)
 }
 
+/// The Pane terminal a server was started from.
+struct PaneWorkspace {
+    let name: String
+    /// `pane://open?pane=<id>&panel=<id>` focuses that terminal in Pane.
+    let link: URL
+
+    /// Pane sets these in every terminal it opens.
+    init?(environment: [String: String]) {
+        guard let pane = environment["PANE_SESSION_ID"], let path = environment["PANE_WORKSPACE_PATH"] else { return nil }
+        var components = URLComponents(string: "pane://open")!
+        components.queryItems = [URLQueryItem(name: "pane", value: pane)]
+        if let panel = environment["PANE_PANEL_ID"] { components.queryItems?.append(URLQueryItem(name: "panel", value: panel)) }
+        guard let link = components.url else { return nil }
+        self.name = (path as NSString).lastPathComponent
+        self.link = link
+    }
+}
+
 /// A listening port and everything we know about the process tree behind it.
 struct Server: Identifiable {
     let port: Int
@@ -44,6 +62,7 @@ struct Server: Identifiable {
     var startedAt: Date?
     var project: ProjectInfo
     var conductorWorkspace: String?
+    var paneWorkspace: PaneWorkspace?
     var agent: AgentSession?
     var processes: [ServerProcess]
     /// Identity of every process in the tree, so we never signal a reused pid.
@@ -79,9 +98,10 @@ struct Server: Identifiable {
         return .running
     }
 
-    /// Short location label: Conductor workspace, git worktree, or parent folder.
+    /// Short location label: Conductor or Pane workspace, git worktree, or parent folder.
     var locationLabel: String {
         if let conductorWorkspace { return conductorWorkspace }
+        if let paneWorkspace { return paneWorkspace.name }
         if let worktree = project.worktreeName { return worktree }
         guard let root = project.root ?? cwd else { return project.name }
         let parent = (root as NSString).deletingLastPathComponent

@@ -344,6 +344,7 @@ private struct IntegrationsPane: View {
     @AppStorage(Preferences.linkClaude) private var claude = true
     @AppStorage(Preferences.linkCodex) private var codex = true
     @AppStorage(Preferences.linkConductor) private var conductor = true
+    @AppStorage(Preferences.linkPane) private var pane = true
     @AppStorage(Preferences.showBranches) private var branches = true
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.githubPullRequests) private var pullRequests = false
@@ -359,6 +360,9 @@ private struct IntegrationsPane: View {
                 }
                 Toggle(isOn: $conductor) {
                     SettingLabel("Conductor", caption: ToolDetection.conductor ? L10n.text("Show workspace names") : L10n.text("Not installed"))
+                }
+                Toggle(isOn: $pane) {
+                    SettingLabel("Pane", caption: ToolDetection.pane ? L10n.text("Link servers to the terminal that started them") : L10n.text("Not installed"))
                 }
             }
             Section("Git") {
@@ -394,6 +398,7 @@ enum ToolDetection {
     static var codex: Bool { FileManager.default.fileExists(atPath: home + "/.codex/sessions") }
     static var conductor: Bool { NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.conductor.app") != nil
         || FileManager.default.fileExists(atPath: home + "/Library/Application Support/com.conductor.app") }
+    static var pane: Bool { NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.dcouple.pane") != nil }
 }
 
 // MARK: - About

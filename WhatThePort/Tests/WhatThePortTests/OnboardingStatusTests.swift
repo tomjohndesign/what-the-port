@@ -29,7 +29,7 @@ struct OnboardingStatusTests {
         services.detect = { tool in calls += 1; return await gates[tool]!.wait() }
         let model = OnboardingStatus(services: services)
         let scan = Task { await model.scanTools() }
-        await eventually { calls == 4 }
+        await eventually { calls == 5 }
         gates[.codex]!.resolve(true)
         await eventually { model.tools[.codex] == .success("~/.codex") }
         #expect(model.isScanning)
@@ -38,12 +38,13 @@ struct OnboardingStatusTests {
         gates[.github]!.resolve(false)
         gates[.claude]!.resolve(true)
         gates[.conductor]!.resolve(true)
+        gates[.pane]!.resolve(false)
         await scan.value
         #expect(!(model.isScanning))
         #expect(model.detectedCount == 3)
         #expect(model.tools[.github] == .unavailable("Not found"))
         await model.scanTools()
-        #expect(calls == 4)
+        #expect(calls == 5)
     }
 
     @Test func testDiscoveryAndRefreshNeverRequestPermissionOrRegisterLogin() async {
@@ -161,7 +162,7 @@ struct OnboardingStatusTests {
         services.detect = { _ in await gate.wait() }
         let model = OnboardingStatus(services: services)
         let scan = Task { await model.scanTools() }
-        await eventually { gate.count == 4 }
+        await eventually { gate.count == 5 }
         scan.cancel()
         gate.resolve(true)
         await scan.value
@@ -169,7 +170,7 @@ struct OnboardingStatusTests {
         #expect(model.tools.isEmpty)
         await model.scanTools()
         #expect(!(model.isScanning))
-        #expect(model.detectedCount == 4)
+        #expect(model.detectedCount == 5)
     }
 
     private func eventually(_ predicate: () -> Bool) async {

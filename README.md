@@ -16,7 +16,7 @@ WhatThePort is a native Swift app that lives in your menu bar, with no Dock icon
 
 ### Knows which agent started it
 
-Servers launched by Claude Code, Codex, or Conductor link back to the session that started them. Pick up the conversation, check the branch, or open a Vercel preview. Optional pull request links use the GitHub CLI you’re already signed in to.
+Servers launched by Claude Code, Codex, Conductor, or [Pane](https://runpane.com) link back to the session that started them. Pick up the conversation, jump to the Pane terminal, check the branch, or open a Vercel preview. Optional pull request links use the GitHub CLI you’re already signed in to.
 
 ![Marketing demo of a server’s detail view with its agent session, git branch, memory and CPU charts, and preview link](docs/images/sessions.jpg)
 
@@ -47,7 +47,7 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 ## Features
 
 - **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with stable port colors and a whole-Mac memory bar for servers, other apps, and free RAM
-- **Knows what started it** - Links servers to the Claude Code, Codex or Conductor session that launched them
+- **Knows what started it** - Links servers to the Claude Code, Codex, Conductor or Pane session that launched them
 - **Resource charts** - 10 minutes of memory and CPU history per server, summed across its own process tree
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
@@ -111,7 +111,7 @@ Open Settings from the gear in the popover (⌘,):
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
-- **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
+- **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names, Vercel previews and pull requests
 - **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, and a tip jar
 
 ## How It Works

@@ -1,6 +1,6 @@
 # WhatThePort
 
-> Every dev server on your Mac, in the menu bar. WhatThePort is a free, open-source macOS menu bar app that shows what’s running on localhost: each dev server’s port, project, git branch, uptime, memory and CPU, and the Claude Code, Codex or Conductor session that started it. Stop the ones you forgot about in one click.
+> Every dev server on your Mac, in the menu bar. WhatThePort is a free, open-source macOS menu bar app that shows what’s running on localhost: each dev server’s port, project, git branch, uptime, memory and CPU, and the Claude Code, Codex, Conductor or Pane session that started it. Stop the ones you forgot about in one click.
 
 - Website and interactive demo: https://whattheport.dev
 - Download (Apple Silicon, macOS 14 or later): https://whattheport.dev/WhatThePort.dmg
@@ -12,7 +12,7 @@
 ## What it does
 
 - **Every dev server at a glance.** Port, project name, git branch, uptime and memory for each local server, with stable port colors and a whole-Mac memory bar for servers, other apps and free RAM.
-- **Knows which agent started it.** Servers launched by Claude Code, Codex or Conductor link back to the session that started them, so you can resume the conversation (`claude --resume`, `codex resume`) or find the Conductor workspace.
+- **Knows which agent started it.** Servers launched by Claude Code, Codex, Conductor or [Pane](https://runpane.com) link back to the session that started them, so you can resume the conversation (`claude --resume`, `codex resume`), find the Conductor workspace, or open the Pane terminal that started the server.
 - **Leak detection.** When a server passes 2 GB of memory or grows more than 500 MB in ten minutes, its memory reading and the menu bar icon turn amber and you get one notification with Details, Stop and Snooze. Thresholds are adjustable.
 - **Resource charts.** Ten minutes of memory and CPU history per server, summed across its own process tree.
 - **Clean up.** Preselects servers from deleted git worktrees or idle for hours, then stops each server’s own process tree in bulk. Postgres, Redis, MongoDB and MySQL are protected by default. Cleanup can be Off, Ask or Automatic; leaking servers are never stopped automatically.
@@ -46,7 +46,7 @@ wtp --version     Print the version
 
 ## How it works
 
-WhatThePort reads listening TCP sockets with `lsof`, then inspects each server’s process tree through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest (package.json, pyproject.toml, Cargo.toml, go.mod, Gemfile), framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex’s session files. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Stopping or restarting that process affects all ports it serves.
+WhatThePort reads listening TCP sockets with `lsof`, then inspects each server’s process tree through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest (package.json, pyproject.toml, Cargo.toml, go.mod, Gemfile), framework and git branch. Session links come from environment variables that Claude Code, Conductor and Pane pass to the commands they run, and from Codex’s session files. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Stopping or restarting that process affects all ports it serves.
 
 By default it watches ports 3000–65535 and processes that look like dev servers: node, bun, deno, python, uvicorn, gunicorn, ruby, rails, puma, php, java, go, cargo, dotnet, elixir, nginx, postgres, redis, mongod, mysql and more. Both are configurable in Settings → Ports & processes. Standard Homebrew and python.org framework interpreters are supported, including their Python.app wrapper; backends embedded in desktop apps remain excluded.
 

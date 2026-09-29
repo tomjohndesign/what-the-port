@@ -126,6 +126,7 @@
 "Less" = "折りたたむ";
 "Link servers to Codex threads" = "サーバーを Codex スレッドにリンク";
 "Link servers to the session that started them" = "サーバーを起動元のセッションにリンク";
+"Link servers to the terminal that started them" = "サーバーを起動元のターミナルにリンク";
 "MERGED" = "マージ済み";
 "Made by Tomjohn" = "制作：Tomjohn";
 "Memory" = "メモリ";
@@ -159,6 +160,7 @@
 "Open in Browser" = "ブラウザで開く";
 "Open in browser" = "ブラウザで開く";
 "Open in editor" = "エディタで開く";
+"Open in Pane" = "Pane で開く";
 "Open localhost:%@" = "localhost:%@ を開く";
 "Opening" = "開く";
 "Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it." = "アプリと macOS のバージョンを入力した新しい Issue を開きます。送信するまで情報は送られません。";

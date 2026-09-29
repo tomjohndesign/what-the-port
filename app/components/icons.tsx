@@ -101,6 +101,15 @@ export function ConductorIcon() {
   )
 }
 
+export function PaneIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>
+      <rect x="1" y="2" width="10" height="8" rx="1.5" fill="none" stroke="#F5F5F7" strokeWidth="1.1" />
+      <path d="M6 2v8" stroke="#F5F5F7" strokeWidth="1.1" />
+    </svg>
+  )
+}
+
 export function VercelIcon({ fill = '#FFFFFF', width = 12, height = 11 }: { fill?: string; width?: number; height?: number }) {
   return (
     <svg width={width} height={height} viewBox="0 0 12 11" aria-hidden style={{ flexShrink: 0 }}>

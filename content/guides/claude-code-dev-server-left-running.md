@@ -22,7 +22,7 @@ lsof -nP -iTCP -sTCP:LISTEN | grep -iE '^(node|bun|deno|python)'
 To tell which ones came from an agent, look at their environment. Agents pass variables to the commands they run, and child processes inherit them. On macOS, `ps -E` shows a process’s environment (for processes you own):
 
 ```bash
-ps -E -ww -o command= -p <PID> | tr ' ' '\n' | grep -E '^(CLAUDE|CONDUCTOR|CODEX)'
+ps -E -ww -o command= -p <PID> | tr ' ' '\n' | grep -E '^(CLAUDE|CONDUCTOR|CODEX|PANE)'
 ```
 
 Some servers rename themselves once they start (Next.js shows up as `next-server`), which hides their environment from `ps`. If nothing prints, try the parent process instead: `ps -o ppid= -p <PID>` gives you its PID.
@@ -33,6 +33,7 @@ What to look for:
 | --- | --- |
 | Claude Code | `CLAUDECODE=1`, `CLAUDE_CODE_SESSION_ID` |
 | Conductor | `CONDUCTOR_WORKSPACE_NAME`, `CONDUCTOR_PORT` |
+| Pane | `PANE_SESSION_ID`, `PANE_PANEL_ID`, `PANE_WORKSPACE_PATH` |
 | Codex | Match the server’s folder to a session in `~/.codex/sessions` |
 
 With the session ID you can go back to the conversation that started the server:
@@ -79,7 +80,7 @@ Two more things help:
 
 ## With WhatThePort
 
-[WhatThePort](/) is a free menu bar app built for this. It links every server to the Claude Code, Codex or Conductor session that started it, using the same environment variables and session files described above. Click a server to see its session, branch, folder and command, then resume the conversation or stop the server and its own process tree.
+[WhatThePort](/) is a free menu bar app built for this. It links every server to the Claude Code, Codex, Conductor or Pane session that started it, using the same environment variables and session files described above. Click a server to see its session, branch, folder and command, then resume the conversation or stop the server and its own process tree.
 
 **Clean up** preselects servers from deleted worktrees and servers that have been idle for hours, so the leftovers from last week’s agent sessions go in one click. You can set it to ask first or to run automatically; servers that are leaking memory are never stopped automatically, and Postgres and Redis are protected by default.
 

@@ -126,6 +126,7 @@
 "Less" = "Менше";
 "Link servers to Codex threads" = "Пов’язувати сервери з розмовами Codex";
 "Link servers to the session that started them" = "Пов’язувати сервери із сеансом, що їх запустив";
+"Link servers to the terminal that started them" = "Пов’язувати сервери з терміналом, що їх запустив";
 "MERGED" = "ОБ’ЄДНАНО";
 "Made by Tomjohn" = "Створено Tomjohn";
 "Memory" = "Пам’ять";
@@ -159,6 +160,7 @@
 "Open in Browser" = "Відкрити в браузері";
 "Open in browser" = "Відкрити в браузері";
 "Open in editor" = "Відкрити в редакторі";
+"Open in Pane" = "Відкрити в Pane";
 "Open localhost:%@" = "Відкрити localhost:%@";
 "Opening" = "Відкриття";
 "Opens a new issue with your app and macOS versions filled in. Nothing is sent until you submit it." = "Відкриває нове звернення з версіями програми та macOS. Нічого не надсилається, доки ви його не опублікуєте.";
