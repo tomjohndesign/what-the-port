@@ -9,6 +9,7 @@ import {
   type Agent,
   type Server,
   SERVERS,
+  SESSION_METADATA_LABELS,
   OTHER_APPS,
   OTHER_MEMORY,
   SYSTEM_MEMORY,
@@ -548,7 +549,10 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
       ]
   const hiddenInfo: [string, string][] = server.info
     .filter(([label]) => !(label === 'Folder' && !server.session) && label !== 'PID' && label !== 'Git')
-  if (server.session) hiddenInfo.push(['Session ID', server.session.id])
+  if (server.session) {
+    hiddenInfo.push(['Session ID', server.session.id])
+    hiddenInfo.push(['Session metadata', SESSION_METADATA_LABELS[server.session.metadataState]])
+  }
 
   return (
     <>

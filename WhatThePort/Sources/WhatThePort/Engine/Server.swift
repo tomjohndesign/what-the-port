@@ -26,6 +26,10 @@ struct ServerProcess: Identifiable, Equatable {
     let memory: UInt64
     var cpu: Double = 0
     var id: pid_t { pid }
+
+    func displayedName(showFull: Bool) -> String {
+        showFull ? rawName : name
+    }
 }
 
 enum ServerStatus {

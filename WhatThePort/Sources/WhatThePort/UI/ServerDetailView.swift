@@ -200,7 +200,7 @@ struct ServerDetailView: View {
                 let largest = max(server.processes.map(\.memory).max() ?? 1, 1)
                 VStack(spacing: 5) {
                     ForEach(server.processes) { process in
-                        let name = showFullCommands ? process.rawName : process.name
+                        let name = process.displayedName(showFull: showFullCommands)
                         HStack(spacing: 0) {
                             Text((process.depth > 0 ? String(repeating: "  ", count: process.depth - 1) + "└ " : "") + name)
                                 .font(Theme.mono)

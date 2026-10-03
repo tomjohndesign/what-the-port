@@ -8,6 +8,7 @@ struct ScanEngineTests {
         var sockets = SocketScan()
         var usages: [pid_t: ProcUsage] = [:]
         var arguments: [pid_t: ProcArgs] = [:]
+        var directories: [pid_t: String] = [:]
         var reads: [pid_t: Int] = [:]
         let epoch = Date(timeIntervalSince1970: 1_700_000_000)
         var config = ScanConfig(minPort: 3000, maxPort: 9999, allowlist: ["node", "Python", "python3"],
@@ -18,7 +19,7 @@ struct ScanEngineTests {
                 return usages[pid]
             },
             arguments: { [unowned self] in arguments[$0] },
-            currentDirectory: { _ in NSTemporaryDirectory() }
+            currentDirectory: { [unowned self] in directories[$0] ?? NSTemporaryDirectory() }
         ))
 
         func process(_ pid: pid_t, parent: pid_t = 1, name: String = "node", memory: UInt64 = 100) {
@@ -283,6 +284,8 @@ struct ScanEngineTests {
         #expect(server.command == "node")
         #expect(server.displayedCommand(showFull: false) == "node")
         #expect(server.processes.map(\.name) == ["node"])
+        #expect(server.processes.map { $0.displayedName(showFull: false) } == ["node"])
+        #expect(server.processes.map { $0.displayedName(showFull: true) } == ["node server.js --api-key=wtp-test-argv-secret-43"])
         #expect(server.displayedCommand(showFull: true) == "node server.js --api-key=wtp-test-argv-secret-43")
         #expect(server.launch?.arguments == arguments)
         #expect(server.launch?.environment == environment)
@@ -452,5 +455,90 @@ struct ScanEngineTests {
         #expect(copilotServer.rootPid == 20)
         #expect(Set(copilotServer.processStarts.keys) == [20])
         #expect(copilotServer.agent?.id == "c0a8012e-0000-4000-8000-000000000043")
+    }
+
+    @Test func relativeAgentScriptsKeepExactSessionsAndExcludeLauncherTargets() {
+        let id = "c0a8012e-0000-4000-8000-000000000043"
+        for (package, filename, kind, variable) in [
+            ("@github/copilot", "index.js", AgentKind.copilot, "COPILOT_AGENT_SESSION_ID"),
+            ("@anthropic-ai/claude-code", "cli.js", AgentKind.claudeCode, "CLAUDE_CODE_SESSION_ID"),
+        ] {
+            for operand in ["node_modules/\(package)/\(filename)", "./node_modules/\(package)/\(filename)", filename, "./\(filename)"] {
+                for options in [[], ["--no-warnings"], ["--require", "/helpers/preload.js"], ["--loader=/helpers/loader.js", "--import", "/helpers/import.js"]] {
+                    let f = Fixture()
+                    f.config.linkClaude = true
+                    f.process(5, name: "zsh")
+                    f.arguments[5] = ProcArgs(executablePath: "/bin/zsh", arguments: ["zsh"],
+                                             environment: [variable: "11111111-1111-4111-8111-111111111111"])
+                    f.process(10, parent: 5)
+                    f.directories[10] = operand.contains("node_modules") ? "/inspected-project" : "/inspected-project/node_modules/\(package)"
+                    f.arguments[10] = ProcArgs(executablePath: "/usr/local/bin/node",
+                                              arguments: ["/usr/local/bin/node"] + options + [operand],
+                                              environment: [variable: id])
+                    f.process(20, parent: 10)
+                    f.listen(20, port: 3000)
+                    let server = f.scan()[0]
+                    #expect(server.agent?.kind == kind)
+                    #expect(server.agent?.id == id)
+                    #expect(server.rootPid == 20)
+                    #expect(Set(server.processStarts.keys) == [20])
+                    #expect(server.launch?.arguments == ["node", "server.js"])
+                }
+            }
+        }
+    }
+
+    @Test func mixedCaseCopilotAncestryKeepsCanonicalIdentityAndRawLaunchEnvironment() {
+        let f = Fixture()
+        let id = "c0a8012e-0000-4000-8000-000000000043"
+        f.process(10)
+        f.arguments[10] = ProcArgs(executablePath: "/usr/local/bin/node",
+                                  arguments: ["node", "node_modules/@github/copilot/index.js"],
+                                  environment: ["COPILOT_AGENT_SESSION_ID": id.lowercased()])
+        f.process(20, parent: 10)
+        let environment = ["COPILOT_AGENT_SESSION_ID": id.uppercased()]
+        f.arguments[20] = ProcArgs(executablePath: "/usr/local/bin/node", arguments: ["node", "server.js"],
+                                  environment: environment)
+        f.listen(20, port: 3000)
+        let server = f.scan()[0]
+        #expect(server.agent?.kind == .copilot)
+        #expect(server.agent?.id == id)
+        #expect(server.rootPid == 20)
+        #expect(Set(server.processStarts.keys) == [20])
+        #expect(server.launch?.environment == environment)
+    }
+
+    @Test func invalidCopilotAncestryCannotBeOverriddenByAValidDescendant() {
+        let f = Fixture()
+        f.process(10, name: "zsh")
+        f.arguments[10] = ProcArgs(executablePath: "/bin/zsh", arguments: ["zsh"],
+                                  environment: ["COPILOT_AGENT_SESSION_ID": "invalid"])
+        f.process(20, parent: 10)
+        f.arguments[20] = ProcArgs(executablePath: "/usr/local/bin/node", arguments: ["node", "server.js"],
+                                  environment: ["COPILOT_AGENT_SESSION_ID": "c0a8012e-0000-4000-8000-000000000043"])
+        f.listen(20, port: 3000)
+        #expect(f.scan()[0].agent == nil)
+    }
+
+    @Test func runtimeOptionValuesAndLaterArgumentsDoNotCreateAgentBoundaries() {
+        for package in ["@github/copilot/index.js", "@anthropic-ai/claude-code/cli.js"] {
+            for arguments in [
+                ["node", "--eval", "node_modules/\(package)"],
+                ["node", "--print=node_modules/\(package)"],
+                ["node", "--require", "node_modules/\(package)", "server.js"],
+                ["node", "--import=node_modules/\(package)", "server.js"],
+                ["node", "--loader", "node_modules/\(package)", "server.js"],
+                ["node", "server.js", "node_modules/\(package)"],
+            ] {
+                let f = Fixture()
+                f.process(10)
+                f.arguments[10] = ProcArgs(executablePath: "/usr/local/bin/node", arguments: arguments, environment: [:])
+                f.process(20, parent: 10)
+                f.listen(20, port: 3000)
+                let server = f.scan()[0]
+                #expect(server.rootPid == 10)
+                #expect(Set(server.processStarts.keys) == [10, 20])
+            }
+        }
     }
 }

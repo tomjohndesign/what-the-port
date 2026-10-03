@@ -1,10 +1,15 @@
 // Run with Node 24, the version used by the deploy workflow.
 import assert from 'node:assert/strict'
-import { SERVERS, serverResources, stoppedPorts } from '../app/components/servers.ts'
+import { SERVERS, SESSION_METADATA_LABELS, serverResources, stoppedPorts } from '../app/components/servers.ts'
 
 const copilot = SERVERS.find(server => server.session?.agent === 'copilot')
 assert(copilot, 'The demo must represent the Copilot integration')
 assert.match(copilot.session.id, /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i)
+assert.equal(copilot.session.metadataState, 'unavailable', 'The minimal Copilot fixture has no workspace metadata')
+for (const server of SERVERS.filter(server => server.session)) {
+  assert.equal(server.session.metadataState, server.session.agent === 'copilot' ? 'unavailable' : 'available')
+}
+assert.deepEqual(SESSION_METADATA_LABELS, { available: 'Available', unavailable: 'Unavailable', limited: 'Limited' })
 
 for (const server of SERVERS) {
   const resources = serverResources([server])
@@ -26,4 +31,4 @@ assert.deepEqual(stoppedPorts(rows, [sibling.port]), [sibling.port])
 assert.equal(serverResources([original, shared]).memory, original.memory)
 assert.equal(serverResources([]).memory, 0)
 assert.deepEqual(stoppedPorts(rows, []), [])
-console.log('Demo resources: shared-port totals, CPU, bar shares, and stop isolation passed.')
+console.log('Demo resources: session metadata, shared-port totals, CPU, bar shares, and stop isolation passed.')

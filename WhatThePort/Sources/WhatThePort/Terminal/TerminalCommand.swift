@@ -165,7 +165,7 @@ enum TerminalCommand {
                 "name": server.project.name,
                 "memoryBytes": server.memory,
                 "cpuPercent": (server.cpu * 10).rounded() / 10,
-                "processes": server.processes.map { ["pid": Int($0.pid), "name": showFullCommands ? $0.rawName : $0.name, "memoryBytes": $0.memory] },
+                "processes": server.processes.map { ["pid": Int($0.pid), "name": $0.displayedName(showFull: showFullCommands), "memoryBytes": $0.memory] },
                 "status": { () -> String in
                     switch monitor.status(of: server) {
                     case .running: return "running"

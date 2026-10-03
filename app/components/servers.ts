@@ -5,6 +5,12 @@ import type { Localizer } from './languages'
 // Memory values use binary MB, matching Theme.swift / Format.
 
 export type Agent = 'claude' | 'codex' | 'copilot'
+export type SessionMetadataState = 'available' | 'unavailable' | 'limited'
+export const SESSION_METADATA_LABELS: Record<SessionMetadataState, string> = {
+  available: 'Available',
+  unavailable: 'Unavailable',
+  limited: 'Limited',
+}
 export type CleanUpReason = 'deleted' | 'idle' | 'leaking'
 
 export type Server = {
@@ -17,7 +23,7 @@ export type Server = {
   cpuNote: string
   uptime: string
   context: { agent?: Agent; text: string; tone?: 'amber' }
-  session?: { agent: Agent; title: string; id: string }
+  session?: { agent: Agent; title: string; id: string; metadataState: SessionMetadataState }
   chart: 'steady' | 'leaking' | 'flat'
   spark: string
   processes: { pid: number; command: string; memory: number; cpu: number }[]
@@ -39,7 +45,7 @@ export const SERVERS: Server[] = [
     uptime: 'up 3h 12m',
     context: { agent: 'claude', text: 'what the port · up 3h' },
     lines: (l) => ({ context: `what the port · ${l.format('up %@', l.duration(180, true))}`, running: l.duration(192) }),
-    session: { agent: 'claude', title: 'Dot-grid menu bar icon', id: '68c8fda6' },
+    session: { agent: 'claude', title: 'Dot-grid menu bar icon', id: '68c8fda6', metadataState: 'available' },
     chart: 'steady',
     spark: 'M0 13 L4 12 L8 12.5 L12 10 L16 11 L20 8 L24 9 L28 7 L32 8 L36 6 L40 6.5 L44 5',
     processes: [
@@ -97,7 +103,7 @@ export const SERVERS: Server[] = [
       note: l.format('Idle %@ · no connections', l.duration(300, true)),
       running: l.duration(300),
     }),
-    session: { agent: 'copilot', title: 'Copilot CLI session', id: 'c7e20b91-4a44-4b31-bc65-0c8239dc7e20' },
+    session: { agent: 'copilot', title: 'Copilot CLI session', id: 'c7e20b91-4a44-4b31-bc65-0c8239dc7e20', metadataState: 'unavailable' },
     chart: 'flat',
     spark: 'M0 13 L4 13 L8 12.5 L12 13 L16 13 L20 13 L24 12.5 L28 13 L32 13 L36 13 L40 13 L44 13',
     processes: [
@@ -129,7 +135,7 @@ export const SERVERS: Server[] = [
       note: l.format('Leaking · +%@', '1.1 GB'),
       running: l.duration(160),
     }),
-    session: { agent: 'claude', title: 'Tokens v2 migration', id: 'a3f19c07' },
+    session: { agent: 'claude', title: 'Tokens v2 migration', id: 'a3f19c07', metadataState: 'available' },
     chart: 'leaking',
     spark: 'M0 16 L4 15.5 L8 14.5 L12 14 L16 12.5 L20 12 L24 10 L28 9 L32 7 L36 5.5 L40 4 L44 2',
     processes: [

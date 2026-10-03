@@ -212,7 +212,11 @@ final class ScanEngine: @unchecked Sendable {
     private func isAgent(_ process: ProcSnapshot) -> Bool {
         if Self.agentNames.contains(process.comm) { return true }
         guard let args = args(for: process) else { return false }
-        let paths = [args.executablePath] + Self.scriptOperands(in: args.arguments)
+        let scripts = Self.scriptOperands(in: args.arguments).map { path in
+            guard !path.hasPrefix("/"), let cwd = inspector.currentDirectory(process.pid) else { return path }
+            return (cwd as NSString).appendingPathComponent(path)
+        }
+        let paths = [args.executablePath] + scripts
         return paths.contains(where: Self.isAgentPath)
     }
 
@@ -233,13 +237,13 @@ final class ScanEngine: @unchecked Sendable {
                 index += 1
                 continue
             }
-            return argument.hasPrefix("/") || argument.hasPrefix(".") ? [argument] : []
+            return [argument]
         }
         return []
     }
 
     private static func isAgentPath(_ path: String) -> Bool {
-        let components = URL(fileURLWithPath: path).standardized.pathComponents
+        let components = ((path as NSString).standardizingPath as NSString).pathComponents
         if components.contains("@anthropic-ai"), components.contains("claude-code") { return true }
         if let github = components.firstIndex(of: "@github"),
            components.indices.contains(github + 1),
@@ -293,12 +297,19 @@ final class ScanEngine: @unchecked Sendable {
         }
         var environment: [String: String] = [:]
         var copilotIDs = Set<String>()
+        var invalidCopilotID = false
         for process in chain.reversed() {
             let values = args(for: process)?.environment ?? [:]
-            if let id = values["COPILOT_AGENT_SESSION_ID"], !id.isEmpty { copilotIDs.insert(id) }
+            if let rawID = values["COPILOT_AGENT_SESSION_ID"] {
+                if let id = AgentSessionResolver.validSessionID(rawID) {
+                    copilotIDs.insert(id)
+                } else {
+                    invalidCopilotID = true
+                }
+            }
             environment.merge(values) { _, closer in closer }
         }
-        if copilotIDs.count > 1 {
+        if invalidCopilotID || copilotIDs.count > 1 {
             environment.removeValue(forKey: "COPILOT_AGENT_SESSION_ID")
             environment["WTP_COPILOT_SESSION_AMBIGUOUS"] = "1"
         }

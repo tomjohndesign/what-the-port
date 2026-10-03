@@ -938,7 +938,7 @@ final class TerminalApp {
         if processesExpanded {
             let largest = max(server.processes.map(\.memory).max() ?? 1, 1)
             for process in server.processes {
-                let name = showFullCommands ? process.rawName : process.name
+                let name = process.displayedName(showFull: showFullCommands)
                 let tree = (process.depth > 0 ? String(repeating: "  ", count: process.depth - 1) + "└ " : "") + name
                 let isListener = process.pid == server.pid
                 let filled = max(Int((8 * Double(process.memory) / Double(largest)).rounded()), 1)

@@ -91,7 +91,7 @@ final class AgentSessionResolver {
                             directory: metadata.directory, metadataState: metadata.state)
     }
 
-    private static func validSessionID(_ value: String) -> String? {
+    static func validSessionID(_ value: String) -> String? {
         UUID(uuidString: value).map { _ in value.lowercased() }
     }
 
