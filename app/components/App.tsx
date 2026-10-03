@@ -2,13 +2,14 @@
 
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
-import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
+import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, CopilotIcon, DotGrid, OpenIcon, VercelIcon } from './icons'
 import { type AppLanguageCode, type Localizer, localizer } from './languages'
 import { GET_IT, TERMINAL } from './sections'
 import {
   type Agent,
   type Server,
   SERVERS,
+  SESSION_METADATA_LABELS,
   OTHER_APPS,
   OTHER_MEMORY,
   SYSTEM_MEMORY,
@@ -184,6 +185,7 @@ function Header({ title, onBack, backLabel }: { title: string; onBack?: () => vo
 function AgentIcon({ agent }: { agent?: Agent }) {
   if (agent === 'claude') return <ClaudeIcon />
   if (agent === 'codex') return <CodexIcon />
+  if (agent === 'copilot') return <CopilotIcon />
   return null
 }
 
@@ -547,7 +549,10 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
       ]
   const hiddenInfo: [string, string][] = server.info
     .filter(([label]) => !(label === 'Folder' && !server.session) && label !== 'PID' && label !== 'Git')
-  if (server.session) hiddenInfo.push(['Session ID', server.session.id])
+  if (server.session) {
+    hiddenInfo.push(['Session ID', server.session.id])
+    hiddenInfo.push(['Session metadata', SESSION_METADATA_LABELS[server.session.metadataState]])
+  }
 
   return (
     <>

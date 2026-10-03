@@ -1,13 +1,32 @@
 import Foundation
+import Darwin
 
 enum AgentKind: String {
     case claudeCode = "Claude Code"
     case codex = "Codex"
+    case copilot = "Copilot"
 
     var resumeCommand: String {
         switch self {
         case .claudeCode: return "claude --resume"
         case .codex: return "codex resume"
+        case .copilot: return "copilot --resume"
+        }
+    }
+
+    var canResume: Bool { self != .copilot }
+}
+
+enum SessionMetadataState: String, Equatable {
+    case available
+    case unavailable
+    case limited
+
+    var label: String {
+        switch self {
+        case .available: return "Available"
+        case .unavailable: return "Unavailable"
+        case .limited: return "Limited"
         }
     }
 }
@@ -20,6 +39,7 @@ struct AgentSession: Equatable {
     let startedAt: Date?
     /// The directory the agent was started in, used to resume it.
     let directory: String?
+    let metadataState: SessionMetadataState
 
     var shortID: String { String(id.prefix(8)) }
 }
@@ -30,17 +50,27 @@ struct AgentSession: Equatable {
 /// server's environment identifies its session exactly. Codex sessions are
 /// matched by working directory against `~/.codex/sessions`.
 final class AgentSessionResolver {
-    private let home = FileManager.default.homeDirectoryForCurrentUser
+    private let home: URL
     private var claudeCache: [String: (session: AgentSession, checkedAt: Date)] = [:]
     private var codexIndex: [String: AgentSession] = [:]
     private var codexIndexedAt: Date = .distantPast
 
-    func resolve(environment: [String: String], cwd: String?, claude: Bool = true, codex: Bool = true) -> AgentSession? {
+    init(home: URL = FileManager.default.homeDirectoryForCurrentUser) {
+        self.home = home
+    }
+
+    func resolve(environment: [String: String], cwd: String?, claude: Bool = true, codex: Bool = true,
+                 copilot: Bool = true) -> AgentSession? {
         if claude, let id = environment["CLAUDE_CODE_SESSION_ID"], !id.isEmpty {
             return claudeSession(id: id)
         }
+        if let id = environment["COPILOT_AGENT_SESSION_ID"] {
+            guard copilot, let id = Self.validSessionID(id) else { return nil }
+            return copilotSession(id: id)
+        }
         // A server started by Claude Code shouldn't be claimed by a Codex session in the same folder.
-        guard codex, environment["CLAUDE_CODE_SESSION_ID"] == nil, let cwd else { return nil }
+        guard codex, environment["CLAUDE_CODE_SESSION_ID"] == nil,
+              environment["WTP_COPILOT_SESSION_AMBIGUOUS"] == nil, let cwd else { return nil }
         refreshCodexIndexIfNeeded()
         // Walk up from the server's directory, but never match a session that was
         // started in the home folder or above; that would claim every server.
@@ -50,6 +80,56 @@ final class AgentSessionResolver {
             directory = (directory as NSString).deletingLastPathComponent
         }
         return nil
+    }
+
+    // MARK: - Copilot
+
+    private func copilotSession(id: String) -> AgentSession {
+        let workspace = home.appendingPathComponent(".copilot/session-state/\(id)/workspace.yaml")
+        let metadata = Self.readCopilotWorkspace(of: workspace, id: id)
+        return AgentSession(kind: .copilot, id: id, title: nil, transcript: nil, startedAt: nil,
+                            directory: metadata.directory, metadataState: metadata.state)
+    }
+
+    static func validSessionID(_ value: String) -> String? {
+        UUID(uuidString: value).map { _ in value.lowercased() }
+    }
+
+    private static func readCopilotWorkspace(of url: URL, id: String) -> (directory: String?, state: SessionMetadataState) {
+        let limit = 64 * 1024
+        let descriptor = open(url.path, O_RDONLY | O_NONBLOCK)
+        guard descriptor >= 0 else { return (nil, .unavailable) }
+        defer { close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0 else { return (nil, .unavailable) }
+        guard (info.st_mode & S_IFMT) == S_IFREG else { return (nil, .limited) }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+        guard let data = try? handle.read(upToCount: limit + 1) else { return (nil, .unavailable) }
+        guard data.count <= limit else { return (nil, .limited) }
+        return workspaceDirectory(in: String(decoding: data, as: UTF8.self), id: id)
+    }
+
+    private static func workspaceDirectory(in metadata: String, id: String) -> (directory: String?, state: SessionMetadataState) {
+        var directory: String?
+        var declaredIDs = Set<String>()
+        for line in metadata.split(separator: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let parts = trimmed.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+            guard parts.count == 2 else { continue }
+            let key = parts[0].trimmingCharacters(in: .whitespaces)
+            let value = parts[1]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+            if ["id", "sessionId", "session_id"].contains(key) {
+                guard let declaredID = validSessionID(value) else { return (nil, .limited) }
+                declaredIDs.insert(declaredID)
+                continue
+            }
+            guard key == "cwd" || key == "workspace" else { continue }
+            if value.hasPrefix("/") { directory = value }
+        }
+        guard declaredIDs.count <= 1, declaredIDs.allSatisfy({ $0 == id }), let directory else { return (nil, .limited) }
+        return (directory, .available)
     }
 
     // MARK: - Claude Code
@@ -70,7 +150,8 @@ final class AgentSessionResolver {
             directory = Self.firstValue(of: "cwd", in: head)
         }
         let created = transcript.flatMap { try? $0.resourceValues(forKeys: [.creationDateKey]).creationDate }
-        let session = AgentSession(kind: .claudeCode, id: id, title: title, transcript: transcript, startedAt: created, directory: directory)
+        let session = AgentSession(kind: .claudeCode, id: id, title: title, transcript: transcript, startedAt: created,
+                                   directory: directory, metadataState: transcript == nil ? .unavailable : .available)
         claudeCache[id] = (session, Date())
         return session
     }
@@ -145,7 +226,8 @@ final class AgentSessionResolver {
                   let cwd = payload["cwd"] as? String else { continue }
             if let existing = index[cwd], existing.modified > modified { continue }
             let started = (payload["timestamp"] as? String).flatMap { Self.isoFormatter.date(from: $0) }
-            let session = AgentSession(kind: .codex, id: id, title: titles[id], transcript: url, startedAt: started, directory: cwd)
+            let session = AgentSession(kind: .codex, id: id, title: titles[id], transcript: url, startedAt: started,
+                                       directory: cwd, metadataState: .available)
             index[cwd] = (session, modified)
         }
         codexIndex = index.mapValues(\.session)

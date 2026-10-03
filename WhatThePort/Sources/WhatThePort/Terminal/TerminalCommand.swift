@@ -20,16 +20,18 @@ enum TerminalCommand {
         }
         Preferences.register()
 
+        let fullCommands = arguments.contains("--full-command")
+        arguments.removeAll { $0 == "--full-command" }
         switch arguments.first {
         case nil:
-            guard isatty(STDIN_FILENO) == 1, isatty(STDOUT_FILENO) == 1 else { list(json: false) }
-            TerminalApp.run()
+            guard isatty(STDIN_FILENO) == 1, isatty(STDOUT_FILENO) == 1 else { list(json: false, showFullCommands: fullCommands) }
+            TerminalApp.run(showFullCommands: fullCommands)
         case "language":
             configureLanguage(Array(arguments.dropFirst()))
         case "list", "ls":
-            list(json: arguments.contains("--json"))
+            list(json: arguments.contains("--json"), showFullCommands: fullCommands)
         case "--json":
-            list(json: true)
+            list(json: true, showFullCommands: fullCommands)
         case "help", "-h", "--help":
             print(usage)
             exit(0)
@@ -49,6 +51,7 @@ enum TerminalCommand {
       wtp               Browse, open and stop servers
       wtp list          Print servers and exit
       wtp list --json   Print servers as JSON
+      wtp --full-command  Show raw commands in terminal output
       wtp --version     Print the version
       wtp language      Show the macOS app language
       wtp language de   Set the app language (system, en, de, fr, es, zh-Hans, he, ja, uk)
@@ -88,7 +91,7 @@ enum TerminalCommand {
 
     // MARK: - List
 
-    @MainActor private static func list(json: Bool) -> Never {
+    @MainActor private static func list(json: Bool, showFullCommands: Bool) -> Never {
         let monitor = ServerMonitor()
         monitor.handlesAlerts = false
         // CPU is measured between two scans.
@@ -97,7 +100,7 @@ enum TerminalCommand {
         monitor.scanNow()
         let servers = monitor.servers
         if json {
-            printJSON(servers, monitor: monitor)
+            printJSON(servers, monitor: monitor, showFullCommands: showFullCommands)
         } else if servers.isEmpty {
             print("Nothing listening on ports \(monitor.minPort)–\(monitor.maxPort).")
         } else {
@@ -152,7 +155,7 @@ enum TerminalCommand {
         }
     }
 
-    @MainActor private static func printJSON(_ servers: [Server], monitor: ServerMonitor) {
+    @MainActor private static func printJSON(_ servers: [Server], monitor: ServerMonitor, showFullCommands: Bool) {
         let iso = ISO8601DateFormatter()
         let objects: [[String: Any]] = servers.map { server in
             var object: [String: Any] = [
@@ -162,7 +165,7 @@ enum TerminalCommand {
                 "name": server.project.name,
                 "memoryBytes": server.memory,
                 "cpuPercent": (server.cpu * 10).rounded() / 10,
-                "processes": server.processes.map { ["pid": Int($0.pid), "name": $0.name, "memoryBytes": $0.memory] },
+                "processes": server.processes.map { ["pid": Int($0.pid), "name": $0.displayedName(showFull: showFullCommands), "memoryBytes": $0.memory] },
                 "status": { () -> String in
                     switch monitor.status(of: server) {
                     case .running: return "running"
@@ -175,14 +178,15 @@ enum TerminalCommand {
             object["branch"] = server.project.branch
             object["framework"] = server.project.framework
             object["folder"] = server.cwd
-            object["command"] = server.command
+            object["command"] = server.displayedCommand(showFull: showFullCommands)
+            if showFullCommands { object["argv"] = server.rawArguments }
             object["startedAt"] = server.startedAt.map(iso.string)
             object["conductorWorkspace"] = server.conductorWorkspace
             if let pane = server.paneWorkspace {
                 object["pane"] = ["workspace": pane.name, "link": pane.link.absoluteString]
             }
             if let agent = server.agent {
-                var session: [String: Any] = ["kind": agent.kind.rawValue, "id": agent.id]
+                var session: [String: Any] = ["kind": agent.kind.rawValue, "id": agent.id, "metadata": agent.metadataState.rawValue]
                 session["title"] = agent.title
                 object["session"] = session
             }

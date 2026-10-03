@@ -193,6 +193,10 @@ struct AgentGlyph: View {
                 prompt.addLine(to: CGPoint(x: 3.5 * s, y: 7.4 * s))
                 prompt.move(to: CGPoint(x: 6.2 * s, y: 7.6 * s)); prompt.addLine(to: CGPoint(x: 8.5 * s, y: 7.6 * s))
                 context.stroke(prompt, with: .color(color), style: StrokeStyle(lineWidth: 1.2 * s, lineCap: .round, lineJoin: .round))
+            case .copilot:
+                let circle = Path(ellipseIn: CGRect(x: 1.5 * s, y: 1.5 * s, width: 9 * s, height: 9 * s))
+                context.stroke(circle, with: .color(color), lineWidth: 1.2 * s)
+                context.draw(Text("C").font(.system(size: 7 * s, weight: .medium)), at: CGPoint(x: 6 * s, y: 6 * s), anchor: .center)
             }
         }
         .frame(width: size, height: size)

@@ -48,6 +48,7 @@ final class TerminalApp {
 
     private let screen = TerminalScreen()
     private let monitor = ServerMonitor()
+    private let showFullCommands: Bool
     private var palette: TerminalPalette!
     private var subscriptions = Set<AnyCancellable>()
     private var sources: [DispatchSourceProtocol] = []
@@ -72,8 +73,12 @@ final class TerminalApp {
     private var processesExpanded = UserDefaults.standard.bool(forKey: "detail.processesExpanded")
     private var targets: [(row: Int, columns: Range<Int>, action: Action)] = []
 
-    static func run() -> Never {
-        let app = TerminalApp()
+    init(showFullCommands: Bool = false) {
+        self.showFullCommands = showFullCommands
+    }
+
+    static func run(showFullCommands: Bool = false) -> Never {
+        let app = TerminalApp(showFullCommands: showFullCommands)
         app.start()
         RunLoop.main.run()
         exit(0)
@@ -340,7 +345,7 @@ final class TerminalApp {
         if let pr = github?.pullRequest {
             items.append(ServerAction(label: "Pull request #\(pr.number)", key: "u") { NSWorkspace.shared.open(pr.url) })
         }
-        if let agent = server.agent {
+        if let agent = server.agent, agent.kind.canResume {
             items.append(ServerAction(label: "Resume \(agent.kind.rawValue) in \(TerminalLauncher.current.name)", key: "a") { [unowned self] in
                 SessionLauncher.resume(agent, fallbackDirectory: server.cwd)
                 show("Resuming in \(TerminalLauncher.current.name)")
@@ -363,7 +368,7 @@ final class TerminalApp {
             items.append(ServerAction(label: "Show transcript", key: nil) { NSWorkspace.shared.selectFile(transcript.path, inFileViewerRootedAtPath: "") })
         }
         items.append(ServerAction(label: "Copy URL", key: "y") { [unowned self] in copy(server.url.absoluteString, label: "URL") })
-        if let command = server.command {
+        if let command = server.displayedCommand(showFull: showFullCommands) {
             items.append(ServerAction(label: "Copy command", key: "Y") { [unowned self] in copy(command, label: "command") })
         }
         if let agent = server.agent {
@@ -803,6 +808,7 @@ final class TerminalApp {
         switch kind {
         case .claudeCode: return "✳"
         case .codex: return ">_"
+        case .copilot: return "◉"
         }
     }
 
@@ -881,7 +887,7 @@ final class TerminalApp {
         if let framework = server.project.framework {
             secondary.append(row("Framework", [Span(framework, palette.text2)]))
         }
-        if let command = server.command {
+        if let command = server.displayedCommand(showFull: showFullCommands) {
             secondary.append(row("Command", [Span(command, palette.text2)], middle: true))
         }
         if let started = server.startedAt {
@@ -892,6 +898,7 @@ final class TerminalApp {
         }
         if let agent = server.agent {
             secondary.append(row("Session ID", [Span(agent.id, palette.text2)], middle: true))
+            secondary.append(row("Session metadata", [Span(agent.metadataState.label, palette.text2)]))
         }
         if !server.addresses.isEmpty {
             secondary.append(row("Address", [Span(server.addresses.joined(separator: " · "), palette.text2)], middle: true))
@@ -931,7 +938,8 @@ final class TerminalApp {
         if processesExpanded {
             let largest = max(server.processes.map(\.memory).max() ?? 1, 1)
             for process in server.processes {
-                let tree = (process.depth > 0 ? String(repeating: "  ", count: process.depth - 1) + "└ " : "") + process.name
+                let name = process.displayedName(showFull: showFullCommands)
+                let tree = (process.depth > 0 ? String(repeating: "  ", count: process.depth - 1) + "└ " : "") + name
                 let isListener = process.pid == server.pid
                 let filled = max(Int((8 * Double(process.memory) / Double(largest)).rounded()), 1)
                 let right: Line = [

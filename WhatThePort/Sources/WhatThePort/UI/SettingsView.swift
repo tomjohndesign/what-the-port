@@ -343,11 +343,13 @@ private struct PortsPane: View {
 private struct IntegrationsPane: View {
     @AppStorage(Preferences.linkClaude) private var claude = true
     @AppStorage(Preferences.linkCodex) private var codex = true
+    @AppStorage(Preferences.linkCopilot) private var copilot = true
     @AppStorage(Preferences.linkConductor) private var conductor = true
     @AppStorage(Preferences.linkPane) private var pane = true
     @AppStorage(Preferences.showBranches) private var branches = true
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.githubPullRequests) private var pullRequests = false
+    @AppStorage(Preferences.showFullCommands) private var showFullCommands = false
 
     var body: some View {
         Form {
@@ -357,6 +359,9 @@ private struct IntegrationsPane: View {
                 }
                 Toggle(isOn: $codex) {
                     SettingLabel("Codex", caption: ToolDetection.codex ? L10n.text("Link servers to Codex threads") : L10n.text("Not found in ~/.codex"))
+                }
+                Toggle(isOn: $copilot) {
+                    SettingLabel("GitHub Copilot", caption: L10n.text("Link servers started by Copilot CLI sessions"))
                 }
                 Toggle(isOn: $conductor) {
                     SettingLabel("Conductor", caption: ToolDetection.conductor ? L10n.text("Show workspace names") : L10n.text("Not installed"))
@@ -385,6 +390,12 @@ private struct IntegrationsPane: View {
             .disabled(!GitHubLookup.isAvailable)
             Section {
                 Text(L10n.text("Agent and Git details come from local files only. The GitHub options above and app update checks use the network."))
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section(L10n.text("Command privacy")) {
+                Toggle(L10n.text("Show full commands"), isOn: $showFullCommands)
+                Text(L10n.text("Full commands can contain credentials. Commands and process names show executable labels by default. This only affects the app."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }

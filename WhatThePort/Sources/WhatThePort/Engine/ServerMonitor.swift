@@ -84,6 +84,7 @@ final class ServerMonitor: ObservableObject {
                    protected: Set(defaults.stringArray(forKey: Preferences.protectedProcesses) ?? Preferences.defaultProtected),
                    linkClaude: defaults.bool(forKey: Preferences.linkClaude),
                    linkCodex: defaults.bool(forKey: Preferences.linkCodex),
+                   linkCopilot: defaults.bool(forKey: Preferences.linkCopilot),
                    linkConductor: defaults.bool(forKey: Preferences.linkConductor),
                    linkPane: defaults.bool(forKey: Preferences.linkPane),
                    showBranches: defaults.bool(forKey: Preferences.showBranches))

@@ -7,6 +7,7 @@ struct ScanConfig {
     var protected: Set<String> = Set(Preferences.defaultProtected)
     var linkClaude = true
     var linkCodex = true
+    var linkCopilot = true
     var linkConductor = true
     var linkPane = true
     var showBranches = true
@@ -26,9 +27,7 @@ final class ScanEngine: @unchecked Sendable {
         "dotnet", "php", "mix", "beam.smp", "elixir",
     ]
     private static let shells: Set<String> = ["sh", "bash", "zsh", "dash", "fish"]
-    private static let agentNames: Set<String> = ["claude", "codex", "Conductor"]
-    /// Path fragments that identify an agent launched via a runtime like node.
-    private static let agentPathMarkers = ["@anthropic-ai/claude-code", "com.conductor.app", "/codex/"]
+    private static let agentNames: Set<String> = ["claude", "codex", "copilot", "Conductor"]
 
     private let projects = ProjectResolver()
     private let agents = AgentSessionResolver()
@@ -94,7 +93,8 @@ final class ScanEngine: @unchecked Sendable {
                 memory += sample.memory
                 cpuPercent += sample.cpu
                 starts[process.pid] = process.startTime
-                nodes.append(ServerProcess(pid: process.pid, name: displayName(for: process), depth: depth,
+                let rawName = displayName(for: process)
+                nodes.append(ServerProcess(pid: process.pid, name: safeProcessName(for: process), rawName: rawName, depth: depth,
                                            memory: sample.memory, cpu: sample.cpu))
             }
 
@@ -106,8 +106,10 @@ final class ScanEngine: @unchecked Sendable {
                 continue
             }
             let environment = inheritedEnvironment(from: listener, root: root, in: processes)
-            let command = rootArgs.map { Self.prettyCommand($0.arguments, comm: root.comm) }
-            var project = projects.resolve(cwd: cwd, command: command)
+            let projectCommand = rootArgs.map { Self.prettyCommand($0.arguments, comm: root.comm) }
+            let rawCommand = rootArgs.map { CommandProjection.full($0.arguments) }
+            let command = rootArgs.map { Self.safeCommand($0, comm: root.comm) }
+            var project = projects.resolve(cwd: cwd, command: projectCommand)
             if !config.showBranches { project.branch = nil }
 
             // Restart from the highest process whose argv wasn't overwritten by a
@@ -142,13 +144,16 @@ final class ScanEngine: @unchecked Sendable {
                 cwd: cwd,
                 cwdExists: cwd.map { FileManager.default.fileExists(atPath: $0) } ?? true,
                 command: command,
+                rawCommand: rawCommand,
+                rawArguments: rootArgs?.arguments,
                 launch: args(for: launcher),
                 launchDirectory: inspector.currentDirectory(launcher.pid) ?? cwd,
                 startedAt: root.startTime,
                 project: project,
                 conductorWorkspace: config.linkConductor ? environment["CONDUCTOR_WORKSPACE_NAME"] : nil,
                 paneWorkspace: config.linkPane ? PaneWorkspace(environment: environment) : nil,
-                agent: agents.resolve(environment: environment, cwd: cwd, claude: config.linkClaude, codex: config.linkCodex),
+                agent: agents.resolve(environment: environment, cwd: cwd, claude: config.linkClaude,
+                                      codex: config.linkCodex, copilot: config.linkCopilot),
                 processes: nodes,
                 processStarts: starts,
                 memory: memory,
@@ -207,8 +212,46 @@ final class ScanEngine: @unchecked Sendable {
     private func isAgent(_ process: ProcSnapshot) -> Bool {
         if Self.agentNames.contains(process.comm) { return true }
         guard let args = args(for: process) else { return false }
-        let joined = ([args.executablePath] + args.arguments.prefix(3)).joined(separator: " ")
-        return Self.agentPathMarkers.contains(where: joined.contains)
+        let scripts = Self.scriptOperands(in: args.arguments).map { path in
+            guard !path.hasPrefix("/"), let cwd = inspector.currentDirectory(process.pid) else { return path }
+            return (cwd as NSString).appendingPathComponent(path)
+        }
+        let paths = [args.executablePath] + scripts
+        return paths.contains(where: Self.isAgentPath)
+    }
+
+    private static func scriptOperands(in arguments: [String]) -> [String] {
+        var index = arguments.isEmpty ? 0 : 1
+        while index < arguments.count {
+            let argument = arguments[index]
+            if ["-e", "--eval", "-p", "--print", "-r", "--require", "--import", "--loader"].contains(argument) {
+                index += 2
+                continue
+            }
+            if argument.hasPrefix("--eval=") || argument.hasPrefix("--print=") ||
+                argument.hasPrefix("--require=") || argument.hasPrefix("--import=") || argument.hasPrefix("--loader=") {
+                index += 1
+                continue
+            }
+            if argument.hasPrefix("-") {
+                index += 1
+                continue
+            }
+            return [argument]
+        }
+        return []
+    }
+
+    private static func isAgentPath(_ path: String) -> Bool {
+        let components = ((path as NSString).standardizingPath as NSString).pathComponents
+        if components.contains("@anthropic-ai"), components.contains("claude-code") { return true }
+        if let github = components.firstIndex(of: "@github"),
+           components.indices.contains(github + 1),
+           components[github + 1] == "copilot" || components[github + 1].hasPrefix("copilot-") {
+            return true
+        }
+        if components.contains("codex") { return true }
+        return components.contains("com.conductor.app")
     }
 
     /// Python distributions may report python3.12, python3.14, etc. Respect
@@ -244,16 +287,31 @@ final class ScanEngine: @unchecked Sendable {
         var current = listener
         var extraHops = 2
         while current.ppid > 1, let parent = processes[current.ppid], chain.count < 10 {
+            chain.append(parent)
+            if isAgent(parent) { break }
             if current.pid == root.pid || chain.contains(where: { $0.pid == root.pid }) {
                 guard extraHops > 0 else { break }
                 extraHops -= 1
             }
-            chain.append(parent)
             current = parent
         }
         var environment: [String: String] = [:]
+        var copilotIDs = Set<String>()
+        var invalidCopilotID = false
         for process in chain.reversed() {
-            environment.merge(args(for: process)?.environment ?? [:]) { _, closer in closer }
+            let values = args(for: process)?.environment ?? [:]
+            if let rawID = values["COPILOT_AGENT_SESSION_ID"] {
+                if let id = AgentSessionResolver.validSessionID(rawID) {
+                    copilotIDs.insert(id)
+                } else {
+                    invalidCopilotID = true
+                }
+            }
+            environment.merge(values) { _, closer in closer }
+        }
+        if invalidCopilotID || copilotIDs.count > 1 {
+            environment.removeValue(forKey: "COPILOT_AGENT_SESSION_ID")
+            environment["WTP_COPILOT_SESSION_AMBIGUOUS"] = "1"
         }
         return environment
     }
@@ -275,10 +333,17 @@ final class ScanEngine: @unchecked Sendable {
 
     private func displayName(for process: ProcSnapshot) -> String {
         guard let args = args(for: process), !args.arguments.isEmpty else { return process.comm }
-        let command = Self.prettyCommand(args.arguments, comm: process.comm)
-        // `process.title` renames like "next-server (v16.0.0)" read better without the version.
-        if let paren = command.range(of: " (") { return String(command[..<paren.lowerBound]) }
-        return command
+        return CommandProjection.full(args.arguments)
+    }
+
+    private func safeProcessName(for process: ProcSnapshot) -> String {
+        guard let args = args(for: process) else { return process.comm }
+        return Self.safeCommand(args, comm: process.comm)
+    }
+
+    private static func safeCommand(_ args: ProcArgs, comm: String) -> String {
+        let executable = (args.executablePath as NSString).lastPathComponent
+        return executable.isEmpty ? comm : executable
     }
 
     /// Turns raw argv into what someone would have typed, e.g.

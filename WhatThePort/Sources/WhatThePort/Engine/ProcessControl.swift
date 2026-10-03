@@ -46,7 +46,7 @@ enum ProcessControl {
     /// argv with a title (`npm run dev -p 3000`), which is what was typed, so we
     /// run that through a shell. Intact argv is re-quoted as-is.
     static func shellCommand(for launch: ProcArgs) -> String? {
-        let args = launch.arguments.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        let args = launch.arguments
         guard let first = args.first else { return nil }
         let shells: Set<String> = ["sh", "bash", "zsh", "dash"]
         if shells.contains((first as NSString).lastPathComponent), args.count >= 3, args[1] == "-c" {
@@ -57,13 +57,7 @@ enum ProcessControl {
             return first
         }
         let executable = first.hasPrefix("/") ? first : launch.executablePath
-        return ([executable] + args.dropFirst()).map(shellQuote).joined(separator: " ")
-    }
-
-    private static func shellQuote(_ value: String) -> String {
-        let safe = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_./:=@%+,"))
-        if value.unicodeScalars.allSatisfy(safe.contains) { return value }
-        return "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        return CommandProjection.full([executable] + args.dropFirst())
     }
 
     private static func spawn(_ command: String, environment: [String: String], cwd: String, port: Int) -> Bool {

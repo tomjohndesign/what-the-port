@@ -47,7 +47,7 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 ## Features
 
 - **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with stable port colors and a whole-Mac memory bar for servers, other apps, and free RAM
-- **Knows what started it** - Links servers to the Claude Code, Codex, Conductor or Pane session that launched them
+- **Knows what started it** - Links servers to the Claude Code, Codex, GitHub Copilot, Conductor or Pane session that launched them
 - **Resource charts** - 10 minutes of memory and CPU history per server, summed across its own process tree
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
@@ -84,7 +84,7 @@ sudo ln -sf /Applications/WhatThePort.app/Contents/MacOS/WhatThePort /usr/local/
 - `↑` `↓` to select, `⏎` for details, `space` for an Actions menu (open, restart, stop, resume the agent session, editor, copy), `c` for Clean up, `?` for every key
 - Every action also has its own key, such as `o` to open, `r` to restart and `s` to stop; in details, `i` shows more info and `p` shows processes
 - Click rows and scroll with the mouse
-- `wtp list` prints the servers and exits; `wtp list --json` prints them as JSON for scripts and agents
+- `wtp list` prints the servers and exits; `wtp list --json` prints them as JSON for scripts and agents; `wtp --full-command` explicitly shows raw commands
 
 `wtp` follows your terminal's colors and leaves notifications and automatic clean up to the menu bar app. Memory and CPU charts fill in while it runs. From source, run `swift run WhatThePort --tui`.
 
@@ -111,12 +111,12 @@ Open Settings from the gear in the popover (⌘,):
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
-- **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names, Vercel previews and pull requests
+- **Integrations** - Claude Code, Codex, GitHub Copilot, Conductor and Pane session links, branch names, Vercel previews and pull requests
 - **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, and a tip jar
 
 ## How It Works
 
-WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Stopping or restarting that process affects all ports it serves.
+WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code, GitHub Copilot and Conductor pass to the commands they run, and from Codex's session files. Commands and process names show executable labels by default; raw commands remain available only through an explicit app or `wtp --full-command` choice. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Stopping or restarting that process affects all ports it serves.
 
 ## Privacy
 

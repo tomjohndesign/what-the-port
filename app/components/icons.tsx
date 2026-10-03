@@ -86,6 +86,15 @@ export function CodexIcon({ color = stroke(75), size = 12, width = 1.2 }: { colo
   )
 }
 
+export function CopilotIcon({ color = stroke(75), size = 12, width = 1.2 }: { color?: string; size?: number; width?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>
+      <circle cx="6" cy="6" r="4.5" fill="none" stroke={color} strokeWidth={width} />
+      <path d="M7.8 4.2a2.6 2.6 0 1 0 0 3.6" fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function ConductorIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>

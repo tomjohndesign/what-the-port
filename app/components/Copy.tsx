@@ -4,6 +4,7 @@ import {
   AppleIcon,
   ClaudeIcon,
   CodexIcon,
+  CopilotIcon,
   Colon,
   type ColonState,
   ConductorIcon,
@@ -51,6 +52,7 @@ export function Cta({ stars, location }: { stars: number | null; location: strin
 const TOOLS = [
   { name: 'Claude Code', detail: 'claude --resume', icon: <ClaudeIcon color="#F5F5F7" size={14} width={1.3} /> },
   { name: 'Codex', detail: 'codex resume', icon: <CodexIcon color="#F5F5F7" size={14} width={1.1} /> },
+  { name: 'GitHub Copilot', detail: 'local session link', icon: <CopilotIcon color="#F5F5F7" size={14} width={1.2} /> },
   { name: 'Conductor', detail: 'workspace name', icon: <ConductorIcon /> },
   { name: 'Pane', detail: 'opens the terminal', icon: <PaneIcon /> },
   { name: 'Vercel', detail: 'preview per branch', icon: <VercelIcon /> },
@@ -60,6 +62,7 @@ const COMMANDS = [
   { name: 'wtp', detail: 'Browse, open and stop servers' },
   { name: 'wtp list', detail: 'Print them and exit' },
   { name: 'wtp list --json', detail: 'For scripts and agents' },
+  { name: 'wtp --full-command', detail: 'Show raw commands explicitly' },
   { name: 'wtp language de', detail: 'Set the Mac app’s language' },
 ]
 
@@ -88,8 +91,9 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <PortLabel port="3000" colon="on" label="Sessions" />
           <h2 className={styles.headline}>Knows which agent started it.</h2>
           <p className={styles.body}>
-            Servers launched by Claude Code, Codex, Conductor or Pane link back to the session that started them. Pick up
-            the conversation, check the branch, or open the Vercel preview for the same commit.
+            Servers show the Claude Code, Codex, GitHub Copilot, Conductor or Pane session that started them. Resume Claude
+            Code or Codex conversations; Copilot shows its local session identity. Check the branch or open the Vercel preview
+            for the same commit.
           </p>
           <ul className={styles.list}>
             {TOOLS.map((tool) => (
