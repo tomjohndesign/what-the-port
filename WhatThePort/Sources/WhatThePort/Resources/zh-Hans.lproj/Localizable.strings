@@ -296,3 +296,8 @@
 "Changes apply immediately." = "更改立即生效。";
 "servers (few)" = "服务器";
 "tools (few)" = "工具";
+"Stop container" = "停止容器";
+"Restart container" = "重启容器";
+"Image" = "镜像";
+"Show containers" = "显示容器";
+"Ports published by running containers" = "运行中的容器发布的端口";

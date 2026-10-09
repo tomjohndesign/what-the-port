@@ -11,6 +11,10 @@ enum ProcessControl {
     /// anything still running after a grace period. Each pid is re-checked
     /// against its start time first so a reused pid is never signalled.
     static func stop(_ server: Server, completion: (() -> Void)? = nil) {
+        if let container = server.container {
+            docker("stop", container) { _ in completion?() }
+            return
+        }
         let targets = server.processStarts
         for pid in targets.keys where isSameProcess(pid, startedAt: targets[pid]) {
             kill(pid, SIGTERM)
@@ -26,6 +30,10 @@ enum ProcessControl {
     /// Stops the server and relaunches the same command, in the same directory,
     /// with the same environment. Output goes to ~/Library/Logs/WhatThePort.
     static func restart(_ server: Server, completion: ((Bool) -> Void)? = nil) {
+        if let container = server.container {
+            docker("restart", container) { completion?($0) }
+            return
+        }
         guard let launch = server.launch, let cwd = server.launchDirectory ?? server.cwd,
               FileManager.default.fileExists(atPath: cwd),
               let command = shellCommand(for: launch) else {
@@ -39,6 +47,15 @@ enum ProcessControl {
                 let launched = spawn(command, environment: launch.environment, cwd: cwd, port: server.port)
                 DispatchQueue.main.async { completion?(launched) }
             }
+        }
+    }
+
+    /// Containers stop through docker. Signalling the process that holds the
+    /// port would take Docker, and every other container, down with it.
+    private static func docker(_ command: String, _ container: DockerContainer, completion: @escaping (Bool) -> Void) {
+        DispatchQueue.global().async {
+            let succeeded = DockerScanner.executable.flatMap { DockerScanner.run($0, [command, container.id], timeout: 30) } != nil
+            DispatchQueue.main.async { completion(succeeded) }
         }
     }
 

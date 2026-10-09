@@ -55,7 +55,7 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         let now = Date()
         var liveKeys = Set<String>()
 
-        for server in servers where !server.isProtected {
+        for server in servers where server.getsAlerts {
             let key = "\(server.port)-\(server.rootPid)"
             liveKeys.insert(key)
             var kinds = fired[key] ?? []

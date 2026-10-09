@@ -22,6 +22,7 @@ export type Server = {
   spark: string
   processes: { pid: number; command: string; memory: number; cpu: number }[]
   info: [label: string, value: string][]
+  container?: true // Docker container row: no uptime, never in Clean up.
   cleanUp?: { reason: CleanUpReason; note: string; suggested: boolean }
   // The popover's row context, clean-up reason and running time, in the app's own phrases.
   lines: (l: Localizer) => { context: string; note?: string; running: string }
@@ -113,6 +114,26 @@ export const SERVERS: Server[] = [
       ['Workspace', 'Conductor · lisbon'],
     ],
     cleanUp: { reason: 'idle', note: 'Idle 5h · no connections', suggested: true },
+  },
+  {
+    port: '5432',
+    name: 'api-db',
+    branch: 'api-db',
+    status: 'on',
+    memory: 148,
+    cpu: 1,
+    cpuNote: 'quiet',
+    uptime: '',
+    context: { text: 'Docker · api' },
+    lines: () => ({ context: 'Docker · api', running: '' }),
+    container: true,
+    chart: 'steady',
+    spark: 'M0 11 L4 11 L8 10.5 L12 11 L16 10.5 L20 11 L24 10.5 L28 11 L32 10.5 L36 11 L40 10.5 L44 11',
+    processes: [{ pid: 70001, command: 'api-db', memory: 148, cpu: 1 }],
+    info: [
+      ['Folder', '~/Code/api'],
+      ['Image', 'postgres:16'],
+    ],
   },
   {
     port: '6006',

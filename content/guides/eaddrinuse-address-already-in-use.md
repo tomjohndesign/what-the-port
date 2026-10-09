@@ -71,7 +71,7 @@ Stopping a parent doesn’t always stop its children. Kill `npm` with `-9` and t
 A few ports are taken by macOS or other apps:
 
 - **5000 and 7000**: AirPlay Receiver on macOS 12 and later. See [Port 5000 in use on Mac](/guides/port-5000-in-use-mac-airplay).
-- **Docker Desktop**: a published container port shows up as a Docker process. Use `docker ps` and `docker stop` rather than killing Docker itself.
+- **Docker Desktop**: a published container port is held by Docker itself. Use `docker ps` and `docker stop` rather than killing Docker, or stop the container from WhatThePort, which lists it by name.
 - **Databases**: Postgres on 5432, Redis on 6379, MySQL on 3306.
 
 ## Handle it in code

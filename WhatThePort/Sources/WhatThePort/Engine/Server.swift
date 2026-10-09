@@ -73,12 +73,19 @@ struct Server: Identifiable {
     var history: [Sample]
     var lastActive: Date
     var isProtected: Bool
+    var container: DockerContainer? = nil
 
     var id: Int { port }
     var url: URL { URL(string: "http://localhost:\(port)")! }
 
     var uptime: TimeInterval? { startedAt.map { Date().timeIntervalSince($0) } }
     var idleFor: TimeInterval { Date().timeIntervalSince(lastActive) }
+
+    /// Containers restart through docker; processes need their command and folder.
+    var canRestart: Bool { container != nil || (launch != nil && cwdExists) }
+
+    /// Protected databases stay quiet, but containers are only protected from Clean up.
+    var getsAlerts: Bool { !isProtected || container != nil }
 
     /// Memory growth across the recorded history window (up to 10 minutes).
     var memoryGrowth: Int64 {
@@ -98,8 +105,9 @@ struct Server: Identifiable {
         return .running
     }
 
-    /// Short location label: Conductor or Pane workspace, git worktree, or parent folder.
+    /// Short location label: Docker, Conductor or Pane workspace, git worktree, or parent folder.
     var locationLabel: String {
+        if let container { return "Docker · \(container.composeProject ?? container.image)" }
         if let conductorWorkspace { return conductorWorkspace }
         if let paneWorkspace { return paneWorkspace.name }
         if let worktree = project.worktreeName { return worktree }

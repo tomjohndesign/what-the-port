@@ -6,6 +6,7 @@ struct ScanEngineTests {
     private final class Fixture {
         var processes: [pid_t: ProcSnapshot] = [:]
         var sockets = SocketScan()
+        var docker = DockerSnapshot()
         var usages: [pid_t: ProcUsage] = [:]
         var arguments: [pid_t: ProcArgs] = [:]
         var reads: [pid_t: Int] = [:]
@@ -34,8 +35,16 @@ struct ScanEngineTests {
             }
         }
 
+        func container(_ id: String, name: String, ports: [Int], memory: UInt64 = 0, cpu: Double = 0, folder: String? = nil) {
+            docker.containers.append(DockerContainer(id: id, name: name, image: "\(name):latest",
+                                                     ports: ports.map { PublishedPort(port: $0, addresses: ["0.0.0.0"]) },
+                                                     composeProject: folder.map { ($0 as NSString).lastPathComponent },
+                                                     composeService: name, workingDirectory: folder))
+            docker.stats[id] = DockerStats(memory: memory, cpu: cpu)
+        }
+
         func scan(after seconds: Double = 0) -> [Server] {
-            engine.scan(config, sockets: sockets, processes: processes, now: epoch.addingTimeInterval(seconds))
+            engine.scan(config, sockets: sockets, processes: processes, docker: docker, now: epoch.addingTimeInterval(seconds))
         }
     }
 
@@ -225,5 +234,74 @@ struct ScanEngineTests {
         #expect(!ScanEngine.isAllowed("python3.14", allowlist: ["node"]))
         #expect(!ScanEngine.isAllowed("python3.helper", allowlist: ["python3"]))
         #expect(!ScanEngine.isAllowed("python3.", allowlist: ["python3"]))
+    }
+
+    @Test func containerPortsBecomeRowsAndHideDockersOwnListener() {
+        let f = Fixture()
+        f.config.allowlist.insert("com.docker.backend")
+        f.process(99, name: "com.docker.backend")
+        f.listen(99, port: 3000)
+        f.process(20)
+        f.listen(20, port: 4000)
+        f.container("ed34fb53ee1d", name: "web", ports: [3000], memory: 15_000_000, cpu: 1.5, folder: NSTemporaryDirectory())
+        let rows = f.scan()
+        #expect(rows.map(\.port) == [3000, 4000])
+        let web = rows[0]
+        #expect(web.container?.name == "web")
+        #expect(web.project.name == "web")
+        #expect(web.project.branch == nil)
+        #expect(web.memory == 15_000_000)
+        #expect(web.cpu == 1.5)
+        #expect(web.processStarts.isEmpty)
+        #expect(web.isProtected)
+        #expect(web.canRestart)
+        #expect(web.getsAlerts)
+        #expect(web.locationLabel == "Docker · \((NSTemporaryDirectory() as NSString).lastPathComponent)")
+    }
+
+    @Test func containerRowsHonourPortRangeAndToggle() {
+        let f = Fixture()
+        f.container("aaa", name: "db", ports: [2000, 5432])
+        #expect(f.scan().map(\.port) == [5432])
+        f.config.showDocker = false
+        #expect(f.scan().isEmpty)
+    }
+
+    @Test func containerWithoutComposeHasNameAndNoFolder() {
+        let f = Fixture()
+        f.container("bbb", name: "cache", ports: [6379])
+        let row = f.scan()[0]
+        #expect(row.project.name == "cache")
+        #expect(row.cwd == nil)
+        #expect(row.cwdExists)
+        #expect(row.locationLabel == "Docker · cache:latest")
+    }
+
+    @Test func containerHistoryGrowsAcrossScans() {
+        let f = Fixture()
+        f.container("ccc", name: "api", ports: [8000], memory: 100)
+        _ = f.scan()
+        f.docker.stats["ccc"] = DockerStats(memory: 300, cpu: 0)
+        let row = f.scan(after: 2)[0]
+        #expect(row.history.map(\.memory) == [100, 300])
+    }
+
+    @Test func containersAreCountedSeparatelyInTotals() {
+        let f = Fixture()
+        f.container("aaa", name: "one", ports: [3000, 3001], memory: 100)
+        f.container("bbb", name: "two", ports: [3002], memory: 50)
+        let resources = ServerResources(f.scan())
+        #expect(resources.memory == 150)
+        #expect(resources.memoryByPort == [3000: 50, 3001: 50, 3002: 50])
+    }
+
+    @Test func protectedProcessRowsGetNoAlerts() {
+        let f = Fixture()
+        f.config.protected = ["node"]
+        f.process(20)
+        f.listen(20, port: 4000)
+        let row = f.scan()[0]
+        #expect(row.isProtected)
+        #expect(!row.getsAlerts)
     }
 }

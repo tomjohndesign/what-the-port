@@ -296,3 +296,8 @@
 "Changes apply immediately." = "השינויים חלים מיד.";
 "servers (few)" = "שרתים";
 "tools (few)" = "כלים";
+"Stop container" = "עצירת הקונטיינר";
+"Restart container" = "הפעלה מחדש של הקונטיינר";
+"Image" = "אימג׳";
+"Show containers" = "הצגת קונטיינרים";
+"Ports published by running containers" = "פורטים שמפורסמים על ידי קונטיינרים פעילים";

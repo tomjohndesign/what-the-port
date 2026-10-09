@@ -1,5 +1,8 @@
 {
   "de": {
+    "Image": "Image",
+    "Stop container": "Container stoppen",
+    "Restart container": "Container neu starten",
     "Servers": "Server",
     "Clean up": "Aufräumen",
     "CPU (servers)": "CPU (Server)",
@@ -59,6 +62,9 @@
     "Preview": "Vorschau"
   },
   "fr": {
+    "Image": "Image",
+    "Stop container": "Arrêter le conteneur",
+    "Restart container": "Redémarrer le conteneur",
     "Servers": "Serveurs",
     "Clean up": "Nettoyer",
     "CPU (servers)": "CPU (serveurs)",
@@ -118,6 +124,9 @@
     "Preview": "Aperçu"
   },
   "es": {
+    "Image": "Imagen",
+    "Stop container": "Detener contenedor",
+    "Restart container": "Reiniciar contenedor",
     "Servers": "Servidores",
     "Clean up": "Limpiar",
     "CPU (servers)": "CPU (servidores)",
@@ -177,6 +186,9 @@
     "Preview": "Vista previa"
   },
   "zh-Hans": {
+    "Image": "镜像",
+    "Stop container": "停止容器",
+    "Restart container": "重启容器",
     "Servers": "服务器",
     "Clean up": "清理",
     "CPU (servers)": "CPU（服务器）",
@@ -236,6 +248,9 @@
     "Preview": "预览"
   },
   "he": {
+    "Image": "אימג׳",
+    "Stop container": "עצירת הקונטיינר",
+    "Restart container": "הפעלה מחדש של הקונטיינר",
     "Servers": "שרתים",
     "Clean up": "ניקוי",
     "CPU (servers)": "CPU (שרתים)",
@@ -295,6 +310,9 @@
     "Preview": "תצוגה מקדימה"
   },
   "ja": {
+    "Image": "イメージ",
+    "Stop container": "コンテナを停止",
+    "Restart container": "コンテナを再起動",
     "Servers": "サーバー",
     "Clean up": "クリーンアップ",
     "CPU (servers)": "CPU（サーバー）",
@@ -354,6 +372,9 @@
     "Preview": "プレビュー"
   },
   "uk": {
+    "Image": "Образ",
+    "Stop container": "Зупинити контейнер",
+    "Restart container": "Перезапустити контейнер",
     "Servers": "Сервери",
     "Clean up": "Очищення",
     "CPU (servers)": "CPU (сервери)",

@@ -346,6 +346,7 @@ private struct IntegrationsPane: View {
     @AppStorage(Preferences.linkConductor) private var conductor = true
     @AppStorage(Preferences.linkPane) private var pane = true
     @AppStorage(Preferences.showBranches) private var branches = true
+    @AppStorage(Preferences.showDocker) private var docker = true
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.githubPullRequests) private var pullRequests = false
 
@@ -367,6 +368,11 @@ private struct IntegrationsPane: View {
             }
             Section("Git") {
                 Toggle(L10n.text("Show branch names"), isOn: $branches)
+            }
+            Section("Docker") {
+                Toggle(isOn: $docker) {
+                    SettingLabel(L10n.text("Show containers"), caption: DockerScanner.executable != nil ? L10n.text("Ports published by running containers") : L10n.text("Not installed"))
+                }
             }
             Section {
                 Toggle(isOn: $previews) {

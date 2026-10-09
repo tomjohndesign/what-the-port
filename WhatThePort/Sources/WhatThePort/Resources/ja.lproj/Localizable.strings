@@ -296,3 +296,8 @@
 "Changes apply immediately." = "変更はすぐに適用されます。";
 "servers (few)" = "サーバー";
 "tools (few)" = "ツール";
+"Stop container" = "コンテナを停止";
+"Restart container" = "コンテナを再起動";
+"Image" = "イメージ";
+"Show containers" = "コンテナを表示";
+"Ports published by running containers" = "実行中のコンテナが公開しているポート";

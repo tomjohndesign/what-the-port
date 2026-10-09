@@ -7,6 +7,7 @@ const LANGUAGES = ['de', 'fr', 'es', 'zh-Hans', 'he', 'ja', 'uk']
 
 // Every app phrase the demo popover shows. English phrases are the keys, as in the app.
 const KEYS = [
+  'Image', 'Stop container', 'Restart container',
   'Servers', 'Clean up', 'CPU (servers)', 'CPU (all)',
   'Whole Mac. Click for servers only.', 'Dev servers, as a share of the whole Mac. Click for all.',
   'Other apps', 'Free', '%@ of %@', 'Free · %@', '%@ of RAM', '%@ of RAM · CPU %@',

@@ -296,3 +296,8 @@
 "Changes apply immediately." = "Зміни застосовуються одразу.";
 "servers (few)" = "сервери";
 "tools (few)" = "інструменти";
+"Stop container" = "Зупинити контейнер";
+"Restart container" = "Перезапустити контейнер";
+"Image" = "Образ";
+"Show containers" = "Показувати контейнери";
+"Ports published by running containers" = "Порти, опубліковані запущеними контейнерами";

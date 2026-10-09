@@ -269,7 +269,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
           </span>
         </div>
         <div className={styles.shareBar} aria-label="Mac memory usage">
-          {demo.running.map((s) => (
+          {demo.running.filter((s) => !(cleaning && s.container)).map((s) => (
             <button
               key={s.port}
               type="button"
@@ -337,7 +337,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             </span>
           </div>
         )}
-        {demo.running.map((s) => (
+        {demo.running.filter((s) => !(cleaning && s.container)).map((s) => (
           <div
             key={s.port}
             role="button"
@@ -542,7 +542,7 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
         ['Branch', server.branch],
       ]
     : [
-        ['Branch', server.branch],
+        ...(server.container ? [] : [['Branch', server.branch] as [string, string]]),
         ['Folder', server.info[0][1]],
       ]
   const hiddenInfo: [string, string][] = server.info
@@ -561,13 +561,15 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
             </span>
           </span>
           <span className={styles.popDisplay} style={{ gap: 10 }}>
-            <span className={styles.t3}>
-              {restarting
-                ? 'restarting…'
-                : restarted
-                  ? l.format('Running for %@', l.duration(0))
-                  : l.format('Running for %@', server.lines(l).running)}
-            </span>
+            {!server.container && (
+              <span className={styles.t3}>
+                {restarting
+                  ? 'restarting…'
+                  : restarted
+                    ? l.format('Running for %@', l.duration(0))
+                    : l.format('Running for %@', server.lines(l).running)}
+              </span>
+            )}
             <span className={styles.popDisplay}>
               <button
                 type="button"
@@ -575,7 +577,11 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
                 aria-label="Restart"
                 disabled={server.status === 'idle' || restarting}
                 title={
-                  server.status === 'idle' ? 'Working directory no longer exists' : l.text('Restart with the same command')
+                  server.status === 'idle'
+                    ? 'Working directory no longer exists'
+                    : server.container
+                      ? l.text('Restart container')
+                      : l.text('Restart with the same command')
                 }
                 data-spinning={restarting}
                 onClick={() => setRestarting(true)}
@@ -601,7 +607,8 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
               <button
                 type="button"
                 className={`${styles.control} ${styles.controlStop}`}
-                aria-label={l.text('Stop')}
+                aria-label={server.container ? l.text('Stop container') : l.text('Stop')}
+                title={server.container ? l.text('Stop container') : undefined}
                 onClick={() => demo.stop([server.port])}
               >
                 <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
@@ -626,7 +633,7 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
               <div key={label} className={styles.infoRow}>
                 <span className={styles.infoLabel}>{l.text(label)}</span>
                 <span
-                  className={`${styles.ellipsis} ${label === 'PID' || label === 'Command' ? styles.mono : ''} ${styles.t1}`}
+                  className={`${styles.ellipsis} ${label === 'PID' || label === 'Command' || label === 'Image' ? styles.mono : ''} ${styles.t1}`}
                 >
                   {value}
                 </span>
@@ -772,10 +779,12 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
         <button type="button" className={styles.primaryAction} onClick={() => trigger('open')}>
           {flash === 'open' ? 'Opened in your browser' : l.format('Open localhost:%@', server.port)}
         </button>
-        <button type="button" className={styles.secondaryAction} onClick={() => trigger('preview')}>
-          <VercelIcon fill="rgb(235 235 245 / 75%)" width={11} height={10} />
-          {flash === 'preview' ? 'Opened' : l.text('Preview')}
-        </button>
+        {!server.container && (
+          <button type="button" className={styles.secondaryAction} onClick={() => trigger('preview')}>
+            <VercelIcon fill="rgb(235 235 245 / 75%)" width={11} height={10} />
+            {flash === 'preview' ? 'Opened' : l.text('Preview')}
+          </button>
+        )}
         <button type="button" className={styles.moreAction} aria-label="More">
           <span />
           <span />

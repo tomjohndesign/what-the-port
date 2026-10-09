@@ -95,6 +95,14 @@ enum TerminalCommand {
         monitor.scanNow()
         usleep(500_000)
         monitor.scanNow()
+        // Container memory comes from a background `docker stats` sampler that needs a few seconds to warm up.
+        var waited = 0
+        while waited < 3_000_000, monitor.servers.contains(where: { $0.container != nil }),
+              !monitor.servers.contains(where: { $0.container != nil && $0.memory > 0 }) {
+            usleep(500_000)
+            waited += 500_000
+            monitor.scanNow()
+        }
         let servers = monitor.servers
         if json {
             printJSON(servers, monitor: monitor)
@@ -152,41 +160,49 @@ enum TerminalCommand {
         }
     }
 
-    @MainActor private static func printJSON(_ servers: [Server], monitor: ServerMonitor) {
+    static func jsonObject(_ server: Server, status: String) -> [String: Any] {
         let iso = ISO8601DateFormatter()
-        let objects: [[String: Any]] = servers.map { server in
-            var object: [String: Any] = [
-                "port": server.port,
-                "url": server.url.absoluteString,
-                "pid": Int(server.pid),
-                "name": server.project.name,
-                "memoryBytes": server.memory,
-                "cpuPercent": (server.cpu * 10).rounded() / 10,
-                "processes": server.processes.map { ["pid": Int($0.pid), "name": $0.name, "memoryBytes": $0.memory] },
-                "status": { () -> String in
-                    switch monitor.status(of: server) {
-                    case .running: return "running"
-                    case .attention: return "attention"
-                    case .idle: return "idle"
-                    }
-                }(),
-                "protected": server.isProtected,
-            ]
-            object["branch"] = server.project.branch
-            object["framework"] = server.project.framework
-            object["folder"] = server.cwd
-            object["command"] = server.command
-            object["startedAt"] = server.startedAt.map(iso.string)
-            object["conductorWorkspace"] = server.conductorWorkspace
-            if let pane = server.paneWorkspace {
-                object["pane"] = ["workspace": pane.name, "link": pane.link.absoluteString]
+        var object: [String: Any] = [
+            "port": server.port,
+            "url": server.url.absoluteString,
+            "name": server.project.name,
+            "memoryBytes": server.memory,
+            "cpuPercent": (server.cpu * 10).rounded() / 10,
+            "processes": server.container != nil ? [] : server.processes.map { ["pid": Int($0.pid), "name": $0.name, "memoryBytes": $0.memory] },
+            "status": status,
+            "protected": server.isProtected,
+        ]
+        // Container rows have no host process, and pid 0 would signal the caller's own process group.
+        if server.container == nil { object["pid"] = Int(server.pid) }
+        object["branch"] = server.project.branch
+        object["framework"] = server.project.framework
+        object["folder"] = server.cwd
+        object["command"] = server.command
+        object["startedAt"] = server.startedAt.map(iso.string)
+        object["conductorWorkspace"] = server.conductorWorkspace
+        if let pane = server.paneWorkspace {
+            object["pane"] = ["workspace": pane.name, "link": pane.link.absoluteString]
+        }
+        if let container = server.container {
+            object["container"] = ["id": container.id, "name": container.name, "image": container.image]
+        }
+        if let agent = server.agent {
+            var session: [String: Any] = ["kind": agent.kind.rawValue, "id": agent.id]
+            session["title"] = agent.title
+            object["session"] = session
+        }
+        return object
+    }
+
+    @MainActor private static func printJSON(_ servers: [Server], monitor: ServerMonitor) {
+        let objects = servers.map { server -> [String: Any] in
+            let status: String
+            switch monitor.status(of: server) {
+            case .running: status = "running"
+            case .attention: status = "attention"
+            case .idle: status = "idle"
             }
-            if let agent = server.agent {
-                var session: [String: Any] = ["kind": agent.kind.rawValue, "id": agent.id]
-                session["title"] = agent.title
-                object["session"] = session
-            }
-            return object
+            return jsonObject(server, status: status)
         }
         let data = (try? JSONSerialization.data(withJSONObject: objects, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data("[]".utf8)
         FileHandle.standardOutput.write(data)

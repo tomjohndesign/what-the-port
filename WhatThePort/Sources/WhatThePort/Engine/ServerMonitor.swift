@@ -86,7 +86,8 @@ final class ServerMonitor: ObservableObject {
                    linkCodex: defaults.bool(forKey: Preferences.linkCodex),
                    linkConductor: defaults.bool(forKey: Preferences.linkConductor),
                    linkPane: defaults.bool(forKey: Preferences.linkPane),
-                   showBranches: defaults.bool(forKey: Preferences.showBranches))
+                   showBranches: defaults.bool(forKey: Preferences.showBranches),
+                   showDocker: defaults.bool(forKey: Preferences.showDocker))
     }
 
     // MARK: - Scanning

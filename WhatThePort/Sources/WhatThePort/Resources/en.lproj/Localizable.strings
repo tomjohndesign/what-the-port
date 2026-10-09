@@ -296,3 +296,8 @@
 "Changes apply immediately." = "Changes apply immediately.";
 "servers (few)" = "servers (few)";
 "tools (few)" = "tools (few)";
+"Stop container" = "Stop container";
+"Restart container" = "Restart container";
+"Image" = "Image";
+"Show containers" = "Show containers";
+"Ports published by running containers" = "Ports published by running containers";

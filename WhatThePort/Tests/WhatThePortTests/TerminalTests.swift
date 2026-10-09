@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import WhatThePort
 
@@ -39,5 +40,20 @@ struct TerminalTests {
         var canvas = BrailleCanvas(columns: 2, rows: 1)
         canvas.plot([(x: 0, y: 3), (x: 3, y: 0)])
         #expect(canvas.text(row: 0) == "⡠⠊")
+    }
+
+    @Test func testContainerJSONHasNoPid() {
+        let server = Server(
+            port: 6379, pid: 0, rootPid: 0, processName: "docker", addresses: [], cwd: nil, cwdExists: true,
+            command: nil, launch: nil, launchDirectory: nil, startedAt: nil, project: ProjectInfo(name: "cache"),
+            conductorWorkspace: nil, paneWorkspace: nil, agent: nil,
+            processes: [ServerProcess(pid: 0, name: "cache", depth: 0, memory: 1)], processStarts: [:],
+            memory: 1, cpu: 0, connections: 0, history: [], lastActive: Date(), isProtected: true,
+            container: DockerContainer(id: "abc", name: "cache", image: "redis:7", ports: [])
+        )
+        let object = TerminalCommand.jsonObject(server, status: "idle")
+        #expect(object["pid"] == nil)
+        #expect((object["processes"] as? [[String: Any]])?.isEmpty == true)
+        #expect((object["container"] as? [String: String])?["id"] == "abc")
     }
 }

@@ -10,6 +10,7 @@ struct ScanConfig {
     var linkConductor = true
     var linkPane = true
     var showBranches = true
+    var showDocker = true
 }
 
 /// Builds the list of servers from sockets and the process table. Holds the
@@ -32,6 +33,7 @@ final class ScanEngine: @unchecked Sendable {
 
     private let projects = ProjectResolver()
     private let agents = AgentSessionResolver()
+    private let docker = DockerScanner()
     struct Inspector {
         var usage: (pid_t) -> ProcUsage? = ProcessInspector.usage
         var arguments: (pid_t) -> ProcArgs? = ProcessInspector.arguments
@@ -46,13 +48,18 @@ final class ScanEngine: @unchecked Sendable {
     private var argsCache: [pid_t: (start: Date, args: ProcArgs?)] = [:]
 
     func scan(_ config: ScanConfig) -> [Server] {
-        scan(config, sockets: SocketScanner.scan(), processes: ProcessInspector.allProcesses(), now: Date())
+        scan(config, sockets: SocketScanner.scan(), processes: ProcessInspector.allProcesses(),
+             docker: config.showDocker ? docker.snapshot() : DockerSnapshot(), now: Date())
     }
 
     /// Snapshot inputs keep ownership and sampling testable without real processes.
-    func scan(_ config: ScanConfig, sockets: SocketScan, processes: [pid_t: ProcSnapshot], now: Date) -> [Server] {
+    func scan(_ config: ScanConfig, sockets: SocketScan, processes: [pid_t: ProcSnapshot],
+              docker: DockerSnapshot = DockerSnapshot(), now: Date) -> [Server] {
         let ownership = ProcessTree(processes: processes, sockets: sockets)
         var sampled: [pid_t: (memory: UInt64, cpu: Double)] = [:]
+        let containers = config.showDocker ? docker.containers : []
+        // Docker's own process holds published ports; the container row replaces it.
+        let publishedPorts = Set(containers.flatMap { $0.ports.map(\.port) })
 
         var servers: [Server] = []
         var seenKeys = Set<String>()
@@ -60,6 +67,7 @@ final class ScanEngine: @unchecked Sendable {
 
         for socket in sockets.listening {
             guard socket.port >= config.minPort, socket.port <= config.maxPort,
+                  !publishedPorts.contains(socket.port),
                   Self.isAllowed(socket.command, allowlist: config.allowlist),
                   let listener = processes[socket.pid] else { continue }
 
@@ -124,14 +132,7 @@ final class ScanEngine: @unchecked Sendable {
             let key = "\(socket.port)-\(root.pid)-\(root.startTime.timeIntervalSince1970)"
             seenKeys.insert(key)
             let connections = sockets.inboundConnections[socket.port] ?? 0
-            if cpuPercent >= 2 || connections > 0 || lastActive[key] == nil {
-                lastActive[key] = now
-            }
-
-            var history = histories[key] ?? []
-            history.append(Sample(time: now, memory: memory, cpu: cpuPercent))
-            history.removeAll { now.timeIntervalSince($0.time) > Self.historyWindow }
-            histories[key] = history
+            let activity = track(key, memory: memory, cpu: cpuPercent, connections: connections, now: now)
 
             servers.append(Server(
                 port: socket.port,
@@ -154,17 +155,71 @@ final class ScanEngine: @unchecked Sendable {
                 memory: memory,
                 cpu: cpuPercent,
                 connections: connections,
-                history: history,
-                lastActive: lastActive[key] ?? now,
+                history: activity.history,
+                lastActive: activity.lastActive,
                 isProtected: config.protected.contains(socket.command)
             ))
         }
+
+        for container in containers {
+            let stats = docker.stats[container.id] ?? DockerStats(memory: 0, cpu: 0)
+            var project = projects.resolve(cwd: container.workingDirectory, command: nil)
+            project.name = container.name
+            project.branch = nil
+            for published in container.ports where published.port >= config.minPort && published.port <= config.maxPort {
+                let key = "\(published.port)-\(container.id)"
+                seenKeys.insert(key)
+                let connections = sockets.inboundConnections[published.port] ?? 0
+                let activity = track(key, memory: stats.memory, cpu: stats.cpu, connections: connections, now: now)
+                servers.append(Server(
+                    port: published.port,
+                    pid: 0,
+                    rootPid: 0,
+                    processName: "docker",
+                    addresses: published.addresses,
+                    cwd: container.workingDirectory,
+                    // The container keeps running even if its Compose folder is gone.
+                    cwdExists: true,
+                    command: nil,
+                    launch: nil,
+                    launchDirectory: nil,
+                    startedAt: nil,
+                    project: project,
+                    conductorWorkspace: nil,
+                    paneWorkspace: nil,
+                    agent: nil,
+                    processes: [ServerProcess(pid: 0, name: container.name, depth: 0, memory: stats.memory, cpu: stats.cpu)],
+                    processStarts: [:],
+                    memory: stats.memory,
+                    cpu: stats.cpu,
+                    connections: connections,
+                    history: activity.history,
+                    lastActive: activity.lastActive,
+                    // Containers are often long-lived databases, so Clean up leaves them alone.
+                    isProtected: true,
+                    container: container
+                ))
+            }
+        }
+        servers.sort { $0.port < $1.port }
 
         histories = histories.filter { seenKeys.contains($0.key) }
         lastActive = lastActive.filter { seenKeys.contains($0.key) }
         previousCPU = previousCPU.filter { livePids.contains($0.key) }
         argsCache = argsCache.filter { processes[$0.key] != nil }
         return servers
+    }
+
+    /// Records a sample and returns the server's history and when it was last active.
+    private func track(_ key: String, memory: UInt64, cpu: Double, connections: Int, now: Date) -> (history: [Sample], lastActive: Date) {
+        if cpu >= 2 || connections > 0 || lastActive[key] == nil {
+            lastActive[key] = now
+        }
+        var history = histories[key] ?? []
+        history.append(Sample(time: now, memory: memory, cpu: cpu))
+        history.removeAll { now.timeIntervalSince($0.time) > Self.historyWindow }
+        histories[key] = history
+        return (history, lastActive[key] ?? now)
     }
 
     // MARK: - Process tree

@@ -6,6 +6,8 @@ struct ServerResources {
     private struct Identity: Hashable {
         let pid: pid_t
         let startedAt: Date
+        /// Container rows all carry pid 0.
+        let container: String?
     }
 
     let memory: UInt64
@@ -17,7 +19,8 @@ struct ServerResources {
         var ports: [Identity: Set<Int>] = [:]
         for server in servers {
             for process in server.processes {
-                let identity = Identity(pid: process.pid, startedAt: server.processStarts[process.pid] ?? .distantPast)
+                let identity = Identity(pid: process.pid, startedAt: server.processStarts[process.pid] ?? .distantPast,
+                                        container: server.container?.id)
                 processes[identity] = process
                 ports[identity, default: []].insert(server.port)
             }

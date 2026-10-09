@@ -346,10 +346,10 @@ final class TerminalApp {
                 show("Resuming in \(TerminalLauncher.current.name)")
             })
         }
-        items.append(ServerAction(label: server.agent.map { "Restart · runs outside \($0.kind.rawValue)" } ?? "Restart", key: "r",
-                                  isEnabled: server.launch != nil && server.cwdExists) { [unowned self] in restart(server) })
+        items.append(ServerAction(label: server.container != nil ? "Restart container" : server.agent.map { "Restart · runs outside \($0.kind.rawValue)" } ?? "Restart", key: "r",
+                                  isEnabled: server.canRestart) { [unowned self] in restart(server) })
         let count = server.processes.count
-        items.append(ServerAction(label: "Stop \(count) \(count == 1 ? "process" : "processes")", key: "s", isDestructive: true) { [unowned self] in
+        items.append(ServerAction(label: server.container != nil ? "Stop container" : "Stop \(count) \(count == 1 ? "process" : "processes")", key: "s", isDestructive: true) { [unowned self] in
             confirmingStop = server.port
         })
         if let root {
@@ -470,7 +470,7 @@ final class TerminalApp {
     }
 
     private func restart(_ server: Server) {
-        guard server.launch != nil, server.cwdExists else {
+        guard server.canRestart else {
             show("Can’t restart :\(server.port): its command or folder is gone", isError: true)
             return
         }
@@ -884,6 +884,9 @@ final class TerminalApp {
         if let command = server.command {
             secondary.append(row("Command", [Span(command, palette.text2)], middle: true))
         }
+        if let container = server.container {
+            secondary.append(row("Image", [Span(container.image, palette.text2)], middle: true))
+        }
         if let started = server.startedAt {
             secondary.append(row("Started", [Span(Format.time(started), palette.text2)]))
         }
@@ -935,7 +938,7 @@ final class TerminalApp {
                 let isListener = process.pid == server.pid
                 let filled = max(Int((8 * Double(process.memory) / Double(largest)).rounded()), 1)
                 let right: Line = [
-                    Span(String(process.pid).padding(toLength: 8, withPad: " ", startingAt: 0), palette.text3),
+                    Span((server.container == nil ? String(process.pid) : "").padding(toLength: 8, withPad: " ", startingAt: 0), palette.text3),
                     Span(String(repeating: "━", count: filled), isListener ? palette.text1 : palette.text2),
                     Span(String(repeating: "─", count: 8 - filled), palette.track),
                     Span(padLeft(Format.bytesString(process.memory), 10), palette.text1),
@@ -1078,7 +1081,7 @@ final class TerminalApp {
             block.add(divider())
             let count = server.processes.count
             let question: Line = [Span("Stop \(server.project.name) ", palette.text1), Span(":\(port)", palette.port(monitor.colorIndex(for: port)).bold()),
-                                  Span(" and its \(count) \(count == 1 ? "process" : "processes")?", palette.text1)]
+                                  Span(server.container != nil ? "?" : " and its \(count) \(count == 1 ? "process" : "processes")?", palette.text1)]
             let keys: Line = [Span("y", palette.softRed.bold()), Span(" Stop   ", palette.softRed), Span("n", palette.text1.bold()), Span(" Cancel", palette.text3)]
             block.add(padded(Line.split(question, keys, width: inner)))
             block.add([])

@@ -52,8 +52,8 @@ struct ServerDetailView: View {
                             Usage.record(.restart)
                             monitor.restart(server)
                         }
-                        .disabled(server.launch == nil || !server.cwdExists)
-                        IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: L10n.format("Stop %d processes", server.processes.count)) {
+                        .disabled(!server.canRestart)
+                        IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: server.container != nil ? L10n.text("Stop container") : L10n.format("Stop %d processes", server.processes.count)) {
                             Usage.record(.stop)
                             monitor.stop(server)
                             back()
@@ -66,6 +66,7 @@ struct ServerDetailView: View {
     }
 
     private var restartHelp: String {
+        if server.container != nil { return L10n.text("Restart container") }
         if let agent = server.agent {
             return L10n.format("Restart. It will run outside the %@ session.", agent.kind.rawValue)
         }
@@ -123,6 +124,9 @@ struct ServerDetailView: View {
         }
         if let framework = server.project.framework {
             rows.append(InfoRow(label: L10n.text("Framework"), tooltip: framework) { Text(framework).font(Theme.body).foregroundStyle(Theme.text2) })
+        }
+        if let container = server.container {
+            rows.append(InfoRow(label: L10n.text("Image"), tooltip: container.image) { Text(container.image).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         if let command = server.command {
             rows.append(InfoRow(label: L10n.text("Command"), tooltip: command) { Text(command).font(Theme.mono).foregroundStyle(Theme.text2) })
@@ -206,8 +210,10 @@ struct ServerDetailView: View {
                                 .truncationMode(.tail)
                                 .help(process.name)
                             Spacer(minLength: 8)
-                            Text(String(process.pid)).font(Theme.monoCaption).foregroundStyle(Theme.text3)
-                                .frame(width: 52, alignment: .leading)
+                            if server.container == nil {
+                                Text(String(process.pid)).font(Theme.monoCaption).foregroundStyle(Theme.text3)
+                                    .frame(width: 52, alignment: .leading)
+                            }
                             Capsule().fill(Theme.fill).frame(width: 64, height: 4)
                                 .overlay(alignment: .leading) {
                                     Capsule().fill(Theme.text1.opacity(process.pid == server.pid ? 0.75 : 0.45))
