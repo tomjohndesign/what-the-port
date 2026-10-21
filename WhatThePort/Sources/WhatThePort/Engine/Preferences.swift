@@ -19,7 +19,8 @@ enum Preferences {
 
     // Alerts
     static let thresholdGB = "alerts.thresholdGB"
-    static let leakWarnings = "alerts.leakWarnings"
+    // Keep the stored key so existing notification preferences carry over.
+    static let growthWarnings = "alerts.leakWarnings"
     static let snoozeMinutes = "alerts.snoozeMinutes"
     static let startStop = "alerts.startStop"
 
@@ -69,7 +70,7 @@ enum Preferences {
             scanInterval: 2.0,
             shareUsage: true,
             thresholdGB: 2.0,
-            leakWarnings: true,
+            growthWarnings: true,
             snoozeMinutes: 60,
             startStop: false,
             cleanUpMode: CleanUpMode.ask.rawValue,

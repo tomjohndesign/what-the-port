@@ -83,11 +83,90 @@ struct ScanEngineTests {
         f.listen(30, port: 8000)
         _ = f.scan()
         f.usages[30] = ProcUsage(footprint: 100 + 600 * 1_048_576, cpuNanoseconds: 0)
-        let rows = f.scan(after: 121)
+        _ = f.scan(after: 121)
+        let rows = f.scan(after: 151)
         #expect(rows[0].memoryGrowth == 0)
-        #expect(!rows[0].isLeaking())
+        #expect(!rows[0].isGrowingRapidly())
         #expect(rows[1].memoryGrowth == 600 * 1_048_576)
-        #expect(rows[1].isLeaking())
+        #expect(rows[1].isGrowingRapidly())
+    }
+
+    @Test func temporaryBuildChildrenRecoverWithoutAGrowthWarning() {
+        let f = Fixture()
+        f.process(20, memory: 800 * 1_048_576)
+        f.listen(20, port: 3000)
+        _ = f.scan()
+
+        for start in [120.0, 180.0] {
+            f.process(21, parent: 20, name: "link", memory: 600 * 1_048_576)
+            let peak = f.scan(after: start)[0]
+            #expect(peak.memory == 1400 * 1_048_576)
+            #expect(!peak.isGrowingRapidly())
+            #expect(peak.status(alertThreshold: 2 * 1_073_741_824) != .attention)
+            #expect(!f.scan(after: start + 14)[0].isGrowingRapidly())
+            f.processes.removeValue(forKey: 21)
+            let recovered = f.scan(after: start + 16)[0]
+            #expect(recovered.memory == 800 * 1_048_576)
+            #expect(!recovered.isGrowingRapidly())
+        }
+    }
+
+    @Test func growthMustStayAboveThresholdForThirtySeconds() {
+        let f = Fixture()
+        f.process(20, memory: 800 * 1_048_576)
+        f.listen(20, port: 3000)
+        _ = f.scan()
+        f.usages[20] = ProcUsage(footprint: 1300 * 1_048_576, cpuNanoseconds: 0)
+        #expect(!f.scan(after: 120)[0].isGrowingRapidly())
+        #expect(!f.scan(after: 149)[0].isGrowingRapidly())
+        #expect(f.scan(after: 150)[0].isGrowingRapidly())
+
+        // A dip below the growth threshold interrupts the sustained interval.
+        f.usages[20] = ProcUsage(footprint: 1299 * 1_048_576, cpuNanoseconds: 0)
+        #expect(!f.scan(after: 151)[0].isGrowingRapidly())
+        f.usages[20] = ProcUsage(footprint: 1300 * 1_048_576, cpuNanoseconds: 0)
+        #expect(!f.scan(after: 152)[0].isGrowingRapidly())
+        #expect(!f.scan(after: 181)[0].isGrowingRapidly())
+        #expect(f.scan(after: 182)[0].isGrowingRapidly())
+    }
+
+    @Test func growthBeforeTheObservationWindowDoesNotCountAsSustained() {
+        let f = Fixture()
+        f.process(20, memory: 100 * 1_048_576)
+        f.listen(20, port: 3000)
+        _ = f.scan()
+        f.usages[20] = ProcUsage(footprint: 700 * 1_048_576, cpuNanoseconds: 0)
+        #expect(!f.scan(after: 90)[0].isGrowingRapidly())
+        #expect(!f.scan(after: 120)[0].isGrowingRapidly())
+        #expect(f.scan(after: 150)[0].isGrowingRapidly())
+    }
+
+    @Test func sustainedGrowthSurvivesTheSlidingHistoryWindow() {
+        let f = Fixture()
+        f.process(20)
+        f.listen(20, port: 3000)
+        for second in stride(from: 0, through: 1200, by: 2) {
+            let memory = 800 * 1_048_576 + UInt64(second) * 510 * 1_048_576 / 600
+            f.usages[20] = ProcUsage(footprint: memory, cpuNanoseconds: 0)
+            let row = f.scan(after: Double(second))[0]
+            if second == 620 || second == 1200 {
+                #expect(row.memoryGrowth >= 500 * 1_048_576)
+                #expect(row.isGrowingRapidly())
+            }
+        }
+    }
+
+    @Test func aMovingBaselineCannotBackdateGrowthQualification() {
+        let f = Fixture()
+        f.process(20)
+        f.listen(20, port: 3000)
+        for second in stride(from: 0, through: 660, by: 2) {
+            let mib: UInt64 = second < 30 ? 1000 : second < 600 ? 500 : 1100
+            f.usages[20] = ProcUsage(footprint: mib * 1_048_576, cpuNanoseconds: 0)
+            let row = f.scan(after: Double(second))[0]
+            if second == 630 || second == 658 { #expect(!row.isGrowingRapidly()) }
+            if second == 660 { #expect(row.isGrowingRapidly()) }
+        }
     }
 
     @Test func hiddenListenersStillLimitOwnership() {

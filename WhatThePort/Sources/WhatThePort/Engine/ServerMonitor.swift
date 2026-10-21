@@ -174,26 +174,26 @@ final class ServerMonitor: ObservableObject {
         }
         if server.idleFor >= idleThreshold { return .idle(server.idleFor) }
         if let uptime = server.uptime, uptime >= longRunningThreshold { return .longRunning(uptime) }
-        if server.isLeaking() { return .leaking(UInt64(max(server.memoryGrowth, 0))) }
+        if server.isGrowingRapidly() { return .rapidGrowth(UInt64(max(server.memoryGrowth, 0))) }
         return nil
     }
 
-    /// Servers worth suggesting in Clean up. Leaking ones are listed but not
+    /// Servers worth suggesting in Clean up. Rapidly growing ones are listed but not
     /// preselected, since they're usually still in use.
     var cleanUpCandidates: [(server: Server, reason: CleanUpReason)] {
         servers.compactMap { server in cleanUpReason(for: server).map { (server, $0) } }
     }
 
     var suggestedCleanUpCount: Int {
-        cleanUpCandidates.filter { !$0.reason.isLeak }.count
+        cleanUpCandidates.filter { !$0.reason.isRapidGrowth }.count
     }
 
     // MARK: - Automatic clean up
 
     /// In Ask mode, tells you once when servers start qualifying. In Automatic
-    /// mode, stops them. Leaking servers are never stopped automatically.
+    /// mode, stops them. Rapidly growing servers are never stopped automatically.
     private func handleCleanUp() {
-        let candidates = cleanUpCandidates.filter { !$0.reason.isLeak }
+        let candidates = cleanUpCandidates.filter { !$0.reason.isRapidGrowth }
         let keys = Set(candidates.map { key(for: $0.server) })
         let fresh = candidates.filter { !handledCleanUps.contains(key(for: $0.server)) }
         handledCleanUps.formIntersection(keys)

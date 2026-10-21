@@ -31,7 +31,7 @@
 "2 seconds" = "2 שניות";
 "4 hours" = "4 שעות";
 "5 seconds" = "5 שניות";
-":%d %@ is leaking" = "⁦:%d⁩ %@ מדליף זיכרון";
+":%d %@ memory is growing quickly" = "⁦:%d⁩ %@ צורך יותר זיכרון במהירות";
 ":%d %@ is using %@" = "⁦:%d⁩ %@ משתמש ב־%@";
 ":%d %@ started" = "⁦:%d⁩ %@ הופעל";
 ":%d stopped" = "⁦:%d⁩ נעצר";
@@ -109,7 +109,7 @@
 "General" = "כללי";
 "Get started" = "מתחילים";
 "Global shortcut" = "קיצור מקשים כללי";
-"Grows more than 500 MB in 10 minutes" = "גדל ביותר מ־500 MB בתוך 10 דקות";
+"Grows 500 MB in 10 minutes, sustained for 30 seconds" = "גדל ב־500 MB בתוך 10 דקות ונשאר כך במשך 30 שניות";
 "Have been idle for" = "אינם פעילים במשך";
 "Have been running for" = "פועלים במשך";
 "Help shape WhatThePort" = "עזרו לעצב את WhatThePort";
@@ -122,7 +122,7 @@
 "Language" = "שפה";
 "Last checked %@" = "נבדק לאחרונה %@";
 "Launch at login" = "הפעלה בהתחברות";
-"Leaking · +%@" = "דליפת זיכרון · +%@";
+"Rapid growth · +%@" = "גדילה מהירה · +%@";
 "Less" = "פחות";
 "Link servers to Codex threads" = "קישור שרתים לשיחות Codex";
 "Link servers to the session that started them" = "קישור שרתים להפעלה שיצרה אותם";
@@ -130,7 +130,7 @@
 "MERGED" = "מוזג";
 "Made by Tomjohn" = "נוצר על ידי Tomjohn";
 "Memory" = "זיכרון";
-"Memory and leak alerts" = "התראות זיכרון ודליפות";
+"Memory and growth alerts" = "התראות זיכרון וגדילה";
 "Menu bar icon" = "סמל בשורת התפריטים";
 "Move WhatThePort to Applications first" = "יש להעביר תחילה את WhatThePort ליישומים";
 "Move WhatThePort to Applications first." = "יש להעביר תחילה את WhatThePort ליישומים.";
@@ -224,7 +224,7 @@
 "Snooze" = "השהיה";
 "Snooze for" = "השהיה למשך";
 "Started" = "הופעל";
-"Stay ahead of leaks" = "הקדימו את דליפות הזיכרון";
+"Stay ahead of memory growth" = "הקדימו את הגידול בזיכרון";
 "Stop" = "עצירה";
 "Stop %d %@ · free %@" = "עצירת %d %@ · פינוי %@";
 "Stop %d processes" = "עצירת %d תהליכים";
@@ -262,7 +262,7 @@
 "WTP now has TUI" = "ל־WTP יש כעת TUI";
 "Waiting for permission…" = "ממתין להרשאה…";
 "Waiting…" = "ממתין…";
-"Warn about leaks" = "התראה על דליפות זיכרון";
+"Warn about rapid growth" = "התראה על גדילה מהירה";
 "Watch ports" = "ניטור פורטים";
 "Watch processes" = "ניטור תהליכים";
 "Website" = "אתר";

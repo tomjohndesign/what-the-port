@@ -8,7 +8,7 @@ import UserNotifications
 final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
     static let shared = AlertCenter()
 
-    private enum Kind: String { case memory, leak }
+    private enum Kind: String { case memory, growth }
     private enum Action {
         static let category = "server-alert"
         static let details = "details"
@@ -17,7 +17,7 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
     }
 
     /// How long a server must stay over the threshold before we alert.
-    private let sustainFor: TimeInterval = 30
+    private let sustainFor = Server.growthSustainDuration
 
     private weak var monitor: ServerMonitor?
     /// Opens Settings. Set by the menu bar label, which has SwiftUI's openWindow.
@@ -41,7 +41,7 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
             UNNotificationAction(identifier: Action.snooze, title: L10n.text("Snooze"), options: []),
         ]
         center.setNotificationCategories([UNNotificationCategory(identifier: Action.category, actions: actions, intentIdentifiers: [])])
-        // Before onboarding, the Leaks step asks with context instead.
+        // Before onboarding, the memory-alert step asks with context instead.
         guard UserDefaults.standard.bool(forKey: Preferences.onboarded) else { return }
         Task {
             let settings = await center.notificationSettings()
@@ -76,14 +76,14 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
             }
 
             // Fast growth. Re-arm once growth drops back under half the trigger.
-            if defaults.bool(forKey: Preferences.leakWarnings), server.isLeaking(), !kinds.contains(.leak) {
-                kinds.insert(.leak)
+            if defaults.bool(forKey: Preferences.growthWarnings), server.isGrowingRapidly(), !kinds.contains(.growth) {
+                kinds.insert(.growth)
                 let window = server.history.first.map { L10n.duration(now.timeIntervalSince($0.time)) } ?? L10n.text("10 min")
-                post(server, kind: .leak,
-                     title: L10n.format(":%d %@ is leaking", server.port, server.project.name),
+                post(server, kind: .growth,
+                     title: L10n.format(":%d %@ memory is growing quickly", server.port, server.project.name),
                      body: L10n.format("%@ grew %@ in %@ and is now using %@.", server.project.framework ?? L10n.text("It"), Format.bytesString(UInt64(max(server.memoryGrowth, 0))), window, Format.bytesString(server.memory)))
             } else if server.memoryGrowth < 250_000_000 {
-                kinds.remove(.leak)
+                kinds.remove(.growth)
             }
 
             fired[key] = kinds

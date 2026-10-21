@@ -186,7 +186,7 @@ private struct CommandLineToolRow: View {
 
 private struct AlertsPane: View {
     @AppStorage(Preferences.thresholdGB) private var thresholdGB = 2.0
-    @AppStorage(Preferences.leakWarnings) private var leakWarnings = true
+    @AppStorage(Preferences.growthWarnings) private var growthWarnings = true
     @AppStorage(Preferences.snoozeMinutes) private var snoozeMinutes = 60
     @AppStorage(Preferences.startStop) private var startStop = false
 
@@ -204,8 +204,8 @@ private struct AlertsPane: View {
                         Text("GB").font(Theme.mono).foregroundStyle(.secondary)
                     }
                 }
-                Toggle(isOn: $leakWarnings) {
-                    SettingLabel(L10n.text("Warn about leaks"), caption: L10n.text("Grows more than 500 MB in 10 minutes"))
+                Toggle(isOn: $growthWarnings) {
+                    SettingLabel(L10n.text("Warn about rapid growth"), caption: L10n.text("Grows 500 MB in 10 minutes, sustained for 30 seconds"))
                 }
                 Picker(L10n.text("Snooze for"), selection: $snoozeMinutes) {
                     Text(L10n.text("15 minutes")).tag(15)

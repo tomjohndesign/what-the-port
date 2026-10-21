@@ -82,7 +82,7 @@ Two more things help:
 
 [WhatThePort](/) is a free menu bar app built for this. It links every server to the Claude Code, Codex, Conductor or Pane session that started it, using the same environment variables and session files described above. Click a server to see its session, branch, folder and command, then resume the conversation or stop the server and its own process tree.
 
-**Clean up** preselects servers from deleted worktrees and servers that have been idle for hours, so the leftovers from last week’s agent sessions go in one click. You can set it to ask first or to run automatically; servers that are leaking memory are never stopped automatically, and Postgres and Redis are protected by default.
+**Clean up** preselects servers from deleted worktrees and servers that have been idle for hours, so the leftovers from last week’s agent sessions go in one click. You can set it to ask first or to run automatically; servers with rapid memory growth are never stopped automatically, and Postgres and Redis are protected by default.
 
 Agents can read the same list. `wtp list --json` prints every server with its port, folder, branch, status and the session that started it:
 

@@ -31,7 +31,7 @@ export function softwareApplication() {
     featureList: [
       'Lists every local dev server with its port, project, git branch, uptime, memory and CPU',
       'Links servers to the Claude Code, Codex, Conductor or Pane session that started them',
-      'Memory leak alerts at 2 GB or 500 MB growth in ten minutes',
+      'Memory alerts at 2 GB or 500 MB growth in ten minutes, sustained for 30 seconds',
       'Clean up stops idle servers and servers from deleted git worktrees',
       'Stops and restarts whole process trees',
       'wtp terminal UI and wtp list --json for scripts and agents',

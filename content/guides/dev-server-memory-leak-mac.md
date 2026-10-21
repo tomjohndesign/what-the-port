@@ -29,6 +29,7 @@ ps -o pid=,rss=,command= -g $(ps -o pgid= -p $pid) \
 Dev servers get bigger as you use them. They compile pages on demand and cache the results, so visiting twenty routes in a large Next.js app can take it from 300 MB to 1.5 GB. That’s expected. What matters is the shape:
 
 - **Normal:** memory rises as you open new pages, then levels off.
+- **Temporary build spike:** compiler or linker child processes allocate memory, then release it when they exit. The total for the server’s process tree falls again.
 - **Leak:** memory keeps climbing while you edit the same file or reload the same page. Every hot reload adds a few megabytes that never come back.
 
 Watch it for a few minutes while you work:
@@ -65,7 +66,9 @@ This stops every process named `node` that you own: every dev server, but also a
 
 ## Get told before your fans do
 
-[WhatThePort](/) is a free menu bar app that tracks the memory and CPU of every dev server on your Mac, summed across its own process tree, with ten minutes of history per server. When a server passes 2 GB, or grows more than 500 MB in ten minutes, its memory reading and the menu bar icon turn amber and you get one notification with **Details**, **Stop** and **Snooze**. The thresholds are adjustable in Settings. Sibling servers under a shared monorepo runner are measured separately. If one process listens on several ports, its usage appears in each corresponding row but is counted only once in the total. The readings use macOS physical footprint, so they can differ from the RSS figures printed by `ps`.
+[WhatThePort](/) is a free menu bar app that tracks the memory and CPU of every dev server on your Mac, summed across its own process tree, with ten minutes of history per server. Servers over 2 GB turn amber. Growth of at least 500 MB over the recorded window (two to ten minutes) must persist for 30 seconds before it is flagged. High-memory notifications also wait 30 seconds. Alerts offer **Details**, **Stop** and **Snooze**; they identify high memory or rapid growth, not a confirmed leak. A long-running build can still trigger a growth warning. Adjust the absolute memory threshold or disable rapid-growth notifications in Settings.
+
+Sibling servers under a shared monorepo runner are measured separately. If one process listens on several ports, its usage appears in each corresponding row but is counted only once in the total. The readings use macOS physical footprint, so they can differ from the RSS figures printed by `ps`. Bazel commands are identified as Bazel even when their project also lists a JavaScript framework dependency.
 
 The popover also shows a whole-Mac memory bar split into dev servers, other apps and free memory, so you can see at a glance how much of your RAM your servers are using.
 

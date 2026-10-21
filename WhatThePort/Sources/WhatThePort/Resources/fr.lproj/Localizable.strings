@@ -31,7 +31,7 @@
 "2 seconds" = "2 secondes";
 "4 hours" = "4 heures";
 "5 seconds" = "5 secondes";
-":%d %@ is leaking" = ":%d %@ présente une fuite mémoire";
+":%d %@ memory is growing quickly" = ":%d %@ consomme rapidement plus de mémoire";
 ":%d %@ is using %@" = ":%d %@ utilise %@";
 ":%d %@ started" = ":%d %@ démarré";
 ":%d stopped" = ":%d arrêté";
@@ -109,7 +109,7 @@
 "General" = "Général";
 "Get started" = "Commencer";
 "Global shortcut" = "Raccourci global";
-"Grows more than 500 MB in 10 minutes" = "Augmente de plus de 500 Mo en 10 minutes";
+"Grows 500 MB in 10 minutes, sustained for 30 seconds" = "Augmente de 500 Mo en 10 minutes et reste à ce niveau pendant 30 secondes";
 "Have been idle for" = "Sont inactifs depuis";
 "Have been running for" = "Fonctionnent depuis";
 "Help shape WhatThePort" = "Contribuez à WhatThePort";
@@ -122,7 +122,7 @@
 "Language" = "Langue";
 "Last checked %@" = "Dernière vérification %@";
 "Launch at login" = "Ouvrir à la connexion";
-"Leaking · +%@" = "Fuite mémoire · +%@";
+"Rapid growth · +%@" = "Hausse rapide · +%@";
 "Less" = "Moins";
 "Link servers to Codex threads" = "Associer les serveurs aux fils Codex";
 "Link servers to the session that started them" = "Associer les serveurs à la session qui les a démarrés";
@@ -130,7 +130,7 @@
 "MERGED" = "FUSIONNÉE";
 "Made by Tomjohn" = "Créé par Tomjohn";
 "Memory" = "Mémoire";
-"Memory and leak alerts" = "Alertes de mémoire et de fuites";
+"Memory and growth alerts" = "Alertes de mémoire et de hausse";
 "Menu bar icon" = "Icône de la barre des menus";
 "Move WhatThePort to Applications first" = "Déplacez d’abord WhatThePort dans Applications";
 "Move WhatThePort to Applications first." = "Déplacez d’abord WhatThePort dans Applications.";
@@ -224,7 +224,7 @@
 "Snooze" = "Reporter";
 "Snooze for" = "Reporter de";
 "Started" = "Démarré";
-"Stay ahead of leaks" = "Anticipez les fuites mémoire";
+"Stay ahead of memory growth" = "Anticipez les hausses de mémoire";
 "Stop" = "Arrêter";
 "Stop %d %@ · free %@" = "Arrêter %d %@ · libérer %@";
 "Stop %d processes" = "Arrêter %d processus";
@@ -262,7 +262,7 @@
 "WTP now has TUI" = "WTP a maintenant une TUI";
 "Waiting for permission…" = "En attente d’autorisation…";
 "Waiting…" = "En attente…";
-"Warn about leaks" = "Alerter en cas de fuite mémoire";
+"Warn about rapid growth" = "Alerter en cas de hausse rapide";
 "Watch ports" = "Surveiller les ports";
 "Watch processes" = "Surveiller les processus";
 "Website" = "Site web";

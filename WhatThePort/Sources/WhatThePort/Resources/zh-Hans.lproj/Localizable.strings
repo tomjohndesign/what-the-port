@@ -31,7 +31,7 @@
 "2 seconds" = "2 秒";
 "4 hours" = "4 小时";
 "5 seconds" = "5 秒";
-":%d %@ is leaking" = ":%d %@ 出现内存泄漏";
+":%d %@ memory is growing quickly" = ":%d %@ 的内存使用量正在快速增长";
 ":%d %@ is using %@" = ":%d %@ 正在使用 %@";
 ":%d %@ started" = ":%d %@ 已启动";
 ":%d stopped" = ":%d 已停止";
@@ -109,7 +109,7 @@
 "General" = "通用";
 "Get started" = "开始";
 "Global shortcut" = "全局快捷键";
-"Grows more than 500 MB in 10 minutes" = "10 分钟内增长超过 500 MB";
+"Grows 500 MB in 10 minutes, sustained for 30 seconds" = "10 分钟内增长 500 MB，并持续 30 秒";
 "Have been idle for" = "空闲时间达到";
 "Have been running for" = "运行时间达到";
 "Help shape WhatThePort" = "帮助改进 WhatThePort";
@@ -122,7 +122,7 @@
 "Language" = "语言";
 "Last checked %@" = "上次检查 %@";
 "Launch at login" = "登录时启动";
-"Leaking · +%@" = "内存泄漏 · 增加 %@";
+"Rapid growth · +%@" = "快速增长 · 增加 %@";
 "Less" = "收起";
 "Link servers to Codex threads" = "关联服务器与 Codex 会话";
 "Link servers to the session that started them" = "关联启动服务器的会话";
@@ -130,7 +130,7 @@
 "MERGED" = "已合并";
 "Made by Tomjohn" = "作者 Tomjohn";
 "Memory" = "内存";
-"Memory and leak alerts" = "内存及泄漏提醒";
+"Memory and growth alerts" = "内存及增长提醒";
 "Menu bar icon" = "菜单栏图标";
 "Move WhatThePort to Applications first" = "请先将 WhatThePort 移到“应用程序”";
 "Move WhatThePort to Applications first." = "请先将 WhatThePort 移到“应用程序”。";
@@ -224,7 +224,7 @@
 "Snooze" = "暂缓";
 "Snooze for" = "暂缓提醒";
 "Started" = "启动时间";
-"Stay ahead of leaks" = "及时发现内存泄漏";
+"Stay ahead of memory growth" = "及时发现内存增长";
 "Stop" = "停止";
 "Stop %d %@ · free %@" = "停止 %d 个%@ · 释放 %@";
 "Stop %d processes" = "停止 %d 个进程";
@@ -262,7 +262,7 @@
 "WTP now has TUI" = "WTP 已支持终端界面";
 "Waiting for permission…" = "正在等待授权…";
 "Waiting…" = "正在等待…";
-"Warn about leaks" = "内存泄漏警告";
+"Warn about rapid growth" = "快速增长警告";
 "Watch ports" = "监测端口范围";
 "Watch processes" = "监测进程";
 "Website" = "网站";

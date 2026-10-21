@@ -29,6 +29,7 @@ final class ProjectResolver {
             var info = cached.info
             // Branches change often; HEAD is cheap to re-read every scan.
             if let head = cached.gitHeadPath { info.branch = Self.branch(fromHead: head) }
+            info.framework = Self.commandFramework(command) ?? info.framework
             return info
         }
 
@@ -58,7 +59,18 @@ final class ProjectResolver {
 
         if let gitHeadPath { info.branch = Self.branch(fromHead: gitHeadPath) }
         cache[cwd] = Cached(info: info, gitHeadPath: gitHeadPath, resolvedAt: Date())
+        // Apply runtime identity after caching: Bazel and Vite can share a cwd.
+        info.framework = Self.commandFramework(command) ?? info.framework
         return info
+    }
+
+    private static func commandFramework(_ command: String?) -> String? {
+        guard let first = command?.split(whereSeparator: { $0.isWhitespace }).first else { return nil }
+        let executable = (String(first) as NSString).lastPathComponent
+        if executable == "bazel" || executable == "bazelisk" || executable.hasPrefix("bazel(") {
+            return "Bazel"
+        }
+        return nil
     }
 
     // MARK: - Manifests

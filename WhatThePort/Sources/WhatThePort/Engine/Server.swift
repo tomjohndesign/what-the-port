@@ -25,7 +25,7 @@ enum CleanUpReason: Equatable {
     case worktreeDeleted
     case idle(TimeInterval)
     case longRunning(TimeInterval)
-    case leaking(UInt64)
+    case rapidGrowth(UInt64)
 }
 
 /// The Pane terminal a server was started from.
@@ -71,6 +71,8 @@ struct Server: Identifiable {
     var cpu: Double
     var connections: Int
     var history: [Sample]
+    /// First consecutive scan whose window growth met the threshold.
+    var rapidGrowthSince: Date? = nil
     var lastActive: Date
     var isProtected: Bool
 
@@ -82,18 +84,29 @@ struct Server: Identifiable {
 
     /// Memory growth across the recorded history window (up to 10 minutes).
     var memoryGrowth: Int64 {
+        Self.memoryGrowth(in: history)
+    }
+
+    static func memoryGrowth(in history: [Sample]) -> Int64 {
         guard let first = history.first, let last = history.last,
               last.time.timeIntervalSince(first.time) >= 120 else { return 0 }
         return Int64(last.memory) - Int64(first.memory)
     }
 
-    func isLeaking(threshold: UInt64 = 500 * 1_048_576) -> Bool {
-        memoryGrowth >= Int64(threshold)
+    /// A transient compiler or linker can add hundreds of MB and then exit.
+    /// Require consecutive elevated samples before flagging rapid growth.
+    static let growthSustainDuration: TimeInterval = 30
+    static let growthThreshold: Int64 = 500 * 1_048_576
+
+    func isGrowingRapidly() -> Bool {
+        guard let since = rapidGrowthSince, let last = history.last,
+              memoryGrowth >= Self.growthThreshold else { return false }
+        return last.time.timeIntervalSince(since) >= Self.growthSustainDuration
     }
 
     func status(alertThreshold: UInt64) -> ServerStatus {
         if !cwdExists { return .idle }
-        if memory >= alertThreshold || isLeaking() { return .attention }
+        if memory >= alertThreshold || isGrowingRapidly() { return .attention }
         if idleFor > 60 * 60 { return .idle }
         return .running
     }

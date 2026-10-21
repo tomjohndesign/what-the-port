@@ -42,6 +42,7 @@ final class ScanEngine: @unchecked Sendable {
 
     private var previousCPU: [pid_t: (start: Date, nanoseconds: UInt64, at: Date)] = [:]
     private var histories: [String: [Sample]] = [:]
+    private var rapidGrowthSince: [String: Date] = [:]
     private var lastActive: [String: Date] = [:]
     private var argsCache: [pid_t: (start: Date, args: ProcArgs?)] = [:]
 
@@ -133,6 +134,14 @@ final class ScanEngine: @unchecked Sendable {
             history.removeAll { now.timeIntervalSince($0.time) > Self.historyWindow }
             histories[key] = history
 
+            // The baseline moves as history expires. Record the observed growth
+            // state now rather than reinterpreting old samples against a new baseline.
+            if Server.memoryGrowth(in: history) >= Server.growthThreshold {
+                if rapidGrowthSince[key] == nil { rapidGrowthSince[key] = now }
+            } else {
+                rapidGrowthSince.removeValue(forKey: key)
+            }
+
             servers.append(Server(
                 port: socket.port,
                 pid: listener.pid,
@@ -155,12 +164,14 @@ final class ScanEngine: @unchecked Sendable {
                 cpu: cpuPercent,
                 connections: connections,
                 history: history,
+                rapidGrowthSince: rapidGrowthSince[key],
                 lastActive: lastActive[key] ?? now,
                 isProtected: config.protected.contains(socket.command)
             ))
         }
 
         histories = histories.filter { seenKeys.contains($0.key) }
+        rapidGrowthSince = rapidGrowthSince.filter { seenKeys.contains($0.key) }
         lastActive = lastActive.filter { seenKeys.contains($0.key) }
         previousCPU = previousCPU.filter { livePids.contains($0.key) }
         argsCache = argsCache.filter { processes[$0.key] != nil }
