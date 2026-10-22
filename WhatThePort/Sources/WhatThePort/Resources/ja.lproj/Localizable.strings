@@ -31,7 +31,7 @@
 "2 seconds" = "2 秒";
 "4 hours" = "4 時間";
 "5 seconds" = "5 秒";
-":%d %@ is leaking" = ":%d %@ でメモリリーク";
+":%d %@ memory is growing quickly" = ":%d %@ のメモリ使用量が急増しています";
 ":%d %@ is using %@" = ":%d %@ が %@を使用中";
 ":%d %@ started" = ":%d %@ が起動しました";
 ":%d stopped" = ":%d が停止しました";
@@ -109,7 +109,7 @@
 "General" = "一般";
 "Get started" = "はじめる";
 "Global shortcut" = "グローバルショートカット";
-"Grows more than 500 MB in 10 minutes" = "10 分間で 500 MB 以上増加する";
+"Grows 500 MB in 10 minutes, sustained for 30 seconds" = "10 分間で 500 MB 増加し、30 秒間継続する";
 "Have been idle for" = "次の時間アイドル状態";
 "Have been running for" = "次の時間稼働している";
 "Help shape WhatThePort" = "WhatThePort の改善に協力";
@@ -122,7 +122,9 @@
 "Language" = "言語";
 "Last checked %@" = "前回の確認 %@";
 "Launch at login" = "ログイン時に起動";
+/* Legacy website key, retained until the demo is updated. */
 "Leaking · +%@" = "メモリリーク · +%@";
+"Rapid growth · +%@" = "急増 · +%@";
 "Less" = "折りたたむ";
 "Leave a tip in the tip jar, or share it with friends." = "チップを送るか、友だちにシェアしてください。";
 "Link servers to Codex threads" = "サーバーを Codex スレッドにリンク";
@@ -132,7 +134,7 @@
 "Link copied" = "リンクをコピーしました";
 "Made by Tomjohn" = "制作：Tomjohn";
 "Memory" = "メモリ";
-"Memory and leak alerts" = "メモリとリークの警告";
+"Memory and growth alerts" = "メモリ使用量と増加の警告";
 "Menu bar icon" = "メニューバーアイコン";
 "Move WhatThePort to Applications first" = "まず WhatThePort をアプリケーションに移動してください";
 "Move WhatThePort to Applications first." = "まず WhatThePort をアプリケーションに移動してください。";
@@ -230,7 +232,7 @@
 "Snooze" = "スヌーズ";
 "Snooze for" = "スヌーズ時間";
 "Started" = "開始時刻";
-"Stay ahead of leaks" = "メモリリークを早期発見";
+"Stay ahead of memory growth" = "メモリの増加を早期発見";
 "Stop" = "停止";
 "Stop %d %@ · free %@" = "%d %@を停止 · %@を解放";
 "Stop %d processes" = "%d 個のプロセスを停止";
@@ -268,7 +270,7 @@
 "WTP now has TUI" = "WTP に TUI が登場";
 "Waiting for permission…" = "許可を待機中…";
 "Waiting…" = "待機中…";
-"Warn about leaks" = "メモリリークを警告";
+"Warn about rapid growth" = "急増を警告";
 "Watch ports" = "監視するポート";
 "Watch processes" = "監視するプロセス";
 "Website" = "ウェブサイト";

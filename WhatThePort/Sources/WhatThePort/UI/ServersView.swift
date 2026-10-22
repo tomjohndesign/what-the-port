@@ -248,10 +248,10 @@ struct ServersView: View {
         }
     }
 
-    /// Everything Clean up suggests, except leaking servers, which are usually still in use.
+    /// Everything Clean up suggests, except candidates suggested for rapid growth alone.
     private static func suggestedSelection(_ monitor: ServerMonitor) -> Set<Int> {
         Set(monitor.cleanUpCandidates.compactMap { candidate in
-            if case .leaking = candidate.reason { return nil }
+            if case .rapidGrowth = candidate.reason { return nil }
             return candidate.server.port
         })
     }
@@ -323,7 +323,7 @@ struct ServerRow: View {
                         Text(reason.label).lineLimit(1)
                     }
                     .font(Theme.caption)
-                    .foregroundStyle(reason.isLeak ? Theme.amber : Theme.text2)
+                    .foregroundStyle(reason.isRapidGrowth ? Theme.amber : Theme.text2)
                 } else {
                     context(status: status)
                 }
@@ -371,7 +371,7 @@ struct ServerRow: View {
     }
 
     @ViewBuilder private func context(status: ServerStatus) -> some View {
-        if status == .attention, server.isLeaking() {
+        if status == .attention, server.isGrowingRapidly() {
             Text(L10n.format("+%@ in %@", Format.bytesString(UInt64(server.memoryGrowth)), L10n.duration(historySpan)))
                 .font(Theme.caption)
                 .foregroundStyle(Theme.amber)
@@ -435,8 +435,8 @@ struct Checkbox: View {
 }
 
 extension CleanUpReason {
-    var isLeak: Bool {
-        if case .leaking = self { return true }
+    var isRapidGrowth: Bool {
+        if case .rapidGrowth = self { return true }
         return false
     }
 
@@ -445,7 +445,7 @@ extension CleanUpReason {
         case .worktreeDeleted: return "folder.badge.minus"
         case .idle: return "clock"
         case .longRunning: return "calendar"
-        case .leaking: return "chart.line.uptrend.xyaxis"
+        case .rapidGrowth: return "chart.line.uptrend.xyaxis"
         }
     }
 
@@ -454,7 +454,7 @@ extension CleanUpReason {
         case .worktreeDeleted: return L10n.text("Worktree deleted")
         case .idle(let duration): return L10n.format("Idle %@ · no connections", L10n.duration(duration, short: true))
         case .longRunning(let duration): return L10n.format("Running for %@", L10n.duration(duration, short: true))
-        case .leaking(let growth): return L10n.format("Leaking · +%@", Format.bytesString(growth))
+        case .rapidGrowth(let growth): return L10n.format("Rapid growth · +%@", Format.bytesString(growth))
         }
     }
 }

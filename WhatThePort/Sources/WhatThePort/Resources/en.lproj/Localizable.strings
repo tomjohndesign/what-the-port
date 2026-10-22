@@ -31,7 +31,7 @@
 "2 seconds" = "2 seconds";
 "4 hours" = "4 hours";
 "5 seconds" = "5 seconds";
-":%d %@ is leaking" = ":%d %@ is leaking";
+":%d %@ memory is growing quickly" = ":%d %@ memory is growing quickly";
 ":%d %@ is using %@" = ":%d %@ is using %@";
 ":%d %@ started" = ":%d %@ started";
 ":%d stopped" = ":%d stopped";
@@ -109,7 +109,7 @@
 "General" = "General";
 "Get started" = "Get started";
 "Global shortcut" = "Global shortcut";
-"Grows more than 500 MB in 10 minutes" = "Grows more than 500 MB in 10 minutes";
+"Grows 500 MB in 10 minutes, sustained for 30 seconds" = "Grows 500 MB in 10 minutes, sustained for 30 seconds";
 "Have been idle for" = "Have been idle for";
 "Have been running for" = "Have been running for";
 "Help shape WhatThePort" = "Help shape WhatThePort";
@@ -122,7 +122,9 @@
 "Language" = "Language";
 "Last checked %@" = "Last checked %@";
 "Launch at login" = "Launch at login";
+/* Legacy website key, retained until the demo is updated. */
 "Leaking · +%@" = "Leaking · +%@";
+"Rapid growth · +%@" = "Rapid growth · +%@";
 "Less" = "Less";
 "Leave a tip in the tip jar, or share it with friends." = "Leave a tip in the tip jar, or share it with friends.";
 "Link servers to Codex threads" = "Link servers to Codex threads";
@@ -132,7 +134,7 @@
 "Link copied" = "Link copied";
 "Made by Tomjohn" = "Made by Tomjohn";
 "Memory" = "Memory";
-"Memory and leak alerts" = "Memory and leak alerts";
+"Memory and growth alerts" = "Memory and growth alerts";
 "Menu bar icon" = "Menu bar icon";
 "Move WhatThePort to Applications first" = "Move WhatThePort to Applications first";
 "Move WhatThePort to Applications first." = "Move WhatThePort to Applications first.";
@@ -230,7 +232,7 @@
 "Snooze" = "Snooze";
 "Snooze for" = "Snooze for";
 "Started" = "Started";
-"Stay ahead of leaks" = "Stay ahead of leaks";
+"Stay ahead of memory growth" = "Stay ahead of memory growth";
 "Stop" = "Stop";
 "Stop %d %@ · free %@" = "Stop %d %@ · free %@";
 "Stop %d processes" = "Stop %d processes";
@@ -268,7 +270,7 @@
 "WTP now has TUI" = "WTP now has TUI";
 "Waiting for permission…" = "Waiting for permission…";
 "Waiting…" = "Waiting…";
-"Warn about leaks" = "Warn about leaks";
+"Warn about rapid growth" = "Warn about rapid growth";
 "Watch ports" = "Watch ports";
 "Watch processes" = "Watch processes";
 "Website" = "Website";

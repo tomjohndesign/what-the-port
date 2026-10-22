@@ -86,7 +86,8 @@ final class ServerMonitor: ObservableObject {
                    linkCodex: defaults.bool(forKey: Preferences.linkCodex),
                    linkConductor: defaults.bool(forKey: Preferences.linkConductor),
                    linkPane: defaults.bool(forKey: Preferences.linkPane),
-                   showBranches: defaults.bool(forKey: Preferences.showBranches))
+                    showBranches: defaults.bool(forKey: Preferences.showBranches),
+                    scanInterval: max(defaults.double(forKey: Preferences.scanInterval), 1))
     }
 
     // MARK: - Scanning
@@ -174,26 +175,26 @@ final class ServerMonitor: ObservableObject {
         }
         if server.idleFor >= idleThreshold { return .idle(server.idleFor) }
         if let uptime = server.uptime, uptime >= longRunningThreshold { return .longRunning(uptime) }
-        if server.isLeaking() { return .leaking(UInt64(max(server.memoryGrowth, 0))) }
+        if server.isGrowingRapidly() { return .rapidGrowth(UInt64(max(server.memoryGrowth, 0))) }
         return nil
     }
 
-    /// Servers worth suggesting in Clean up. Leaking ones are listed but not
-    /// preselected, since they're usually still in use.
+    /// Candidates suggested for rapid growth alone are listed but not preselected.
+    /// Idle and age-based candidates follow their own cleanup settings.
     var cleanUpCandidates: [(server: Server, reason: CleanUpReason)] {
         servers.compactMap { server in cleanUpReason(for: server).map { (server, $0) } }
     }
 
     var suggestedCleanUpCount: Int {
-        cleanUpCandidates.filter { !$0.reason.isLeak }.count
+        cleanUpCandidates.filter { !$0.reason.isRapidGrowth }.count
     }
 
     // MARK: - Automatic clean up
 
     /// In Ask mode, tells you once when servers start qualifying. In Automatic
-    /// mode, stops them. Leaking servers are never stopped automatically.
+    /// mode, stops them. Rapid growth alone never triggers automatic cleanup.
     private func handleCleanUp() {
-        let candidates = cleanUpCandidates.filter { !$0.reason.isLeak }
+        let candidates = cleanUpCandidates.filter { !$0.reason.isRapidGrowth }
         let keys = Set(candidates.map { key(for: $0.server) })
         let fresh = candidates.filter { !handledCleanUps.contains(key(for: $0.server)) }
         handledCleanUps.formIntersection(keys)

@@ -107,7 +107,7 @@ struct OnboardingView: View {
     private var title: String {
         switch step {
         case .welcome: return "WhatThePort"
-        case .leaks: return L10n.text("Stay ahead of leaks")
+        case .leaks: return L10n.text("Stay ahead of memory growth")
         case .tools: return L10n.text("Your tools, at a glance.")
         case .vercel: return L10n.text("Vercel previews")
         case .terminal: return L10n.text("WTP TUI")
@@ -154,7 +154,7 @@ struct OnboardingView: View {
                 OnboardingCard {
                     OnboardingSummary(title: status.setupSummary, detail: L10n.format("%d of 2 ready", status.readyCount))
                     RowDivider()
-                    OnboardingRow(title: L10n.text("Notifications"), caption: status.notifications == .action("Not allowed", button: "Settings…") ? L10n.text("Allow in System Settings") : L10n.text("Memory and leak alerts")) {
+                    OnboardingRow(title: L10n.text("Notifications"), caption: status.notifications == .action("Not allowed", button: "Settings…") ? L10n.text("Allow in System Settings") : L10n.text("Memory and growth alerts")) {
                         OnboardingConfirmation(state: status.notifications, action: notificationAction)
                     }
                     RowDivider()

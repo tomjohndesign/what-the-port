@@ -31,7 +31,7 @@
 "2 seconds" = "2 секунди";
 "4 hours" = "4 години";
 "5 seconds" = "5 секунд";
-":%d %@ is leaking" = ":%d %@ має витік пам’яті";
+":%d %@ memory is growing quickly" = ":%d %@ швидко збільшує використання пам’яті";
 ":%d %@ is using %@" = ":%d %@ використовує %@";
 ":%d %@ started" = ":%d %@ запущено";
 ":%d stopped" = ":%d зупинено";
@@ -109,7 +109,7 @@
 "General" = "Загальні";
 "Get started" = "Почати";
 "Global shortcut" = "Глобальне сполучення клавіш";
-"Grows more than 500 MB in 10 minutes" = "Зростає більш ніж на 500 МБ за 10 хвилин";
+"Grows 500 MB in 10 minutes, sustained for 30 seconds" = "Зростає на 500 МБ за 10 хвилин і тримається 30 секунд";
 "Have been idle for" = "Неактивні протягом";
 "Have been running for" = "Працюють протягом";
 "Help shape WhatThePort" = "Допоможіть покращити WhatThePort";
@@ -122,7 +122,9 @@
 "Language" = "Мова";
 "Last checked %@" = "Остання перевірка %@";
 "Launch at login" = "Запускати під час входу";
+/* Legacy website key, retained until the demo is updated. */
 "Leaking · +%@" = "Витік пам’яті · +%@";
+"Rapid growth · +%@" = "Швидке зростання · +%@";
 "Less" = "Менше";
 "Leave a tip in the tip jar, or share it with friends." = "Залиште чайові або поділіться з друзями.";
 "Link servers to Codex threads" = "Пов’язувати сервери з розмовами Codex";
@@ -132,7 +134,7 @@
 "Link copied" = "Посилання скопійовано";
 "Made by Tomjohn" = "Створено Tomjohn";
 "Memory" = "Пам’ять";
-"Memory and leak alerts" = "Сповіщення про пам’ять і витоки";
+"Memory and growth alerts" = "Сповіщення про пам’ять і зростання";
 "Menu bar icon" = "Іконка в смузі меню";
 "Move WhatThePort to Applications first" = "Спочатку перемістіть WhatThePort до папки «Програми»";
 "Move WhatThePort to Applications first." = "Спочатку перемістіть WhatThePort до папки «Програми».";
@@ -230,7 +232,7 @@
 "Snooze" = "Відкласти";
 "Snooze for" = "Відкласти на";
 "Started" = "Запущено";
-"Stay ahead of leaks" = "Виявляйте витоки завчасно";
+"Stay ahead of memory growth" = "Виявляйте зростання пам’яті завчасно";
 "Stop" = "Зупинити";
 "Stop %d %@ · free %@" = "Зупинити %d %@ · звільнити %@";
 "Stop %d processes" = "Зупинити процеси: %d";
@@ -268,7 +270,7 @@
 "WTP now has TUI" = "WTP тепер має TUI";
 "Waiting for permission…" = "Очікування дозволу…";
 "Waiting…" = "Очікування…";
-"Warn about leaks" = "Попереджати про витоки";
+"Warn about rapid growth" = "Попереджати про швидке зростання";
 "Watch ports" = "Стежити за портами";
 "Watch processes" = "Стежити за процесами";
 "Website" = "Вебсайт";

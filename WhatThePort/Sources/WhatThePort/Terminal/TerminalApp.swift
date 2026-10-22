@@ -452,7 +452,7 @@ final class TerminalApp {
     private func setCleaning(_ cleaning: Bool) {
         isCleaning = cleaning
         selection = cleaning
-            ? Set(monitor.cleanUpCandidates.filter { !$0.reason.isLeak }.map(\.server.port))
+            ? Set(monitor.cleanUpCandidates.filter { !$0.reason.isRapidGrowth }.map(\.server.port))
             : []
         if cleaning, !visibleServers.contains(where: { $0.port == selectedPort }) {
             selectedPort = visibleServers.first?.port
@@ -765,9 +765,9 @@ final class TerminalApp {
 
     private func context(for server: Server, status: ServerStatus, reason: CleanUpReason?, width: Int) -> Line {
         if let reason {
-            return [Span(reason.label, reason.isLeak ? palette.amber : palette.text2)]
+            return [Span(reason.label, reason.isRapidGrowth ? palette.amber : palette.text2)]
         }
-        if status == .attention, server.isLeaking() {
+        if status == .attention, server.isGrowingRapidly() {
             let span = server.history.last.map { last in server.history.first.map { last.time.timeIntervalSince($0.time) } ?? 0 } ?? 0
             return [Span("+\(Format.bytesString(UInt64(server.memoryGrowth))) in \(Format.duration(span))", palette.amber)]
         }
