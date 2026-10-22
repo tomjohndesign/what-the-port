@@ -196,6 +196,31 @@
   transition: background-color 0.15s ease;
 }
 
+/* The tip jar's thank-you page: the dot matrix, copy and button, centered. */
+.thanks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  text-align: center;
+}
+
+.thanks .intro {
+  margin-bottom: 0;
+}
+
+.thanks .lede {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 440px;
+  text-wrap: balance;
+}
+
+.openApp {
+  padding: 0 16px;
+}
+
 .download:hover {
   background-color: #e6e6e9;
 }

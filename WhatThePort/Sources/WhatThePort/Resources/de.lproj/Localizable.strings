@@ -124,10 +124,12 @@
 "Launch at login" = "Bei Anmeldung starten";
 "Leaking · +%@" = "Speicherleck · +%@";
 "Less" = "Weniger";
+"Leave a tip in the tip jar, or share it with friends." = "Gib etwas in die Trinkgeldkasse oder empfiehl WTP deinen Freunden.";
 "Link servers to Codex threads" = "Server mit Codex-Threads verknüpfen";
 "Link servers to the session that started them" = "Server mit der Sitzung verknüpfen, die sie gestartet hat";
 "Link servers to the terminal that started them" = "Server mit dem Terminal verknüpfen, das sie gestartet hat";
 "MERGED" = "ZUSAMMENGEFÜHRT";
+"Link copied" = "Link kopiert";
 "Made by Tomjohn" = "Von Tomjohn";
 "Memory" = "Speicher";
 "Memory and leak alerts" = "Speicher- und Leckwarnungen";
@@ -138,6 +140,7 @@
 "Needs approval" = "Genehmigung erforderlich";
 "Needs the GitHub CLI (gh)" = "GitHub CLI (gh) erforderlich";
 "Needs the GitHub CLI (gh), which wasn't found." = "GitHub CLI (gh) erforderlich, aber nicht gefunden.";
+"Monthly tip reminder" = "Monatliche Trinkgeld-Erinnerung";
 "Never stop" = "Nie stoppen";
 "No CPU and no open connections" = "Keine CPU-Nutzung und keine offenen Verbindungen";
 "No servers running right now" = "Derzeit laufen keine Server";
@@ -167,6 +170,7 @@
 "Opens when you sign in" = "Öffnet sich bei der Anmeldung";
 "Other apps" = "Andere Apps";
 "Over %@ GB" = "Über %@ GB";
+"Paste it anywhere to share WhatThePort." = "Füge ihn irgendwo ein, um WhatThePort zu teilen.";
 "Pick servers to stop" = "Server zum Stoppen auswählen";
 "Ports" = "Ports";
 "Ports & processes" = "Ports & Prozesse";
@@ -213,6 +217,8 @@
 "Setup complete" = "Einrichtung abgeschlossen";
 "Share anonymous usage" = "Anonyme Nutzungsdaten teilen";
 "Share which features you use, once a day. Nothing about your servers, projects or Mac is included." = "Einmal täglich verwendete Funktionen teilen. Keine Daten zu Servern, Projekten oder deinem Mac.";
+"Share" = "Teilen";
+"Share with friends" = "Mit Freunden teilen";
 "Show branch names" = "Branch-Namen anzeigen";
 "Show popover with ⌥⌘P" = "Popover mit ⌥⌘P öffnen";
 "Show preview buttons" = "Vorschauschaltflächen anzeigen";
@@ -267,7 +273,7 @@
 "Watch processes" = "Prozesse überwachen";
 "Website" = "Website";
 "Welcome to WhatThePort" = "Willkommen bei WhatThePort";
-"WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe." = "WhatThePort ist kostenlos und quelloffen. Wenn es dir Zeit spart, kannst du über Stripe einen beliebigen Betrag geben.";
+"WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder." = "WhatThePort ist kostenlos und quelloffen. Wenn es dir Zeit spart, gib über Stripe einen beliebigen Betrag oder empfiehl es deinen Freunden. Nach einem Trinkgeld endet die monatliche Erinnerung.";
 "WhatThePort reads local session files and process info to put your servers in context." = "WhatThePort liest lokale Sitzungsdateien und Prozessinfos, um deine Server einzuordnen.";
 "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac." = "WhatThePort warnt dich, wenn ein Server Speicher verschlingt. Keine Serverdaten verlassen deinen Mac.";
 "WhatThePort, %d servers" = "WhatThePort, %d Server";

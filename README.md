@@ -112,7 +112,7 @@ Open Settings from the gear in the popover (⌘,):
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
 - **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names, Vercel previews and pull requests
-- **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, and a tip jar
+- **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, a tip jar and a share link. Once a month, a notification asks for a tip or a share. Tipping turns it off, and so does **Monthly tip reminder**.
 
 ## How It Works
 
@@ -180,6 +180,10 @@ type to **Customers choose what to pay** (not a product price), then add it to t
 environment with `vercel env add TIP_URL production`. Production builds fail
 without it ([`scripts/check-tip.mjs`](scripts/check-tip.mjs)); local dev and
 previews redirect `/tip` to production.
+
+Under the Payment Link's **After payment**, choose **Don't show confirmation page**
+and redirect to `https://whattheport.dev/thanks`. That page opens
+`whattheport://tipped`, which turns off the app's monthly tip reminder.
 
 `vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
 workflow publishes production with the freshly built app. Other branches retain

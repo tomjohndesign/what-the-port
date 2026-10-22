@@ -14,6 +14,9 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         static let details = "details"
         static let stop = "stop"
         static let snooze = "snooze"
+        static let tipCategory = "tip-reminder"
+        static let tip = "tip"
+        static let share = "share"
     }
 
     /// How long a server must stay over the threshold before we alert.
@@ -40,7 +43,14 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
             UNNotificationAction(identifier: Action.stop, title: L10n.text("Stop"), options: [.destructive]),
             UNNotificationAction(identifier: Action.snooze, title: L10n.text("Snooze"), options: []),
         ]
-        center.setNotificationCategories([UNNotificationCategory(identifier: Action.category, actions: actions, intentIdentifiers: [])])
+        let tipActions = [
+            UNNotificationAction(identifier: Action.tip, title: L10n.text("Tip jar"), options: [.foreground]),
+            UNNotificationAction(identifier: Action.share, title: L10n.text("Share"), options: [.foreground]),
+        ]
+        center.setNotificationCategories([
+            UNNotificationCategory(identifier: Action.category, actions: actions, intentIdentifiers: []),
+            UNNotificationCategory(identifier: Action.tipCategory, actions: tipActions, intentIdentifiers: []),
+        ])
         // Before onboarding, the Leaks step asks with context instead.
         guard UserDefaults.standard.bool(forKey: Preferences.onboarded) else { return }
         Task {
@@ -164,6 +174,62 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
+    /// Asks for a tip or a share once a month, until a tip or the setting turns it
+    /// off. The first month starts after onboarding, so new installs aren't asked straight away.
+    func remindAboutTips() {
+        guard isAvailable else { return }
+        Task {
+            while true {
+                await postTipReminderIfDue()
+                try? await Task.sleep(for: .seconds(60 * 60))
+            }
+        }
+    }
+
+    private func postTipReminderIfDue() async {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: Preferences.onboarded), defaults.bool(forKey: Preferences.tipReminder) else { return }
+        let now = Date()
+        guard let last = defaults.object(forKey: Preferences.tipReminded) as? Date else {
+            defaults.set(now, forKey: Preferences.tipReminded)
+            return
+        }
+        guard let due = Calendar.current.date(byAdding: .month, value: 1, to: last), now >= due else { return }
+        defaults.set(now, forKey: Preferences.tipReminded)
+        let center = UNUserNotificationCenter.current()
+        let status = await center.notificationSettings().authorizationStatus
+        guard status == .authorized || status == .provisional else { return }
+        let content = UNMutableNotificationContent()
+        content.title = L10n.text("Enjoying WTP?")
+        content.body = L10n.text("Leave a tip in the tip jar, or share it with friends.")
+        content.categoryIdentifier = Action.tipCategory
+        content.userInfo = ["announcement": "tip"]
+        try? await center.add(UNNotificationRequest(identifier: "announcement-tip", content: content, trigger: nil))
+    }
+
+    /// The tip jar's thank-you page opens whattheport://tipped. Stop asking.
+    func recordTip() {
+        UserDefaults.standard.set(false, forKey: Preferences.tipReminder)
+        guard isAvailable else { return }
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["announcement-tip"])
+    }
+
+    /// Shows the share menu under the menu bar icon. When the menu bar is hiding
+    /// the icon there's nothing to show it from, so copy the link instead.
+    private func share() {
+        NSApp.activate(ignoringOtherApps: true)
+        if StatusItemOpener.isShowing, let button = StatusItemOpener.button {
+            NSSharingServicePicker(items: [FeedbackLink.site]).show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            return
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(FeedbackLink.site.absoluteString, forType: .string)
+        let content = UNMutableNotificationContent()
+        content.title = L10n.text("Link copied")
+        content.body = L10n.text("Paste it anywhere to share WhatThePort.")
+        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "share-copied", content: content, trigger: nil))
+    }
+
     private func context(for server: Server) -> String {
         [server.project.branch, server.agent.map { L10n.format("%@ session", $0.kind.rawValue) }].compactMap { $0 }.joined(separator: " · ")
     }
@@ -178,10 +244,13 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
         let port = response.notification.request.content.userInfo["port"] as? Int
-        let isAnnouncement = response.notification.request.content.userInfo["announcement"] != nil
+        let announcement = response.notification.request.content.userInfo["announcement"] as? String
         let action = response.actionIdentifier
         Task { @MainActor in
-            if isAnnouncement {
+            if announcement == "tip" {
+                // The tip jar is the reminder's main action, so a click on it goes there too.
+                if action == Action.share { self.share() } else { NSWorkspace.shared.open(FeedbackLink.tip) }
+            } else if announcement != nil {
                 self.openSettings?()
             } else {
                 self.handle(action: action, port: port)
@@ -235,7 +304,7 @@ enum StatusItemOpener {
         return window.isVisible && window.occlusionState.contains(.visible)
     }
 
-    private static var button: NSStatusBarButton? {
+    static var button: NSStatusBarButton? {
         NSApp.windows.lazy.compactMap { findButton(in: $0.contentView) }.first
     }
 

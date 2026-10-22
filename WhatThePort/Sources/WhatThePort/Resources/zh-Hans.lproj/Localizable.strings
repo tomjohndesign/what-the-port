@@ -124,10 +124,12 @@
 "Launch at login" = "登录时启动";
 "Leaking · +%@" = "内存泄漏 · 增加 %@";
 "Less" = "收起";
+"Leave a tip in the tip jar, or share it with friends." = "打赏一下，或分享给朋友。";
 "Link servers to Codex threads" = "关联服务器与 Codex 会话";
 "Link servers to the session that started them" = "关联启动服务器的会话";
 "Link servers to the terminal that started them" = "关联启动服务器的终端";
 "MERGED" = "已合并";
+"Link copied" = "链接已复制";
 "Made by Tomjohn" = "作者 Tomjohn";
 "Memory" = "内存";
 "Memory and leak alerts" = "内存及泄漏提醒";
@@ -138,6 +140,7 @@
 "Needs approval" = "需要批准";
 "Needs the GitHub CLI (gh)" = "需要 GitHub CLI（gh）";
 "Needs the GitHub CLI (gh), which wasn't found." = "需要 GitHub CLI（gh），当前未找到。";
+"Monthly tip reminder" = "每月打赏提醒";
 "Never stop" = "禁止停止";
 "No CPU and no open connections" = "无 CPU 活动，也无打开的连接";
 "No servers running right now" = "当前没有运行中的服务器";
@@ -167,6 +170,7 @@
 "Opens when you sign in" = "登录时自动打开";
 "Other apps" = "其他应用";
 "Over %@ GB" = "超过 %@ GB";
+"Paste it anywhere to share WhatThePort." = "粘贴到任意位置即可分享 WhatThePort。";
 "Pick servers to stop" = "选择要停止的服务器";
 "Ports" = "端口";
 "Ports & processes" = "端口与进程";
@@ -213,6 +217,8 @@
 "Setup complete" = "设置完成";
 "Share anonymous usage" = "分享匿名使用情况";
 "Share which features you use, once a day. Nothing about your servers, projects or Mac is included." = "每天分享一次使用过的功能，不包含服务器、项目或 Mac 信息。";
+"Share" = "分享";
+"Share with friends" = "分享给朋友";
 "Show branch names" = "显示分支名称";
 "Show popover with ⌥⌘P" = "按 ⌥⌘P 打开面板";
 "Show preview buttons" = "显示预览按钮";
@@ -267,7 +273,7 @@
 "Watch processes" = "监测进程";
 "Website" = "网站";
 "Welcome to WhatThePort" = "欢迎使用 WhatThePort";
-"WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe." = "WhatThePort 免费开源。如果它帮你节省了时间，可以通过 Stripe 自选金额打赏。";
+"WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder." = "WhatThePort 免费开源。如果它帮你节省了时间，可以通过 Stripe 自选金额打赏，或分享给朋友。打赏后，每月提醒会自动关闭。";
 "WhatThePort reads local session files and process info to put your servers in context." = "WhatThePort 读取本地会话文件和进程信息，帮助你了解服务器来源。";
 "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac." = "服务器内存占用异常时，WhatThePort 会提醒你。服务器信息不会离开你的 Mac。";
 "WhatThePort, %d servers" = "WhatThePort，%d 个服务器";

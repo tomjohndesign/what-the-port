@@ -124,10 +124,12 @@
 "Launch at login" = "Launch at login";
 "Leaking · +%@" = "Leaking · +%@";
 "Less" = "Less";
+"Leave a tip in the tip jar, or share it with friends." = "Leave a tip in the tip jar, or share it with friends.";
 "Link servers to Codex threads" = "Link servers to Codex threads";
 "Link servers to the session that started them" = "Link servers to the session that started them";
 "Link servers to the terminal that started them" = "Link servers to the terminal that started them";
 "MERGED" = "MERGED";
+"Link copied" = "Link copied";
 "Made by Tomjohn" = "Made by Tomjohn";
 "Memory" = "Memory";
 "Memory and leak alerts" = "Memory and leak alerts";
@@ -138,6 +140,7 @@
 "Needs approval" = "Needs approval";
 "Needs the GitHub CLI (gh)" = "Needs the GitHub CLI (gh)";
 "Needs the GitHub CLI (gh), which wasn't found." = "Needs the GitHub CLI (gh), which wasn't found.";
+"Monthly tip reminder" = "Monthly tip reminder";
 "Never stop" = "Never stop";
 "No CPU and no open connections" = "No CPU and no open connections";
 "No servers running right now" = "No servers running right now";
@@ -167,6 +170,7 @@
 "Opens when you sign in" = "Opens when you sign in";
 "Other apps" = "Other apps";
 "Over %@ GB" = "Over %@ GB";
+"Paste it anywhere to share WhatThePort." = "Paste it anywhere to share WhatThePort.";
 "Pick servers to stop" = "Pick servers to stop";
 "Ports" = "Ports";
 "Ports & processes" = "Ports & processes";
@@ -213,6 +217,8 @@
 "Setup complete" = "Setup complete";
 "Share anonymous usage" = "Share anonymous usage";
 "Share which features you use, once a day. Nothing about your servers, projects or Mac is included." = "Share which features you use, once a day. Nothing about your servers, projects or Mac is included.";
+"Share" = "Share";
+"Share with friends" = "Share with friends";
 "Show branch names" = "Show branch names";
 "Show popover with ⌥⌘P" = "Show popover with ⌥⌘P";
 "Show preview buttons" = "Show preview buttons";
@@ -267,7 +273,7 @@
 "Watch processes" = "Watch processes";
 "Website" = "Website";
 "Welcome to WhatThePort" = "Welcome to WhatThePort";
-"WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe." = "WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe.";
+"WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder." = "WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder.";
 "WhatThePort reads local session files and process info to put your servers in context." = "WhatThePort reads local session files and process info to put your servers in context.";
 "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac." = "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac.";
 "WhatThePort, %d servers" = "WhatThePort, %d servers";

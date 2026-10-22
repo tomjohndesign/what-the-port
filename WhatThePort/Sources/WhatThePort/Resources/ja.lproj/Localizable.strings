@@ -124,10 +124,12 @@
 "Launch at login" = "ログイン時に起動";
 "Leaking · +%@" = "メモリリーク · +%@";
 "Less" = "折りたたむ";
+"Leave a tip in the tip jar, or share it with friends." = "チップを送るか、友だちにシェアしてください。";
 "Link servers to Codex threads" = "サーバーを Codex スレッドにリンク";
 "Link servers to the session that started them" = "サーバーを起動元のセッションにリンク";
 "Link servers to the terminal that started them" = "サーバーを起動元のターミナルにリンク";
 "MERGED" = "マージ済み";
+"Link copied" = "リンクをコピーしました";
 "Made by Tomjohn" = "制作：Tomjohn";
 "Memory" = "メモリ";
 "Memory and leak alerts" = "メモリとリークの警告";
@@ -138,6 +140,7 @@
 "Needs approval" = "承認が必要";
 "Needs the GitHub CLI (gh)" = "GitHub CLI（gh）が必要";
 "Needs the GitHub CLI (gh), which wasn't found." = "GitHub CLI（gh）が必要ですが、見つかりませんでした。";
+"Monthly tip reminder" = "毎月のチップのお知らせ";
 "Never stop" = "停止しない";
 "No CPU and no open connections" = "CPU 使用も接続もなし";
 "No servers running right now" = "現在稼働中のサーバーはありません";
@@ -167,6 +170,7 @@
 "Opens when you sign in" = "ログイン時に開く";
 "Other apps" = "ほかのアプリ";
 "Over %@ GB" = "%@ GB 超";
+"Paste it anywhere to share WhatThePort." = "好きな場所に貼り付けて WhatThePort をシェアできます。";
 "Pick servers to stop" = "停止するサーバーを選択";
 "Ports" = "ポート";
 "Ports & processes" = "ポートとプロセス";
@@ -213,6 +217,8 @@
 "Setup complete" = "設定完了";
 "Share anonymous usage" = "匿名の使用状況を共有";
 "Share which features you use, once a day. Nothing about your servers, projects or Mac is included." = "使用した機能を 1 日 1 回共有します。サーバー、プロジェクト、Mac に関する情報は含みません。";
+"Share" = "共有";
+"Share with friends" = "友だちにシェア";
 "Show branch names" = "ブランチ名を表示";
 "Show popover with ⌥⌘P" = "⌥⌘P でポップオーバーを表示";
 "Show preview buttons" = "プレビューボタンを表示";
@@ -267,7 +273,7 @@
 "Watch processes" = "監視するプロセス";
 "Website" = "ウェブサイト";
 "Welcome to WhatThePort" = "WhatThePort へようこそ";
-"WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe." = "WhatThePort は無料のオープンソースアプリです。時間の節約に役立ったら、Stripe でお好きな金額のチップを送れます。";
+"WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder." = "WhatThePort は無料のオープンソースアプリです。時間の節約に役立ったら、Stripe でお好きな金額のチップを送るか、友だちにシェアしてください。チップを送ると毎月のお知らせは止まります。";
 "WhatThePort reads local session files and process info to put your servers in context." = "WhatThePort はローカルのセッションファイルとプロセス情報を読み取り、サーバーの背景情報を表示します。";
 "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac." = "サーバーがメモリを大量に使い始めると WhatThePort が警告します。サーバーの情報が Mac の外に送られることはありません。";
 "WhatThePort, %d servers" = "WhatThePort、サーバー %d 台";

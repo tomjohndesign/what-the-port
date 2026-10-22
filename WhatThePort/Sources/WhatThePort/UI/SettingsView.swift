@@ -405,6 +405,7 @@ enum ToolDetection {
 
 private struct AboutPane: View {
     @ObservedObject private var updater = AppUpdater.shared
+    @AppStorage(Preferences.tipReminder) private var tipReminder = true
     private let links: [(label: String, value: String, url: String)] = [
         (L10n.text("Website"), "tomjohn.design", "https://www.tomjohn.design"),
         ("LinkedIn", "in/tomjohndesign", "https://www.linkedin.com/in/tomjohndesign"),
@@ -471,10 +472,22 @@ private struct AboutPane: View {
             }
             Section {
                 ExternalLinkRow(label: L10n.text("Enjoying WTP?"), value: L10n.text("Tip jar"), url: FeedbackLink.tip)
+                ShareLink(item: FeedbackLink.site) {
+                    LabeledContent(L10n.text("Share with friends")) {
+                        HStack(spacing: 8) {
+                            Text("whattheport.dev").font(Theme.mono)
+                            Image(systemName: "square.and.arrow.up").font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                Toggle(L10n.text("Monthly tip reminder"), isOn: $tipReminder)
             } header: {
                 Text(L10n.text("Support"))
             } footer: {
-                Text(L10n.text("WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe."))
+                Text(L10n.text("WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
@@ -495,6 +508,9 @@ enum FeedbackLink {
 
     /// Redirects to the tip page (TIP_URL on the site), so it can change without an app update.
     static let tip = URL(string: "https://whattheport.dev/tip")!
+
+    /// What sharing sends: the site, with the demo and the download.
+    static let site = URL(string: "https://whattheport.dev")!
 
     static func issue(_ kind: Kind) -> URL {
         let body: String

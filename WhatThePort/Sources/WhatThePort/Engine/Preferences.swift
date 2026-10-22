@@ -17,6 +17,12 @@ enum Preferences {
     /// Set once people know about `wtp`: from onboarding, or the 2.5 update notification.
     static let announcedTUI = "general.announcedTUI"
 
+    // Support
+    /// The monthly tip reminder. Tipping turns it off: the tip jar's thank-you page opens whattheport://tipped.
+    static let tipReminder = "support.tipReminder"
+    /// When the monthly tip reminder last went out, or when its first month began.
+    static let tipReminded = "support.tipReminded"
+
     // Alerts
     static let thresholdGB = "alerts.thresholdGB"
     static let leakWarnings = "alerts.leakWarnings"
@@ -83,6 +89,7 @@ enum Preferences {
             linkCodex: true,
             linkConductor: true,
             linkPane: true,
+            tipReminder: true,
             showBranches: true,
             // Both make network calls through `gh`, so they're opt-in.
             vercelPreviews: false,

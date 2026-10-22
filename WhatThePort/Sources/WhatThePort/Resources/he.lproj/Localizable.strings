@@ -124,10 +124,12 @@
 "Launch at login" = "הפעלה בהתחברות";
 "Leaking · +%@" = "דליפת זיכרון · +%@";
 "Less" = "פחות";
+"Leave a tip in the tip jar, or share it with friends." = "השאירו טיפ, או שתפו עם חברים.";
 "Link servers to Codex threads" = "קישור שרתים לשיחות Codex";
 "Link servers to the session that started them" = "קישור שרתים להפעלה שיצרה אותם";
 "Link servers to the terminal that started them" = "קישור שרתים למסוף שהפעיל אותם";
 "MERGED" = "מוזג";
+"Link copied" = "הקישור הועתק";
 "Made by Tomjohn" = "נוצר על ידי Tomjohn";
 "Memory" = "זיכרון";
 "Memory and leak alerts" = "התראות זיכרון ודליפות";
@@ -138,6 +140,7 @@
 "Needs approval" = "נדרש אישור";
 "Needs the GitHub CLI (gh)" = "נדרש GitHub CLI ‏(gh)";
 "Needs the GitHub CLI (gh), which wasn't found." = "נדרש GitHub CLI ‏(gh), שלא נמצא.";
+"Monthly tip reminder" = "תזכורת חודשית לטיפ";
 "Never stop" = "לעולם לא לעצור";
 "No CPU and no open connections" = "ללא שימוש ב־CPU וללא חיבורים פתוחים";
 "No servers running right now" = "אין שרתים פעילים כרגע";
@@ -167,6 +170,7 @@
 "Opens when you sign in" = "נפתח בהתחברות";
 "Other apps" = "יישומים אחרים";
 "Over %@ GB" = "מעל %@ GB";
+"Paste it anywhere to share WhatThePort." = "הדביקו אותו בכל מקום כדי לשתף את WhatThePort.";
 "Pick servers to stop" = "בחירת שרתים לעצירה";
 "Ports" = "פורטים";
 "Ports & processes" = "פורטים ותהליכים";
@@ -213,6 +217,8 @@
 "Setup complete" = "ההגדרה הושלמה";
 "Share anonymous usage" = "שיתוף נתוני שימוש אנונימיים";
 "Share which features you use, once a day. Nothing about your servers, projects or Mac is included." = "שיתוף התכונות שבהן השתמשתם, פעם ביום. ללא מידע על שרתים, פרויקטים או ה־Mac שלך.";
+"Share" = "שיתוף";
+"Share with friends" = "שיתוף עם חברים";
 "Show branch names" = "הצגת שמות ענפים";
 "Show popover with ⌥⌘P" = "הצגת החלונית עם ⁦⌥⌘P⁩";
 "Show preview buttons" = "הצגת כפתורי תצוגה מקדימה";
@@ -267,7 +273,7 @@
 "Watch processes" = "ניטור תהליכים";
 "Website" = "אתר";
 "Welcome to WhatThePort" = "ברוכים הבאים ל־WhatThePort";
-"WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe." = "WhatThePort חינמי ובקוד פתוח. אם הוא חוסך לכם זמן, אפשר להשאיר טיפ בכל סכום דרך Stripe.";
+"WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder." = "WhatThePort חינמי ובקוד פתוח. אם הוא חוסך לכם זמן, השאירו טיפ בכל סכום דרך Stripe, או שתפו עם חברים. אחרי טיפ, התזכורת החודשית נכבית.";
 "WhatThePort reads local session files and process info to put your servers in context." = "WhatThePort קורא קובצי הפעלה מקומיים ומידע על תהליכים כדי להציג את ההקשר של השרתים שלך.";
 "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac." = "WhatThePort מתריע כששרת מתחיל לצרוך זיכרון רב. מידע על השרתים שלך לא יוצא מה־Mac.";
 "WhatThePort, %d servers" = "WhatThePort, %d שרתים";

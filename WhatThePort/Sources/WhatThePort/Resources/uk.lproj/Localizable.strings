@@ -124,10 +124,12 @@
 "Launch at login" = "Запускати під час входу";
 "Leaking · +%@" = "Витік пам’яті · +%@";
 "Less" = "Менше";
+"Leave a tip in the tip jar, or share it with friends." = "Залиште чайові або поділіться з друзями.";
 "Link servers to Codex threads" = "Пов’язувати сервери з розмовами Codex";
 "Link servers to the session that started them" = "Пов’язувати сервери із сеансом, що їх запустив";
 "Link servers to the terminal that started them" = "Пов’язувати сервери з терміналом, що їх запустив";
 "MERGED" = "ОБ’ЄДНАНО";
+"Link copied" = "Посилання скопійовано";
 "Made by Tomjohn" = "Створено Tomjohn";
 "Memory" = "Пам’ять";
 "Memory and leak alerts" = "Сповіщення про пам’ять і витоки";
@@ -138,6 +140,7 @@
 "Needs approval" = "Потрібне підтвердження";
 "Needs the GitHub CLI (gh)" = "Потрібен GitHub CLI (gh)";
 "Needs the GitHub CLI (gh), which wasn't found." = "Потрібен GitHub CLI (gh), але його не знайдено.";
+"Monthly tip reminder" = "Щомісячне нагадування про чайові";
 "Never stop" = "Ніколи не зупиняти";
 "No CPU and no open connections" = "Без використання CPU та відкритих з’єднань";
 "No servers running right now" = "Зараз жоден сервер не працює";
@@ -167,6 +170,7 @@
 "Opens when you sign in" = "Відкривається під час входу";
 "Other apps" = "Інші програми";
 "Over %@ GB" = "Понад %@ ГБ";
+"Paste it anywhere to share WhatThePort." = "Вставте його будь-де, щоб поділитися WhatThePort.";
 "Pick servers to stop" = "Виберіть сервери для зупинки";
 "Ports" = "Порти";
 "Ports & processes" = "Порти й процеси";
@@ -213,6 +217,8 @@
 "Setup complete" = "Налаштування завершено";
 "Share anonymous usage" = "Ділитися анонімними даними використання";
 "Share which features you use, once a day. Nothing about your servers, projects or Mac is included." = "Раз на день діліться використаними функціями. Жодних даних про сервери, проєкти чи Mac.";
+"Share" = "Поділитися";
+"Share with friends" = "Поділитися з друзями";
 "Show branch names" = "Показувати назви гілок";
 "Show popover with ⌥⌘P" = "Показувати вікно через ⌥⌘P";
 "Show preview buttons" = "Показувати кнопки перегляду";
@@ -267,7 +273,7 @@
 "Watch processes" = "Стежити за процесами";
 "Website" = "Вебсайт";
 "Welcome to WhatThePort" = "Вітаємо у WhatThePort";
-"WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe." = "WhatThePort — безкоштовна програма з відкритим кодом. Якщо вона заощаджує ваш час, можете залишити чайові будь-якого розміру через Stripe.";
+"WhatThePort is free and open source. If it saves you time, leave a tip of any amount through Stripe, or share it with friends. Tipping turns off the monthly reminder." = "WhatThePort — безкоштовна програма з відкритим кодом. Якщо вона заощаджує ваш час, залиште чайові будь-якого розміру через Stripe або поділіться з друзями. Після чайових щомісячне нагадування вимкнеться.";
 "WhatThePort reads local session files and process info to put your servers in context." = "WhatThePort читає локальні файли сеансів і дані процесів, щоб показати контекст ваших серверів.";
 "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac." = "WhatThePort попереджає, коли сервер починає споживати забагато пам’яті. Дані про сервери не залишають ваш Mac.";
 "WhatThePort, %d servers" = "WhatThePort, серверів: %d";

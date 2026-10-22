@@ -60,7 +60,7 @@ There’s no account and no analytics SDK. Everything the app shows comes from y
 
 ### Is WhatThePort free?
 
-Yes. It’s free and open source under the MIT license, with no account and no paid tier. There’s an optional tip jar.
+Yes. It’s free and open source under the MIT license, with no account and no paid tier. There’s an optional tip jar. Once a month the app asks for a tip or a share. It stops after you tip, or you can turn it off in Settings → About.
 
 ### Does it work on Intel Macs or older macOS?
 
