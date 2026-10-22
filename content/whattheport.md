@@ -13,9 +13,9 @@
 
 - **Every dev server at a glance.** Port, project name, git branch, uptime and memory for each local server, with stable port colors and a whole-Mac memory bar for servers, other apps and free RAM.
 - **Knows which agent started it.** Servers launched by Claude Code, Codex, Conductor or [Pane](https://runpane.com) link back to the session that started them, so you can resume the conversation (`claude --resume`, `codex resume`), find the Conductor workspace, or open the Pane terminal that started the server.
-- **Memory growth detection.** Servers over 2 GB turn amber. Growth of at least 500 MB over the recorded window (two to ten minutes) must persist for 30 seconds before it is flagged. High-memory notifications also wait 30 seconds. Alerts offer Details, Stop and Snooze; growth alone does not prove a leak. The absolute memory threshold is adjustable, and rapid-growth notifications can be disabled.
+- **Leak detection.** When a server passes 2 GB of memory or grows more than 500 MB in ten minutes, its memory reading and the menu bar icon turn amber and you get one notification with Details, Stop and Snooze. Thresholds are adjustable.
 - **Resource charts.** Ten minutes of memory and CPU history per server, summed across its own process tree.
-- **Clean up.** Preselects servers from deleted git worktrees or idle for hours, then stops each server’s own process tree in bulk. Postgres, Redis, MongoDB and MySQL are protected by default. Cleanup can be Off, Ask or Automatic; rapidly growing servers are never stopped automatically.
+- **Clean up.** Preselects servers from deleted git worktrees or idle for hours, then stops each server’s own process tree in bulk. Postgres, Redis, MongoDB and MySQL are protected by default. Cleanup can be Off, Ask or Automatic; leaking servers are never stopped automatically.
 - **Stop and restart.** Stop sends SIGTERM to the server’s own process tree, then SIGKILL after a short delay. Restart reruns the original command in the same folder.
 - **Previews and pull requests (optional).** A Vercel preview button and the branch’s pull request, through the GitHub CLI you’re already signed in to.
 - **Terminal UI.** `wtp` shows the same servers, details and Clean up in your terminal. `wtp list --json` prints them as JSON for scripts and coding agents.
@@ -60,7 +60,7 @@ There’s no account and no analytics SDK. Everything the app shows comes from y
 
 ### Is WhatThePort free?
 
-Yes. It’s free and open source under the MIT license, with no account and no paid tier. There’s an optional tip jar.
+Yes. It’s free and open source under the MIT license, with no account and no paid tier. There’s an optional tip jar. Once a month the app asks for a tip or a share. It stops after you tip, or you can turn it off in Settings → About.
 
 ### Does it work on Intel Macs or older macOS?
 
@@ -68,7 +68,7 @@ The prebuilt download is for Apple Silicon Macs on macOS 14 Sonoma or later. You
 
 ### How is it different from `lsof` or `npx kill-port`?
 
-Those answer one question about one port. WhatThePort keeps every dev server in view all the time, names them by project and branch, shows memory and CPU for the server’s own process tree, warns you about high memory and rapid growth, links servers to the agent session that started them, and stops the whole tree, not just one PID.
+Those answer one question about one port. WhatThePort keeps every dev server in view all the time, names them by project and branch, shows memory and CPU for the server’s own process tree, warns you about leaks, links servers to the agent session that started them, and stops the whole tree, not just one PID.
 
 ### Will it stop my database?
 

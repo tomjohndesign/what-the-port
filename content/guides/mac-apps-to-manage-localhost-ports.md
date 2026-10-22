@@ -59,7 +59,7 @@ These stay running and show your servers all the time, so you notice a stray ser
 
 - **Agent sessions.** Each server links to the Claude Code, Codex, Conductor or Pane session that started it, so you can resume the conversation, find the workspace, or open the Pane terminal.
 - **Branches and worktrees.** Each server shows its git branch, and servers whose worktree has been deleted are flagged.
-- **Memory alerts.** Memory is summed across each server’s own process tree, with ten minutes of history. Servers over 2 GB turn amber; growth of at least 500 MB must persist for 30 seconds before being flagged. High-memory notifications also wait 30 seconds. Rapid growth is a signal to investigate, not proof of a leak.
+- **Leak alerts.** Memory is summed across each server’s own process tree, with ten minutes of history. A server that passes 2 GB or grows 500 MB in ten minutes turns amber in the menu bar and sends one notification.
 - **Clean up.** Preselects idle servers and servers from deleted worktrees, then stops each server’s own process tree. Databases are protected by default. It can run automatically.
 - **A terminal UI.** `wtp` shows the same list in your terminal, and `wtp list --json` gives scripts and agents a structured list of every server.
 

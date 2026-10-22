@@ -105,11 +105,11 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
     case 2:
       return (
         <div className={styles.copy}>
-          <PortLabel port="6006" colon="amber" label="Memory" />
+          <PortLabel port="6006" colon="amber" label="Leaks" />
           <h2 className={styles.headline}>Notices before your fans do.</h2>
           <p className={styles.body}>
-            Get a quiet notification when a server stays over 2 GB or its memory growth stays above 500 MB for
-            30 seconds. Growth is measured over the last ten minutes: a signal to investigate, not proof of a leak.
+            When a server passes 2 GB or grows 500 MB in ten minutes, the menu bar turns amber and you get one quiet
+            notification. Crashed, hung and failed preview builds get flagged too.
           </p>
         </div>
       )

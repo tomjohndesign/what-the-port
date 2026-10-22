@@ -10,6 +10,7 @@ struct ScanConfig {
     var linkConductor = true
     var linkPane = true
     var showBranches = true
+    var scanInterval: TimeInterval = 2
 }
 
 /// Builds the list of servers from sockets and the process table. Holds the
@@ -63,6 +64,8 @@ final class ScanEngine: @unchecked Sendable {
             guard socket.port >= config.minPort, socket.port <= config.maxPort,
                   Self.isAllowed(socket.command, allowlist: config.allowlist),
                   let listener = processes[socket.pid] else { continue }
+            // Bazel's random localhost port is build-client IPC, not a dev server.
+            guard !Self.isBazelDaemon(args(for: listener)) else { continue }
 
             let service = ownership.service(containing: listener.pid)
             let root = rootProcess(for: listener, in: processes, ownership: ownership, service: service)
@@ -130,6 +133,14 @@ final class ScanEngine: @unchecked Sendable {
             }
 
             var history = histories[key] ?? []
+            if let previous = history.last {
+                let gap = now.timeIntervalSince(previous.time)
+                // Allow normal scan jitter, but don't count sleep or a stalled
+                // scanner as evidence of consecutive elevated observations.
+                if gap < 0 || gap > max(config.scanInterval, 1) * 3 {
+                    rapidGrowthSince.removeValue(forKey: key)
+                }
+            }
             history.append(Sample(time: now, memory: memory, cpu: cpuPercent))
             history.removeAll { now.timeIntervalSince($0.time) > Self.historyWindow }
             histories[key] = history
@@ -179,6 +190,15 @@ final class ScanEngine: @unchecked Sendable {
     }
 
     // MARK: - Process tree
+
+    private static func isBazelDaemon(_ args: ProcArgs?) -> Bool {
+        guard let args, (args.executablePath as NSString).lastPathComponent == "java",
+              let title = args.arguments.first,
+              title.hasPrefix("bazel("), title.hasSuffix(")") else { return false }
+        return zip(args.arguments, args.arguments.dropFirst()).contains {
+            $0.0 == "-jar" && ($0.1 as NSString).lastPathComponent == "A-server.jar"
+        }
+    }
 
     /// Climbs from the listening process to the command the user actually ran,
     /// e.g. from `next-server` up to `npm run dev`. Stops at shells, terminals

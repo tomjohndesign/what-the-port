@@ -18,10 +18,19 @@ const GLYPHS: Record<string, string[]> = {
   count: ['#####', '#....', '####.', '....#', '####.'],
   leak: ['....a', '...a.', '..#..', '.#...', '#....'],
   alert: ['aaaaa', 'aa.aa', 'aaaaa', 'aa.aa', 'aaaaa'],
+  H: ['#...#', '#...#', '#####', '#...#', '#...#'],
+  A: ['.###.', '#...#', '#####', '#...#', '#...#'],
+  N: ['#...#', '##..#', '#.#.#', '#..##', '#...#'],
+  K: ['#...#', '#..#.', '###..', '#..#.', '#...#'],
+  Y: ['#...#', '.#.#.', '..#..', '..#..', '..#..'],
+  O: ['.###.', '#...#', '#...#', '#...#', '.###.'],
+  U: ['#...#', '#...#', '#...#', '#...#', '.###.'],
 }
 
+type Sequence = [glyph: keyof typeof GLYPHS, hold: number][]
+
 // Colon at rest, spell the name, then show off what the grid can say.
-const SEQUENCE: [glyph: string, hold: number][] = [
+const SEQUENCE: Sequence = [
   ['colon', 1600],
   ['W', 700],
   ['T', 700],
@@ -37,9 +46,23 @@ const SEQUENCE: [glyph: string, hold: number][] = [
   ['questionBang', 1000],
 ]
 
+// The tip jar's thank-you page.
+export const THANK_YOU: Sequence = [
+  ['colon', 1200],
+  ...(['T', 'H', 'A', 'N', 'K', 'Y', 'O', 'U'] as const).map((letter): Sequence[number] => [letter, 600]),
+]
+
 const COLORS = { '#': '#F5F5F7', a: '#FFB224', '.': '#F5F5F71F' } as const
 
-export function DotMatrix({ size = 216, playing = true }: { size?: number; playing?: boolean }) {
+export function DotMatrix({
+  size = 216,
+  playing = true,
+  sequence = SEQUENCE,
+}: {
+  size?: number
+  playing?: boolean
+  sequence?: Sequence
+}) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -48,11 +71,11 @@ export function DotMatrix({ size = 216, playing = true }: { size?: number; playi
       return
     }
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const timer = setTimeout(() => setStep((s) => (s + 1) % SEQUENCE.length), SEQUENCE[step][1])
+    const timer = setTimeout(() => setStep((s) => (s + 1) % sequence.length), sequence[step][1])
     return () => clearTimeout(timer)
-  }, [step, playing])
+  }, [step, playing, sequence])
 
-  const rows = GLYPHS[SEQUENCE[step][0]]
+  const rows = GLYPHS[sequence[step][0]]
 
   return (
     <svg className={styles.dotMatrix} width={size} height={size} viewBox="0 0 216 216" aria-hidden>

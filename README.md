@@ -22,7 +22,7 @@ Servers launched by Claude Code, Codex, Conductor, or [Pane](https://runpane.com
 
 ### Notices before your fans do
 
-Servers over the default 2 GB memory threshold turn amber. Growth of at least 500 MB over the recorded window must persist for 30 seconds before it is flagged; high-memory notifications also wait 30 seconds. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the server’s own process tree. Adjust the absolute memory threshold, disable rapid-growth notifications, or snooze alerts in Settings. Growth alone does not prove a leak.
+When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the server’s own process tree. Adjust thresholds and snooze alerts in Settings.
 
 ![Marketing demo showing a rising memory chart and the amber alert threshold for a development server](docs/images/leaks.jpg)
 
@@ -30,7 +30,7 @@ Servers over the default 2 GB memory threshold turn amber. Growth of at least 50
 
 **Clean up** adds checkboxes to the server list and preselects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops each server’s own process tree. Database processes such as Postgres and Redis are protected by default.
 
-Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Rapidly growing servers are never stopped automatically.
+Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Leaking servers are never stopped automatically.
 
 ![Marketing demo of Clean up with idle and deleted-worktree servers selected for removal](docs/images/clean-up.jpg)
 
@@ -49,11 +49,11 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with stable port colors and a whole-Mac memory bar for servers, other apps, and free RAM
 - **Knows what started it** - Links servers to the Claude Code, Codex, Conductor or Pane session that launched them
 - **Resource charts** - 10 minutes of memory and CPU history per server, summed across its own process tree
-- **Memory growth detection** - Servers over 2 GB, or with at least 500 MB growth sustained for 30 seconds, turn amber in the list and the menu bar. Growth is a reason to investigate, not proof of a leak.
+- **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
 - **Stop and restart** - Stops the server’s own process tree; restart reruns the original command in the same folder
-- **Alerts** - Notifications with Details, Stop and Snooze after high memory or rapid growth persists for 30 seconds
-- **Automatic clean up (optional)** - Off, Ask or Automatic; rapidly growing servers are never stopped automatically
+- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
+- **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
 - **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
 - **Global shortcut** - ⌥⌘P opens the popover
@@ -108,11 +108,11 @@ The native app supports **English, German, French, Spanish, Simplified Chinese, 
 Open Settings from the gear in the popover (⌘,):
 
 - **General** - Language, launch at login, menu bar icon style, editor, global shortcut, the `wtp` terminal command, scan interval, anonymous usage sharing
-- **Alerts** - Memory threshold, rapid-growth warnings, snooze length, start/stop notifications
+- **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
 - **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names, Vercel previews and pull requests
-- **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, and a tip jar
+- **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, a tip jar and a share link. Once a month, a notification asks for a tip or a share. Tipping turns it off, and so does **Monthly tip reminder**.
 
 ## How It Works
 
@@ -180,6 +180,10 @@ type to **Customers choose what to pay** (not a product price), then add it to t
 environment with `vercel env add TIP_URL production`. Production builds fail
 without it ([`scripts/check-tip.mjs`](scripts/check-tip.mjs)); local dev and
 previews redirect `/tip` to production.
+
+Under the Payment Link's **After payment**, choose **Don't show confirmation page**
+and redirect to `https://whattheport.dev/thanks`. That page opens
+`whattheport://tipped`, which turns off the app's monthly tip reminder.
 
 `vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
 workflow publishes production with the freshly built app. Other branches retain

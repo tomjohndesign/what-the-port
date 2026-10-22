@@ -15,7 +15,8 @@ const KEYS = [
   'Cancel', 'Stop servers', 'Stop %d %@ · free %@', 'server', 'servers', 'servers (few)',
   'Open in browser', 'Stop', 'Back',
   'up %@', 'idle %@', 'Worktree deleted · idle %@', '+%@ in %@',
-  'Worktree deleted', 'Idle %@ · no connections', 'Rapid growth · +%@',
+  // The website keeps the old label until its separate copy update lands.
+  'Worktree deleted', 'Idle %@ · no connections', 'Leaking · +%@', 'Rapid growth · +%@',
   '<1m', '%dm', '%dh', '%dh %dm', '%dd',
   'Running for %@', 'Restart with the same command', 'Session', 'Branch', 'Folder', 'Framework', 'Command',
   'Started', 'Workspace', 'Session ID', '%d more', 'Less', 'Memory', '10 min', 'Processes',

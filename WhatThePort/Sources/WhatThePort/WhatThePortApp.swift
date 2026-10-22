@@ -31,6 +31,7 @@ struct WhatThePortApp: App {
         _ = AppUpdater.shared
         AlertCenter.shared.start(monitor: monitor)
         AlertCenter.shared.announceTUI()
+        AlertCenter.shared.remindAboutTips()
         HotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: Preferences.hotkey))
         monitor.start()
         Usage.start()
@@ -60,6 +61,21 @@ struct WhatThePortApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Set once the menu bar icon appears, since only views can open windows.
     @MainActor static var openSettings: (() -> Void)?
+
+    /// Handle whattheport:// links here, before SwiftUI, which would open a
+    /// window for a URL no scene claims.
+    @MainActor
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(handleURL(_:reply:)),
+                                                     forEventClass: AEEventClass(kInternetEventClass), andEventID: AEEventID(kAEGetURL))
+    }
+
+    @MainActor @objc
+    private func handleURL(_ event: NSAppleEventDescriptor, reply: NSAppleEventDescriptor) {
+        guard let string = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
+              let url = URL(string: string), url.scheme == "whattheport" else { return }
+        if url.host == "tipped" { AlertCenter.shared.recordTip() }
+    }
 
     /// Opening the app again (from Finder, Spotlight or Launchpad) opens the
     /// popover, or Settings when the menu bar is hiding the icon, so people

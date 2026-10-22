@@ -83,7 +83,7 @@ struct ScanEngineTests {
         f.listen(30, port: 8000)
         _ = f.scan()
         f.usages[30] = ProcUsage(footprint: 100 + 600 * 1_048_576, cpuNanoseconds: 0)
-        _ = f.scan(after: 121)
+        for second in stride(from: 121, through: 149, by: 2) { _ = f.scan(after: Double(second)) }
         let rows = f.scan(after: 151)
         #expect(rows[0].memoryGrowth == 0)
         #expect(!rows[0].isGrowingRapidly())
@@ -118,7 +118,9 @@ struct ScanEngineTests {
         _ = f.scan()
         f.usages[20] = ProcUsage(footprint: 1300 * 1_048_576, cpuNanoseconds: 0)
         #expect(!f.scan(after: 120)[0].isGrowingRapidly())
-        #expect(!f.scan(after: 149)[0].isGrowingRapidly())
+        for second in stride(from: 122, through: 148, by: 2) {
+            #expect(!f.scan(after: Double(second))[0].isGrowingRapidly())
+        }
         #expect(f.scan(after: 150)[0].isGrowingRapidly())
 
         // A dip below the growth threshold interrupts the sustained interval.
@@ -126,7 +128,9 @@ struct ScanEngineTests {
         #expect(!f.scan(after: 151)[0].isGrowingRapidly())
         f.usages[20] = ProcUsage(footprint: 1300 * 1_048_576, cpuNanoseconds: 0)
         #expect(!f.scan(after: 152)[0].isGrowingRapidly())
-        #expect(!f.scan(after: 181)[0].isGrowingRapidly())
+        for second in stride(from: 154, through: 180, by: 2) {
+            #expect(!f.scan(after: Double(second))[0].isGrowingRapidly())
+        }
         #expect(f.scan(after: 182)[0].isGrowingRapidly())
     }
 
@@ -137,7 +141,9 @@ struct ScanEngineTests {
         _ = f.scan()
         f.usages[20] = ProcUsage(footprint: 700 * 1_048_576, cpuNanoseconds: 0)
         #expect(!f.scan(after: 90)[0].isGrowingRapidly())
-        #expect(!f.scan(after: 120)[0].isGrowingRapidly())
+        for second in stride(from: 120, through: 148, by: 2) {
+            #expect(!f.scan(after: Double(second))[0].isGrowingRapidly())
+        }
         #expect(f.scan(after: 150)[0].isGrowingRapidly())
     }
 
@@ -180,6 +186,72 @@ struct ScanEngineTests {
         #expect(rows.count == 1)
         #expect(rows[0].rootPid == 20)
         #expect(Set(rows[0].processStarts.keys) == [20])
+    }
+
+    @Test func bazelDaemonIsExcludedButItsDevServersAndOtherJavaAppsRemain() {
+        let f = Fixture()
+        f.config.allowlist.insert("java")
+        f.config.maxPort = 65535
+        f.process(10, name: "java", memory: 800)
+        f.arguments[10] = ProcArgs(executablePath: "/opt/jdk/bin/java",
+                                  arguments: ["bazel(example-project)", "-Xmx4g", "-jar", "/cache/A-server.jar"], environment: [:])
+        f.listen(10, port: 65000)
+        f.process(20, parent: 10, memory: 200)
+        f.process(21, parent: 20, name: "esbuild", memory: 30)
+        f.listen(20, port: 3000)
+        f.process(30, name: "java", memory: 100)
+        f.arguments[30] = ProcArgs(executablePath: "/opt/jdk/bin/java",
+                                  arguments: ["java", "-jar", "/project/app.jar"], environment: [:])
+        f.listen(30, port: 8080)
+        let rows = f.scan()
+        #expect(rows.map(\.pid) == [20, 30])
+        #expect(rows.first(where: { $0.pid == 20 })?.memory == 230)
+        #expect(Set(rows.first(where: { $0.pid == 20 })?.processStarts.keys.map { $0 } ?? []) == [20, 21])
+        #expect(f.reads[10] == nil)
+    }
+
+    @Test func bazelDaemonDetectionRequiresBothTitleAndServerJar() {
+        let f = Fixture()
+        f.config.allowlist.insert("java")
+        for (pid, arguments) in [(20, ["java", "-jar", "A-server.jar"]),
+                                 (30, ["bazel(example-project)", "-jar", "app.jar"]),
+                                 (40, ["java", "-Ddescription=bazel(example-project)", "-jar", "app.jar"])] {
+            f.process(pid_t(pid), name: "java")
+            f.arguments[pid_t(pid)] = ProcArgs(executablePath: "/opt/jdk/bin/java", arguments: arguments, environment: [:])
+            f.listen(pid_t(pid), port: 8000 + pid)
+        }
+        #expect(f.scan().map(\.pid) == [20, 30, 40])
+    }
+
+    @Test func aLongScanPauseRestartsPendingGrowthQualification() {
+        let f = Fixture()
+        f.process(20, memory: 800 * 1_048_576)
+        f.listen(20, port: 3000)
+        _ = f.scan()
+        _ = f.scan(after: 200)
+        f.usages[20] = ProcUsage(footprint: 1400 * 1_048_576, cpuNanoseconds: 0)
+        #expect(!f.scan(after: 202)[0].isGrowingRapidly())
+        #expect(!f.scan(after: 204)[0].isGrowingRapidly())
+        // A sleep or stalled scan supplies no evidence of sustained growth.
+        #expect(!f.scan(after: 244)[0].isGrowingRapidly())
+        for second in stride(from: 246, through: 272, by: 2) {
+            #expect(!f.scan(after: Double(second))[0].isGrowingRapidly())
+        }
+        #expect(f.scan(after: 274)[0].isGrowingRapidly())
+    }
+
+    @Test func slowerConfiguredScansCanStillQualifySustainedGrowth() {
+        let f = Fixture()
+        f.config.scanInterval = 10
+        f.process(20, memory: 800 * 1_048_576)
+        f.listen(20, port: 3000)
+        _ = f.scan()
+        f.usages[20] = ProcUsage(footprint: 1400 * 1_048_576, cpuNanoseconds: 0)
+        for second in [200.0, 210, 220] { #expect(!f.scan(after: second)[0].isGrowingRapidly()) }
+        #expect(f.scan(after: 230)[0].isGrowingRapidly())
+        #expect(!f.scan(after: 270)[0].isGrowingRapidly())
+        for second in [280.0, 290] { #expect(!f.scan(after: second)[0].isGrowingRapidly()) }
+        #expect(f.scan(after: 300)[0].isGrowingRapidly())
     }
 
     @Test func packageManagerAndWorkersStayWithAnExclusiveServer() {

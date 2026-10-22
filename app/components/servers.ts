@@ -126,7 +126,7 @@ export const SERVERS: Server[] = [
     context: { text: '+1.1 GB in 10 min', tone: 'amber' },
     lines: (l) => ({
       context: l.format('+%@ in %@', '1.1 GB', l.text('10 min')),
-      note: l.format('Rapid growth · +%@', '1.1 GB'),
+      note: l.format('Leaking · +%@', '1.1 GB'),
       running: l.duration(160),
     }),
     session: { agent: 'claude', title: 'Tokens v2 migration', id: 'a3f19c07' },
@@ -146,7 +146,7 @@ export const SERVERS: Server[] = [
       ['Git', '3 changed files'],
       ['Workspace', 'Pane · tokens-v2'],
     ],
-    cleanUp: { reason: 'leaking', note: 'Rapid growth · +1.1 GB in 10 min', suggested: false },
+    cleanUp: { reason: 'leaking', note: 'Leaking · +1.1 GB in 10 min', suggested: false },
   },
   {
     port: '8000',

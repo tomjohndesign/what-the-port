@@ -248,7 +248,7 @@ struct ServersView: View {
         }
     }
 
-    /// Everything Clean up suggests, except rapidly growing servers, which are usually still in use.
+    /// Everything Clean up suggests, except candidates suggested for rapid growth alone.
     private static func suggestedSelection(_ monitor: ServerMonitor) -> Set<Int> {
         Set(monitor.cleanUpCandidates.compactMap { candidate in
             if case .rapidGrowth = candidate.reason { return nil }
