@@ -13,7 +13,7 @@ const KEYS = [
   'System and smaller apps', 'Everything else', 'Everything else · %@',
   'Pick servers to stop', 'freed by stopping %d', 'Nothing listening', 'Dev servers on ports %d–%d show up here.',
   'Cancel', 'Stop servers', 'Stop %d %@ · free %@', 'server', 'servers', 'servers (few)',
-  'Open in browser', 'Stop', 'Back',
+  'Open in browser', 'Stop', 'Back', 'Container', 'Image', 'Restart container',
   'up %@', 'idle %@', 'Worktree deleted · idle %@', '+%@ in %@',
   'Worktree deleted', 'Idle %@ · no connections', 'Leaking · +%@',
   '<1m', '%dm', '%dh', '%dh %dm', '%dd',

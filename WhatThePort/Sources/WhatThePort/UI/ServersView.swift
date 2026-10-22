@@ -382,7 +382,15 @@ struct ServerRow: View {
         } else {
             HStack(spacing: 5) {
                 if let agent = server.agent { AgentGlyph(kind: agent.kind, size: 10) }
-                if server.cwdExists, server.project.branch != nil {
+                if let container = server.container {
+                    // Like native rows, only the middle truncates; the time always shows.
+                    ContainerGlyph(size: 10)
+                    HStack(spacing: 3) {
+                        Text([container.runtime.name, server.project.branch].compactMap { $0 }.joined(separator: " · "))
+                            .lineLimit(1).truncationMode(.tail)
+                        if !contextText.isEmpty { Text("· " + contextText).fixedSize() }
+                    }
+                } else if server.cwdExists, server.project.branch != nil {
                     HStack(spacing: 3) {
                         Text(server.project.name.replacingOccurrences(of: "-", with: " "))
                             .lineLimit(1).truncationMode(.tail).help(server.project.name)
@@ -397,9 +405,7 @@ struct ServerRow: View {
         }
     }
 
-    private var primaryName: String {
-        server.project.branch ?? server.project.name
-    }
+    private var primaryName: String { server.listTitle }
 
     /// Uptime or idle time, prefixed with the location when there's no branch.
     private var contextText: String {
@@ -407,7 +413,7 @@ struct ServerRow: View {
         let time = server.idleFor > 60 * 60
             ? L10n.format("idle %@", L10n.duration(server.idleFor, short: true))
             : server.uptime.map { L10n.format("up %@", L10n.duration($0, short: true)) } ?? ""
-        if server.project.branch != nil { return time }
+        if server.project.branch != nil || server.container != nil { return time }
         return [server.locationLabel, time].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 

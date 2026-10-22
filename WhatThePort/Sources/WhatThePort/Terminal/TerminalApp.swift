@@ -81,6 +81,7 @@ final class TerminalApp {
 
     private func start() {
         monitor.handlesAlerts = false
+        monitor.isWatched = true
         activeScreen = screen
         atexit { activeScreen?.leave() }
         screen.enter()
@@ -346,10 +347,9 @@ final class TerminalApp {
                 show("Resuming in \(TerminalLauncher.current.name)")
             })
         }
-        items.append(ServerAction(label: server.agent.map { "Restart · runs outside \($0.kind.rawValue)" } ?? "Restart", key: "r",
-                                  isEnabled: server.launch != nil && server.cwdExists) { [unowned self] in restart(server) })
-        let count = server.processes.count
-        items.append(ServerAction(label: "Stop \(count) \(count == 1 ? "process" : "processes")", key: "s", isDestructive: true) { [unowned self] in
+        items.append(ServerAction(label: server.agent.map { "Restart · runs outside \($0.kind.rawValue)" } ?? (server.container != nil ? "Restart container" : "Restart"), key: "r",
+                                  isEnabled: monitor.canRestart(server)) { [unowned self] in restart(server) })
+        items.append(ServerAction(label: stopLabel(server), key: "s", isDestructive: true) { [unowned self] in
             confirmingStop = server.port
         })
         if let root {
@@ -369,7 +369,16 @@ final class TerminalApp {
         if let agent = server.agent {
             items.append(ServerAction(label: "Copy session ID", key: nil) { [unowned self] in copy(agent.id, label: "session ID") })
         }
+        if let container = server.container {
+            items.append(ServerAction(label: "Copy container ID", key: nil) { [unowned self] in copy(container.id, label: "container ID") })
+        }
         return items
+    }
+
+    private func stopLabel(_ server: Server) -> String {
+        if server.container != nil { return "Stop container" }
+        let count = server.processes.count
+        return "Stop \(count) \(count == 1 ? "process" : "processes")"
     }
 
     private func runShortcut(_ event: InputEvent, server: Server) {
@@ -470,7 +479,7 @@ final class TerminalApp {
     }
 
     private func restart(_ server: Server) {
-        guard server.launch != nil, server.cwdExists else {
+        guard monitor.canRestart(server) else {
             show("Can’t restart :\(server.port): its command or folder is gone", isError: true)
             return
         }
@@ -731,7 +740,7 @@ final class TerminalApp {
         first.append(Span(String(repeating: " ", count: max(indent, 1))))
         second.append(Span("       "))
 
-        let name = (server.project.branch ?? server.project.name).replacingOccurrences(of: "-", with: " ")
+        let name = server.listTitle.replacingOccurrences(of: "-", with: " ")
         first.append(Span(name, palette.text1.bold()))
 
         let memoryStyle = attention ? palette.amber : palette.text1
@@ -777,7 +786,14 @@ final class TerminalApp {
         var line: Line = []
         if let agent = server.agent { line += [Span(agentGlyph(agent.kind), palette.text2), Span(" ")] }
         let text = contextText(server)
-        if server.cwdExists, server.project.branch != nil {
+        if let container = server.container {
+            // Only the runtime and branch truncate, so the time stays visible.
+            let suffix = text.isEmpty ? "" : " · " + text
+            let available = max(width - line.width - TextWidth.of(suffix), 1)
+            let lead = [container.runtime.name, server.project.branch].compactMap { $0 }.joined(separator: " · ")
+            line.append(Span([Span(lead)].truncated(to: available).map(\.text).joined(), palette.text2))
+            line.append(Span(suffix, palette.text2))
+        } else if server.cwdExists, server.project.branch != nil {
             let suffix = " · " + text
             let available = max(width - line.width - TextWidth.of(suffix), 1)
             let project = server.project.name.replacingOccurrences(of: "-", with: " ")
@@ -795,7 +811,7 @@ final class TerminalApp {
         let time = server.idleFor > 60 * 60
             ? "idle \(Format.shortDuration(server.idleFor))"
             : server.uptime.map { "up \(Format.shortDuration($0))" } ?? ""
-        if server.project.branch != nil { return time }
+        if server.project.branch != nil || server.container != nil { return time }
         return [server.locationLabel, time].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
@@ -855,6 +871,9 @@ final class TerminalApp {
         // Info: the essentials, then the rest behind "N more".
         let github = monitor.github.result(for: server)
         var primary: [Line] = []
+        if let container = server.container {
+            primary.append(row("Container", [Span("\(container.runtime.name) · \(container.name)", palette.text1)]))
+        }
         if let agent = server.agent {
             primary.append(row("Session", [Span(agentGlyph(agent.kind) + " ", palette.text1), Span(agent.title ?? agent.kind.rawValue, palette.text1), Span(" ↗", palette.text2)]))
         }
@@ -877,6 +896,9 @@ final class TerminalApp {
         // Folder moves here when Session and Branch fill the first two rows.
         if !folderIsPrimary, let folder {
             secondary.append(row("Folder", [Span(folder, palette.text2)], middle: true))
+        }
+        if let container = server.container {
+            secondary.append(row("Image", [Span(container.image, palette.text2)], middle: true))
         }
         if let framework = server.project.framework {
             secondary.append(row("Framework", [Span(framework, palette.text2)]))
@@ -923,8 +945,14 @@ final class TerminalApp {
         block.add([])
         block.add(divider())
 
-        // Processes
+        // Processes; a container's run inside the runtime's VM, not on the Mac.
         block.add([])
+        if let container = server.container {
+            block.add(padded(Line.split([Span("Container", palette.text2)],
+                                        [Span("\(container.shortID) · \(Format.bytesString(server.memory))", palette.text2)], width: inner)))
+            block.add([])
+            return block
+        }
         let summary = "\(server.processes.count) · \(Format.bytesString(server.memory))"
         block.add(padded(Line.split([Span("Processes ", palette.text2), Span(processesExpanded ? "▾" : "▸", palette.text3), Span("   p", palette.text2.bold())],
                                     [Span(summary, palette.text2)], width: inner)), action: .toggleProcesses)
@@ -957,9 +985,10 @@ final class TerminalApp {
 
     private func detailFooter(_ server: Server) -> Block {
         if let footer = messageFooter() { return footer }
-        return hintsFooter([("⏎", "Open localhost:\(server.port)"), ("space", "Actions"),
-                            ("i", infoExpanded ? "Less info" : "More info"),
-                            ("p", processesExpanded ? "Hide processes" : "Processes"), ("?", "Keys"), ("esc", "Back")])
+        var hints = [("⏎", "Open localhost:\(server.port)"), ("space", "Actions"),
+                     ("i", infoExpanded ? "Less info" : "More info")]
+        if server.container == nil { hints.append(("p", processesExpanded ? "Hide processes" : "Processes")) }
+        return hintsFooter(hints + [("?", "Keys"), ("esc", "Back")])
     }
 
     // MARK: Charts
@@ -1077,8 +1106,9 @@ final class TerminalApp {
             var block = Block()
             block.add(divider())
             let count = server.processes.count
+            let target = server.container != nil ? " container?" : " and its \(count) \(count == 1 ? "process" : "processes")?"
             let question: Line = [Span("Stop \(server.project.name) ", palette.text1), Span(":\(port)", palette.port(monitor.colorIndex(for: port)).bold()),
-                                  Span(" and its \(count) \(count == 1 ? "process" : "processes")?", palette.text1)]
+                                  Span(target, palette.text1)]
             let keys: Line = [Span("y", palette.softRed.bold()), Span(" Stop   ", palette.softRed), Span("n", palette.text1.bold()), Span(" Cancel", palette.text3)]
             block.add(padded(Line.split(question, keys, width: inner)))
             block.add([])

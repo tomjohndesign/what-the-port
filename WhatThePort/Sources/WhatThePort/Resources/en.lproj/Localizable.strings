@@ -77,9 +77,12 @@
 "Colon + count" = "Colon + count";
 "Command" = "Command";
 "Confirmed" = "Confirmed";
+"Container" = "Container";
+"Containers" = "Containers";
 "Continue" = "Continue";
 "Copy URL" = "Copy URL";
 "Copy command" = "Copy command";
+"Copy container ID" = "Copy container ID";
 "Copy session ID" = "Copy session ID";
 "Couldn’t add the login item. Try again or check System Settings." = "Couldn’t add the login item. Try again or check System Settings.";
 "Couldn’t request notifications. Try again or check System Settings." = "Couldn’t request notifications. Try again or check System Settings.";
@@ -114,6 +117,7 @@
 "Have been running for" = "Have been running for";
 "Help shape WhatThePort" = "Help shape WhatThePort";
 "Idle %@ · no connections" = "Idle %@ · no connections";
+"Image" = "Image";
 "Installed" = "Installed";
 "Installs when you quit. Some updates may ask to restart the app." = "Installs when you quit. Some updates may ask to restart the app.";
 "Install…" = "Install…";
@@ -174,6 +178,7 @@
 "Pick servers to stop" = "Pick servers to stop";
 "Ports" = "Ports";
 "Ports & processes" = "Ports & processes";
+"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime.";
 "Preview" = "Preview";
 "Preview build failed · %@" = "Preview build failed · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "Preview button for each branch, from Vercel's GitHub deployments";
@@ -190,6 +195,7 @@
 "Report a bug" = "Report a bug";
 "Reset to defaults" = "Reset to defaults";
 "Restart WhatThePort to apply the language change." = "Restart WhatThePort to apply the language change.";
+"Restart container" = "Restart container";
 "Restart with the same command" = "Restart with the same command";
 "Restart. It will run outside the %@ session." = "Restart. It will run outside the %@ session.";
 "Resume in %@" = "Resume in %@";
@@ -220,6 +226,7 @@
 "Share" = "Share";
 "Share with friends" = "Share with friends";
 "Show branch names" = "Show branch names";
+"Show containers" = "Show containers";
 "Show popover with ⌥⌘P" = "Show popover with ⌥⌘P";
 "Show preview buttons" = "Show preview buttons";
 "Show the pull request for each branch" = "Show the pull request for each branch";
@@ -234,6 +241,7 @@
 "Stop" = "Stop";
 "Stop %d %@ · free %@" = "Stop %d %@ · free %@";
 "Stop %d processes" = "Stop %d processes";
+"Stop container" = "Stop container";
 "Stop servers" = "Stop servers";
 "Stopped %@" = "Stopped %@";
 "Stopping" = "Stopping";

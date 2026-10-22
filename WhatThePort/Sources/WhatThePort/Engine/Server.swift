@@ -64,6 +64,10 @@ struct Server: Identifiable {
     var conductorWorkspace: String?
     var paneWorkspace: PaneWorkspace?
     var agent: AgentSession?
+    /// Set when the port is published by a Docker or OrbStack container. The
+    /// listening pid is then the runtime's helper, which must never be signalled:
+    /// `processes` and `processStarts` stay empty and Stop goes to the container.
+    var container: ContainerInfo? = nil
     var processes: [ServerProcess]
     /// Identity of every process in the tree, so we never signal a reused pid.
     var processStarts: [pid_t: Date]
@@ -75,7 +79,21 @@ struct Server: Identifiable {
     var isProtected: Bool
 
     var id: Int { port }
+    /// Which server this is across scans, for alerts and Clean up. Containers
+    /// share their runtime helper's pid, so they're told apart by container id.
+    var identityKey: String { "\(port)-\(container?.id ?? String(rootPid))" }
     var url: URL { URL(string: "http://localhost:\(port)")! }
+
+    /// Protected native databases stay quiet. Containers are only protected
+    /// from Clean up, and still warn when they use too much memory.
+    var getsAlerts: Bool { !isProtected || container != nil }
+
+    /// The name a list row leads with: the branch, or for containers the
+    /// container's own name, since a compose project's services share a branch.
+    var listTitle: String {
+        if container != nil { return project.name }
+        return project.branch ?? project.name
+    }
 
     var uptime: TimeInterval? { startedAt.map { Date().timeIntervalSince($0) } }
     var idleFor: TimeInterval { Date().timeIntervalSince(lastActive) }

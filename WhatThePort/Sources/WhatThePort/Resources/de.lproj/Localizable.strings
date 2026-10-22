@@ -77,9 +77,12 @@
 "Colon + count" = "Doppelpunkt + Anzahl";
 "Command" = "Befehl";
 "Confirmed" = "Bestätigt";
+"Container" = "Container";
+"Containers" = "Container";
 "Continue" = "Weiter";
 "Copy URL" = "URL kopieren";
 "Copy command" = "Befehl kopieren";
+"Copy container ID" = "Container-ID kopieren";
 "Copy session ID" = "Sitzungs-ID kopieren";
 "Couldn’t add the login item. Try again or check System Settings." = "Das Anmeldeobjekt konnte nicht hinzugefügt werden. Erneut versuchen oder die Systemeinstellungen prüfen.";
 "Couldn’t request notifications. Try again or check System Settings." = "Mitteilungen konnten nicht angefordert werden. Erneut versuchen oder die Systemeinstellungen prüfen.";
@@ -114,6 +117,7 @@
 "Have been running for" = "Laufen seit";
 "Help shape WhatThePort" = "WhatThePort mitgestalten";
 "Idle %@ · no connections" = "Inaktiv %@ · keine Verbindungen";
+"Image" = "Image";
 "Installed" = "Installiert";
 "Installs when you quit. Some updates may ask to restart the app." = "Installation beim Beenden. Manche Updates erfordern einen Neustart der App.";
 "Install…" = "Installieren…";
@@ -174,6 +178,7 @@
 "Pick servers to stop" = "Server zum Stoppen auswählen";
 "Ports" = "Ports";
 "Ports & processes" = "Ports & Prozesse";
+"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "Von Containern in Docker Desktop, OrbStack, Colima und Rancher Desktop veröffentlichte Ports. Stoppen und Neustarten betreffen den Container, nicht die Laufzeitumgebung.";
 "Preview" = "Vorschau";
 "Preview build failed · %@" = "Vorschau-Build fehlgeschlagen · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "Vorschau je Branch aus Vercels GitHub-Deployments";
@@ -190,6 +195,7 @@
 "Report a bug" = "Fehler melden";
 "Reset to defaults" = "Auf Standard zurücksetzen";
 "Restart WhatThePort to apply the language change." = "WhatThePort neu starten, um die Sprache zu ändern.";
+"Restart container" = "Container neu starten";
 "Restart with the same command" = "Mit demselben Befehl neu starten";
 "Restart. It will run outside the %@ session." = "Neu starten. Läuft dann außerhalb der %@-Sitzung.";
 "Resume in %@" = "In %@ fortsetzen";
@@ -220,6 +226,7 @@
 "Share" = "Teilen";
 "Share with friends" = "Mit Freunden teilen";
 "Show branch names" = "Branch-Namen anzeigen";
+"Show containers" = "Container anzeigen";
 "Show popover with ⌥⌘P" = "Popover mit ⌥⌘P öffnen";
 "Show preview buttons" = "Vorschauschaltflächen anzeigen";
 "Show the pull request for each branch" = "Pull Request für jeden Branch anzeigen";
@@ -234,6 +241,7 @@
 "Stop" = "Stoppen";
 "Stop %d %@ · free %@" = "%d %@ stoppen · %@ freigeben";
 "Stop %d processes" = "%d Prozesse stoppen";
+"Stop container" = "Container stoppen";
 "Stop servers" = "Server stoppen";
 "Stopped %@" = "%@ gestoppt";
 "Stopping" = "Wird gestoppt";

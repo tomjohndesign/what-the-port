@@ -52,6 +52,7 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
 - **Stop and restart** - Stops the server’s own process tree; restart reruns the original command in the same folder
+- **Containers** - Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers get their own rows, with the compose folder’s branch and the container’s memory and CPU. Stop and restart go to the container, never to the runtime
 - **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
 - **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
@@ -111,12 +112,14 @@ Open Settings from the gear in the popover (⌘,):
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
-- **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names, Vercel previews and pull requests
+- **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names, containers, Vercel previews and pull requests
 - **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, a tip jar and a share link. Once a month, a notification asks for a tip or a share. Tipping turns it off, and so does **Monthly tip reminder**.
 
 ## How It Works
 
 WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Stopping or restarting that process affects all ports it serves.
+
+Container runtimes publish container ports from their own helper process. When a helper holds a port, WhatThePort asks that runtime’s local Docker Engine socket which container owns it, and follows the engine’s events and stats in the background while it does. A container row never counts or stops the helper; stop and restart work like `docker stop` and `docker restart`. Clean up only lists a container when it leaks, since its traffic can stay inside the compose network, and database images are protected.
 
 ## Privacy
 

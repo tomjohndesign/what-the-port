@@ -2,7 +2,7 @@
 title: Tools for managing localhost ports and dev servers on a Mac
 description: A practical overview of the ways to see and stop what’s running on localhost on macOS, from lsof and kill-port to Raycast extensions and menu bar apps, and which fits which workflow.
 published: 2026-09-25
-updated: 2026-09-29
+updated: 2026-10-22
 order: 9
 keywords: localhost manager mac, port monitor mac, dev server manager mac, kill port app mac, lsof gui mac, menu bar app localhost ports, kill-port alternative
 ---
@@ -61,6 +61,7 @@ These stay running and show your servers all the time, so you notice a stray ser
 - **Branches and worktrees.** Each server shows its git branch, and servers whose worktree has been deleted are flagged.
 - **Leak alerts.** Memory is summed across each server’s own process tree, with ten minutes of history. A server that passes 2 GB or grows 500 MB in ten minutes turns amber in the menu bar and sends one notification.
 - **Clean up.** Preselects idle servers and servers from deleted worktrees, then stops each server’s own process tree. Databases are protected by default. It can run automatically.
+- **Containers.** Ports published by Docker Desktop, OrbStack, Colima or Rancher Desktop containers get their own rows, and Stop stops the container rather than the runtime.
 - **A terminal UI.** `wtp` shows the same list in your terminal, and `wtp list --json` gives scripts and agents a structured list of every server.
 
 It needs an Apple Silicon Mac on macOS 14 or later.

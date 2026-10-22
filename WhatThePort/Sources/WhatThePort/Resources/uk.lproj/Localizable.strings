@@ -77,9 +77,12 @@
 "Colon + count" = "Двокрапка + кількість";
 "Command" = "Команда";
 "Confirmed" = "Підтверджено";
+"Container" = "Контейнер";
+"Containers" = "Контейнери";
 "Continue" = "Продовжити";
 "Copy URL" = "Копіювати URL";
 "Copy command" = "Копіювати команду";
+"Copy container ID" = "Копіювати ID контейнера";
 "Copy session ID" = "Копіювати ID сеансу";
 "Couldn’t add the login item. Try again or check System Settings." = "Не вдалося додати елемент входу. Спробуйте ще раз або перевірте параметри системи.";
 "Couldn’t request notifications. Try again or check System Settings." = "Не вдалося запитати дозвіл на сповіщення. Спробуйте ще раз або перевірте параметри системи.";
@@ -114,6 +117,7 @@
 "Have been running for" = "Працюють протягом";
 "Help shape WhatThePort" = "Допоможіть покращити WhatThePort";
 "Idle %@ · no connections" = "Неактивний %@ · без з’єднань";
+"Image" = "Образ";
 "Installed" = "Встановлено";
 "Installs when you quit. Some updates may ask to restart the app." = "Встановлюється під час виходу. Деякі оновлення можуть потребувати перезапуску програми.";
 "Install…" = "Встановити…";
@@ -174,6 +178,7 @@
 "Pick servers to stop" = "Виберіть сервери для зупинки";
 "Ports" = "Порти";
 "Ports & processes" = "Порти й процеси";
+"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "Порти, опубліковані контейнерами Docker Desktop, OrbStack, Colima і Rancher Desktop. Зупинка й перезапуск діють на контейнер, а не на середовище.";
 "Preview" = "Перегляд";
 "Preview build failed · %@" = "Не вдалося зібрати попередній перегляд · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "Кнопка перегляду для кожної гілки з розгортань Vercel у GitHub";
@@ -190,6 +195,7 @@
 "Report a bug" = "Повідомити про помилку";
 "Reset to defaults" = "Відновити типові значення";
 "Restart WhatThePort to apply the language change." = "Перезапустіть WhatThePort, щоб застосувати зміну мови.";
+"Restart container" = "Перезапустити контейнер";
 "Restart with the same command" = "Перезапустити тією самою командою";
 "Restart. It will run outside the %@ session." = "Перезапустити. Сервер працюватиме поза сеансом %@.";
 "Resume in %@" = "Продовжити в %@";
@@ -220,6 +226,7 @@
 "Share" = "Поділитися";
 "Share with friends" = "Поділитися з друзями";
 "Show branch names" = "Показувати назви гілок";
+"Show containers" = "Показувати контейнери";
 "Show popover with ⌥⌘P" = "Показувати вікно через ⌥⌘P";
 "Show preview buttons" = "Показувати кнопки перегляду";
 "Show the pull request for each branch" = "Показувати пулреквест для кожної гілки";
@@ -234,6 +241,7 @@
 "Stop" = "Зупинити";
 "Stop %d %@ · free %@" = "Зупинити %d %@ · звільнити %@";
 "Stop %d processes" = "Зупинити процеси: %d";
+"Stop container" = "Зупинити контейнер";
 "Stop servers" = "Зупинити сервери";
 "Stopped %@" = "%@ зупинено";
 "Stopping" = "Зупинка";

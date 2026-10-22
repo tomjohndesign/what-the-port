@@ -52,8 +52,8 @@ struct ServerDetailView: View {
                             Usage.record(.restart)
                             monitor.restart(server)
                         }
-                        .disabled(server.launch == nil || !server.cwdExists)
-                        IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: L10n.format("Stop %d processes", server.processes.count)) {
+                        .disabled(!monitor.canRestart(server))
+                        IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: stopHelp) {
                             Usage.record(.stop)
                             monitor.stop(server)
                             back()
@@ -66,10 +66,15 @@ struct ServerDetailView: View {
     }
 
     private var restartHelp: String {
+        if server.container != nil { return L10n.text("Restart container") }
         if let agent = server.agent {
             return L10n.format("Restart. It will run outside the %@ session.", agent.kind.rawValue)
         }
         return L10n.text("Restart with the same command")
+    }
+
+    private var stopHelp: String {
+        server.container != nil ? L10n.text("Stop container") : L10n.format("Stop %d processes", server.processes.count)
     }
 
     // MARK: - Info
@@ -98,6 +103,14 @@ struct ServerDetailView: View {
 
     private var primaryRows: [InfoRow] {
         var rows: [InfoRow] = []
+        if let container = server.container {
+            rows.append(InfoRow(label: L10n.text("Container"), tooltip: "\(container.runtime.name) · \(container.name)") {
+                HStack(spacing: 6) {
+                    ContainerGlyph()
+                    Text("\(container.runtime.name) · \(container.name)").font(Theme.body).foregroundStyle(Theme.text1)
+                }
+            })
+        }
         if let agent = server.agent {
             rows.append(InfoRow(label: L10n.text("Session"), tooltip: agent.title) { SessionValue(session: agent, server: server) })
         }
@@ -120,6 +133,9 @@ struct ServerDetailView: View {
         }
         if server.agent != nil || server.project.branch != nil, let folder = folderText {
             rows.append(InfoRow(label: L10n.text("Folder"), tooltip: server.cwd) { Text(folder).font(Theme.mono).foregroundStyle(Theme.text2) })
+        }
+        if let container = server.container {
+            rows.append(InfoRow(label: L10n.text("Image"), tooltip: container.image) { Text(container.image).font(Theme.mono).foregroundStyle(Theme.text2) })
         }
         if let framework = server.project.framework {
             rows.append(InfoRow(label: L10n.text("Framework"), tooltip: framework) { Text(framework).font(Theme.body).foregroundStyle(Theme.text2) })
@@ -173,7 +189,24 @@ struct ServerDetailView: View {
 
     // MARK: - Processes
 
-    private var processes: some View {
+    @ViewBuilder private var processes: some View {
+        if let container = server.container {
+            // The container's processes run inside the runtime's VM, not on the Mac.
+            HStack {
+                Text(L10n.text("Container")).font(Theme.body).foregroundStyle(Theme.text2)
+                Spacer()
+                Text("\(container.shortID) · \(Format.bytesString(server.memory))")
+                    .font(Theme.mono)
+                    .foregroundStyle(Theme.text2)
+                    .help(container.id)
+            }
+            .padding(EdgeInsets(top: 14, leading: Theme.inset, bottom: 14, trailing: Theme.inset))
+        } else {
+            processTree
+        }
+    }
+
+    private var processTree: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
                 withAnimation(.snappy(duration: 0.2)) { processesExpanded.toggle() }
@@ -256,6 +289,7 @@ struct ServerDetailView: View {
             Menu {
                 Button(L10n.text("Copy URL")) { copy(server.url.absoluteString) }
                 if let command = server.command { Button(L10n.text("Copy command")) { copy(command) } }
+                if let container = server.container { Button(L10n.text("Copy container ID")) { copy(container.id) } }
                 Divider()
                 if let root = server.project.root ?? server.cwd, server.cwdExists {
                     Button(L10n.text("Open in editor")) {

@@ -9,6 +9,8 @@ struct ScanEngineTests {
         var usages: [pid_t: ProcUsage] = [:]
         var arguments: [pid_t: ProcArgs] = [:]
         var reads: [pid_t: Int] = [:]
+        var runtimes: [ContainerRuntime: RuntimeSnapshot] = [:]
+        var containerQueries: [Set<ContainerRuntime>] = []
         let epoch = Date(timeIntervalSince1970: 1_700_000_000)
         var config = ScanConfig(minPort: 3000, maxPort: 9999, allowlist: ["node", "Python", "python3"],
                                 linkClaude: false, linkCodex: false, linkConductor: false, showBranches: false)
@@ -18,8 +20,38 @@ struct ScanEngineTests {
                 return usages[pid]
             },
             arguments: { [unowned self] in arguments[$0] },
-            currentDirectory: { _ in NSTemporaryDirectory() }
+            currentDirectory: { _ in NSTemporaryDirectory() },
+            containers: { [unowned self] wanted in
+                containerQueries.append(wanted)
+                return runtimes.filter { wanted.contains($0.key) }
+            }
         ))
+
+        /// OrbStack's helper, which holds every published container port.
+        func orbStackHelper(_ pid: pid_t, memory: UInt64 = 4_000_000_000) {
+            processes[pid] = ProcSnapshot(pid: pid, ppid: 1, comm: "OrbStack Helper", startTime: epoch)
+            usages[pid] = ProcUsage(footprint: memory, cpuNanoseconds: 0)
+            arguments[pid] = ProcArgs(executablePath: "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper",
+                                      arguments: ["OrbStack Helper", "vmgr"], environment: [:])
+        }
+
+        /// A running container as the monitor reports it, with one stats sample unless `memory` is nil.
+        func container(_ name: String, image: String, ports: Set<Int>, memory: UInt64? = 0, cpu: Double = 0,
+                       runtime: ContainerRuntime = .orbStack(), service: String? = nil,
+                       workingDirectory: String? = NSTemporaryDirectory()) {
+            let info = ContainerInfo(id: name + "-id", name: name, image: image, runtime: runtime, publishedPorts: ports,
+                                     composeProject: service == nil ? nil : "shop", composeService: service,
+                                     workingDirectory: service == nil ? nil : workingDirectory)
+            runtimes[runtime, default: RuntimeSnapshot()].containers.append(info)
+            runtimes[runtime]!.listedAt = epoch
+            runtimes[runtime]!.startedAt[info.id] = epoch
+            if let memory { sample(name, memory: memory, cpu: cpu, runtime: runtime) }
+        }
+
+        func sample(_ name: String, memory: UInt64, cpu: Double = 0, after seconds: Double = 0, runtime: ContainerRuntime = .orbStack()) {
+            runtimes[runtime, default: RuntimeSnapshot()].samples[name + "-id"] =
+                ContainerSample(memory: memory, cpu: cpu, at: epoch.addingTimeInterval(seconds))
+        }
 
         func process(_ pid: pid_t, parent: pid_t = 1, name: String = "node", memory: UInt64 = 100) {
             processes[pid] = ProcSnapshot(pid: pid, ppid: parent, comm: name, startTime: epoch)
@@ -217,6 +249,176 @@ struct ScanEngineTests {
         #expect(ScanEngine.isEmbeddedAppExecutable("/Applications/Python.app/Contents/MacOS/Python"))
         #expect(!ScanEngine.isEmbeddedAppExecutable("/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python"))
         #expect(!ScanEngine.isEmbeddedAppExecutable("/project/.venv/bin/python3.12"))
+    }
+
+    @Test func containerPortsBelongToTheirContainerNeverTheRuntime() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 5432)
+        f.listen(500, port: 6379)
+        f.listen(500, port: 8222) // the runtime's own port, with no container behind it
+        f.container("shop-db-1", image: "postgres:16-alpine", ports: [5432], memory: 300, service: "db")
+        f.container("cache", image: "redis:7-alpine", ports: [6379], memory: 50)
+        let rows = f.scan()
+        #expect(rows.map(\.port) == [5432, 6379])
+        #expect(rows.map { $0.container?.name } == ["shop-db-1", "cache"])
+        #expect(rows.map(\.memory) == [300, 50])
+        #expect(rows.map(\.listTitle) == ["shop-db-1", "cache"])
+        #expect(rows[0].cwd == NSTemporaryDirectory())
+        #expect(rows.allSatisfy { $0.isProtected }, "postgres and redis images match the default protected list")
+        #expect(f.containerQueries == [[.orbStack()]], "Only runtimes whose helper holds a port are asked, once per scan")
+    }
+
+    @Test func portsShareOneContainer() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 8000)
+        f.listen(500, port: 8001)
+        f.container("api", image: "ghcr.io/acme/api:1.2", ports: [8000, 8001], memory: 400, cpu: 50)
+        let rows = f.scan()
+        #expect(rows.map(\.cpu) == [50, 50])
+        #expect(!rows[0].isProtected)
+        let resources = ServerResources(rows)
+        #expect(resources.memory == 400)
+        #expect(resources.memoryByPort == [8000: 200, 8001: 200])
+    }
+
+    @Test func aRuntimesOwnPortsDoNotKeepItWatched() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 8222) // OrbStack's own SSH server
+        f.runtimes[.orbStack()] = RuntimeSnapshot(listedAt: f.epoch)
+        #expect(f.scan().isEmpty)
+        #expect(f.containerQueries == [[.orbStack()]], "Asked once, to learn the port has no container")
+        _ = f.scan(after: 2)
+        #expect(f.containerQueries.count == 1, "Its own port alone no longer keeps the engine watched")
+        // A container port brings it back.
+        f.listen(500, port: 5432)
+        f.container("db", image: "postgres", ports: [5432])
+        #expect(f.scan(after: 4).map(\.port) == [5432])
+        #expect(f.containerQueries.count == 2)
+        // A freed own port is forgotten, so a container can take it later.
+        f.sockets = SocketScan()
+        f.listen(500, port: 5432)
+        _ = f.scan(after: 6)
+        f.listen(500, port: 8222)
+        f.container("web", image: "web", ports: [8222])
+        #expect(f.scan(after: 8).map(\.port).sorted() == [5432, 8222])
+    }
+
+    @Test func containerRowsNeverCarryPidsToSignal() {
+        // Stop signals `processStarts`. For a container that would be the
+        // runtime's helper, so every container row must leave it empty.
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 5432)
+        f.listen(500, port: 8000)
+        f.container("db", image: "postgres", ports: [5432])
+        f.container("api", image: "api", ports: [8000], memory: nil)
+        for seconds in [0.0, 2, 4] {
+            let rows = f.scan(after: seconds)
+            #expect(rows.count == 2)
+            #expect(rows.allSatisfy { $0.processStarts.isEmpty && $0.processes.isEmpty })
+        }
+    }
+
+    @Test func historyRecordsEachStatsSampleOnceAndNeverAMissingOne() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 5432)
+        f.container("db", image: "postgres", ports: [5432], memory: nil)
+        var row = f.scan()[0]
+        #expect(row.history.isEmpty, "No sample yet is no data, not 0 MB")
+        f.sample("db", memory: 900_000_000)
+        row = f.scan(after: 1)[0]
+        row = f.scan(after: 2)[0]
+        #expect(row.history.map(\.memory) == [900_000_000], "A sample is recorded once, however many scans read it")
+        f.sample("db", memory: 900_000_000, after: 150)
+        row = f.scan(after: 150)[0]
+        #expect(row.history.count == 2)
+        #expect(row.memoryGrowth == 0 && !row.isLeaking(), "A flat container never reads as a leak")
+    }
+
+    @Test func composeFolderInsideALinuxVMIsNotStale() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 3000)
+        f.container("web", image: "web", ports: [3000], service: "web", workingDirectory: "/home/me/app")
+        let row = f.scan()[0]
+        #expect(row.cwd == nil)
+        #expect(row.cwdExists)
+        #expect(ServerMonitor.cleanUpReason(for: row, mode: .automatic, idleThreshold: 0, longRunningThreshold: 0, deletedWorktree: true) == nil)
+    }
+
+    @Test func containersAreOnlySuggestedForCleanUpWhenLeaking() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 8000)
+        f.container("api", image: "api", ports: [8000], memory: 100_000_000)
+        // Idle for hours with no host-side connections: it may still be serving its compose network.
+        var row = f.scan()[0]
+        row.lastActive = f.epoch.addingTimeInterval(-86_400)
+        #expect(ServerMonitor.cleanUpReason(for: row, mode: .automatic, idleThreshold: 60, longRunningThreshold: 60, deletedWorktree: true) == nil)
+        f.sample("api", memory: 900_000_000, after: 150)
+        row = f.scan(after: 150)[0]
+        #expect(ServerMonitor.cleanUpReason(for: row, mode: .ask, idleThreshold: 60, longRunningThreshold: 60, deletedWorktree: true)?.isLeak == true)
+        #expect(row.getsAlerts)
+    }
+
+    @Test func protectedContainersStillGetMemoryAlerts() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 5432)
+        f.container("db", image: "pgvector/pgvector:pg16", ports: [5432])
+        f.process(20, name: "postgres")
+        f.listen(20, port: 5433)
+        f.config.allowlist.insert("postgres")
+        f.config.protected = ["postgres"]
+        let rows = f.scan()
+        #expect(rows.map(\.isProtected) == [true, true])
+        #expect(rows.map(\.getsAlerts) == [true, false], "Native databases stay quiet; containers still warn")
+    }
+
+    @Test func containersOnOnePortKeepSeparateIdentities() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 5432)
+        f.container("old-db", image: "postgres", ports: [5432])
+        let before = f.scan()
+        f.runtimes = [:]
+        f.container("new-db", image: "postgres", ports: [5432])
+        let after = f.scan(after: 2)
+        #expect(before[0].rootPid == after[0].rootPid, "Both rows sit behind the same helper")
+        #expect(before[0].identityKey != after[0].identityKey)
+        #expect(after[0].history.count == 1, "The replacement starts its own history")
+        f.process(20)
+        f.listen(20, port: 3000)
+        #expect(f.scan(after: 4).first { $0.port == 3000 }?.identityKey == "3000-20")
+    }
+
+    @Test func turningContainersOffHidesTheRuntimeHelper() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 5432)
+        f.container("db", image: "postgres", ports: [5432])
+        f.config.showContainers = false
+        f.config.allowlist.insert("OrbStack Helper")
+        #expect(f.scan().isEmpty)
+        #expect(f.containerQueries.isEmpty)
+    }
+
+    @Test func runtimeAppMemoryExcludesItsContainers() {
+        let f = Fixture()
+        f.orbStackHelper(500)
+        f.listen(500, port: 5432)
+        f.listen(500, port: 5433)
+        f.container("db", image: "postgres", ports: [5432, 5433], memory: 300)
+        let rows = f.scan()
+        let apps = [AppMemory(id: "/Applications/OrbStack.app", name: "OrbStack", bundlePath: "/Applications/OrbStack.app", agent: nil, memory: 1000),
+                    AppMemory(id: "/Applications/Safari.app", name: "Safari", bundlePath: "/Applications/Safari.app", agent: nil, memory: 800)]
+        let adjusted = AppUsageScanner.excludingContainers(apps, servers: rows)
+        #expect(adjusted.map(\.name) == ["Safari", "OrbStack"])
+        #expect(adjusted.map(\.memory) == [800, 700])
     }
 
     @Test func versionedPythonNamesRespectUserAllowlist() {

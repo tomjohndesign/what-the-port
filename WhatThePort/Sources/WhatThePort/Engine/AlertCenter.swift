@@ -65,8 +65,8 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         let now = Date()
         var liveKeys = Set<String>()
 
-        for server in servers where !server.isProtected {
-            let key = "\(server.port)-\(server.rootPid)"
+        for server in servers where server.getsAlerts {
+            let key = server.identityKey
             liveKeys.insert(key)
             var kinds = fired[key] ?? []
 
@@ -117,7 +117,7 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         content.categoryIdentifier = Action.category
         content.threadIdentifier = "port-\(server.port)"
         content.userInfo = ["port": server.port]
-        let request = UNNotificationRequest(identifier: "\(kind.rawValue)-\(server.port)-\(server.rootPid)", content: content, trigger: nil)
+        let request = UNNotificationRequest(identifier: "\(kind.rawValue)-\(server.identityKey)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
         Usage.record(.memoryAlert)
     }

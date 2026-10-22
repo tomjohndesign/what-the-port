@@ -2,7 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
-import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
+import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, ContainerIcon, DotGrid, OpenIcon, VercelIcon } from './icons'
 import { type AppLanguageCode, type Localizer, localizer } from './languages'
 import { GET_IT, TERMINAL } from './sections'
 import {
@@ -337,7 +337,8 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             </span>
           </div>
         )}
-        {demo.running.map((s) => (
+        {/* Clean up hides protected servers, like the app. */}
+        {demo.running.filter((s) => !(cleaning && s.protected)).map((s) => (
           <div
             key={s.port}
             role="button"
@@ -384,7 +385,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
                 {s.branch.replaceAll('-', ' ')}
               </span>
               <span className={styles.rowSub} style={{ color: s.context.tone === 'amber' ? AMBER : '#EBEBF599' }}>
-                {cleaning && s.cleanUp ? REASON_ICONS[s.cleanUp.reason] : <AgentIcon agent={s.context.agent} />}
+                {cleaning && s.cleanUp ? REASON_ICONS[s.cleanUp.reason] : s.container ? <ContainerIcon /> : <AgentIcon agent={s.context.agent} />}
                 <span className={styles.ellipsis}>
                   {flash === s.port
                     ? `Opened localhost:${s.port}`
@@ -528,7 +529,20 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
     return () => clearTimeout(timer)
   }, [restarting])
 
-  const shownInfo: [string, ReactNode][] = server.session
+  const shownInfo: [string, ReactNode][] = server.container
+    ? [
+        [
+          'Container',
+          <span key="container" className={styles.infoValue}>
+            <ContainerIcon />
+            <span className={`${styles.ellipsis} ${styles.t1}`}>
+              {server.container.runtime} · {server.name}
+            </span>
+          </span>,
+        ],
+        ['Branch', server.container.branch],
+      ]
+    : server.session
     ? [
         [
           'Session',
@@ -546,7 +560,7 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
         ['Folder', server.info[0][1]],
       ]
   const hiddenInfo: [string, string][] = server.info
-    .filter(([label]) => !(label === 'Folder' && !server.session) && label !== 'PID' && label !== 'Git')
+    .filter(([label]) => !(label === 'Folder' && !server.session && !server.container) && label !== 'PID' && label !== 'Git')
   if (server.session) hiddenInfo.push(['Session ID', server.session.id])
 
   return (
@@ -575,7 +589,9 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
                 aria-label="Restart"
                 disabled={server.status === 'idle' || restarting}
                 title={
-                  server.status === 'idle' ? 'Working directory no longer exists' : l.text('Restart with the same command')
+                  server.status === 'idle'
+                    ? 'Working directory no longer exists'
+                    : l.text(server.container ? 'Restart container' : 'Restart with the same command')
                 }
                 data-spinning={restarting}
                 onClick={() => setRestarting(true)}
@@ -729,44 +745,56 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
         </div>
       </div>
 
-      <div className={styles.popSection}>
-        <button
-          type="button"
-          className={styles.processes}
-          onClick={() => setProcessesOpen((v) => !v)}
-          aria-expanded={processesOpen}
-          data-open={processesOpen}
-        >
-          <span className={styles.popDisplay} style={{ gap: 4 }}>
-            <span className={styles.t2}>{l.text('Processes')}</span>
-            <span className={styles.processesChevron}>
-              <Chevron direction="right" />
+      {server.container ? (
+        // A container's processes run inside the runtime's VM, so the app shows the container instead.
+        <div className={styles.popSection}>
+          <div className={styles.processes}>
+            <span className={styles.t2}>{l.text('Container')}</span>
+            <span className={`${styles.mono} ${styles.t2}`}>
+              {server.container.id} · {formatMemory(server.memory)}
             </span>
-          </span>
-          <span className={styles.popDisplay} style={{ gap: 8 }}>
-            <span className={`${styles.mono} ${styles.t3}`}>{server.processes.length} ·</span>
-            <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(server.memory)}</span>
-          </span>
-        </button>
-        <div className={styles.collapsible} data-open={processesOpen}>
-          <div>
-            <div className={styles.processList}>
-              {server.processes.map((p, index) => (
-                <div key={p.command} className={styles.processRow}>
-                  <span className={`${styles.mono} ${styles.ellipsis} ${styles.t1}`}>
-                    {index ? '└ ' : ''}
-                    {p.command}
-                  </span>
-                  <span className={styles.processBar}>
-                    <i style={{ width: `${(p.memory / Math.max(...server.processes.map((p) => p.memory))) * 100}%` }} />
-                  </span>
-                  <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(p.memory)}</span>
-                </div>
-              ))}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.popSection}>
+          <button
+            type="button"
+            className={styles.processes}
+            onClick={() => setProcessesOpen((v) => !v)}
+            aria-expanded={processesOpen}
+            data-open={processesOpen}
+          >
+            <span className={styles.popDisplay} style={{ gap: 4 }}>
+              <span className={styles.t2}>{l.text('Processes')}</span>
+              <span className={styles.processesChevron}>
+                <Chevron direction="right" />
+              </span>
+            </span>
+            <span className={styles.popDisplay} style={{ gap: 8 }}>
+              <span className={`${styles.mono} ${styles.t3}`}>{server.processes.length} ·</span>
+              <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(server.memory)}</span>
+            </span>
+          </button>
+          <div className={styles.collapsible} data-open={processesOpen}>
+            <div>
+              <div className={styles.processList}>
+                {server.processes.map((p, index) => (
+                  <div key={p.command} className={styles.processRow}>
+                    <span className={`${styles.mono} ${styles.ellipsis} ${styles.t1}`}>
+                      {index ? '└ ' : ''}
+                      {p.command}
+                    </span>
+                    <span className={styles.processBar}>
+                      <i style={{ width: `${(p.memory / Math.max(...server.processes.map((p) => p.memory))) * 100}%` }} />
+                    </span>
+                    <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(p.memory)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className={`${styles.popSection} ${styles.actions}`}>
         <button type="button" className={styles.primaryAction} onClick={() => trigger('open')}>

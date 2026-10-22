@@ -91,6 +91,7 @@ enum TerminalCommand {
     @MainActor private static func list(json: Bool) -> Never {
         let monitor = ServerMonitor()
         monitor.handlesAlerts = false
+        monitor.isWatched = true
         // CPU is measured between two scans.
         monitor.scanNow()
         usleep(500_000)
@@ -158,7 +159,6 @@ enum TerminalCommand {
             var object: [String: Any] = [
                 "port": server.port,
                 "url": server.url.absoluteString,
-                "pid": Int(server.pid),
                 "name": server.project.name,
                 "memoryBytes": server.memory,
                 "cpuPercent": (server.cpu * 10).rounded() / 10,
@@ -172,6 +172,17 @@ enum TerminalCommand {
                 }(),
                 "protected": server.isProtected,
             ]
+            // A container's listener is its runtime's helper; signalling that pid
+            // would stop every container, so scripts get the container instead.
+            if let container = server.container {
+                var info: [String: Any] = ["id": container.id, "name": container.name, "image": container.image,
+                                           "runtime": container.runtime.name]
+                info["composeProject"] = container.composeProject
+                info["composeService"] = container.composeService
+                object["container"] = info
+            } else {
+                object["pid"] = Int(server.pid)
+            }
             object["branch"] = server.project.branch
             object["framework"] = server.project.framework
             object["folder"] = server.cwd

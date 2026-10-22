@@ -77,9 +77,12 @@
 "Colon + count" = "נקודתיים + מספר";
 "Command" = "פקודה";
 "Confirmed" = "אושר";
+"Container" = "קונטיינר";
+"Containers" = "קונטיינרים";
 "Continue" = "המשך";
 "Copy URL" = "העתקת URL";
 "Copy command" = "העתקת פקודה";
+"Copy container ID" = "העתקת מזהה הקונטיינר";
 "Copy session ID" = "העתקת מזהה הפעלה";
 "Couldn’t add the login item. Try again or check System Settings." = "לא ניתן להוסיף את פריט ההתחברות. נסו שוב או בדקו בהגדרות המערכת.";
 "Couldn’t request notifications. Try again or check System Settings." = "לא ניתן לבקש הרשאה לעדכונים. נסו שוב או בדקו בהגדרות המערכת.";
@@ -114,6 +117,7 @@
 "Have been running for" = "פועלים במשך";
 "Help shape WhatThePort" = "עזרו לעצב את WhatThePort";
 "Idle %@ · no connections" = "לא פעיל %@ · ללא חיבורים";
+"Image" = "אימג׳";
 "Installed" = "מותקן";
 "Installs when you quit. Some updates may ask to restart the app." = "מותקן ביציאה. עדכונים מסוימים עשויים לבקש הפעלה מחדש של היישום.";
 "Install…" = "התקנה…";
@@ -174,6 +178,7 @@
 "Pick servers to stop" = "בחירת שרתים לעצירה";
 "Ports" = "פורטים";
 "Ports & processes" = "פורטים ותהליכים";
+"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "פורטים שקונטיינרים של Docker Desktop‏, OrbStack‏, Colima ו-Rancher Desktop מפרסמים. עצירה והפעלה מחדש פועלות על הקונטיינר, לא על סביבת ההרצה.";
 "Preview" = "תצוגה מקדימה";
 "Preview build failed · %@" = "בניית התצוגה המקדימה נכשלה · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "כפתור תצוגה מקדימה לכל ענף, מפריסות GitHub של Vercel";
@@ -190,6 +195,7 @@
 "Report a bug" = "דיווח על תקלה";
 "Reset to defaults" = "איפוס לברירת מחדל";
 "Restart WhatThePort to apply the language change." = "יש להפעיל מחדש את WhatThePort כדי לשנות שפה.";
+"Restart container" = "הפעלה מחדש של הקונטיינר";
 "Restart with the same command" = "הפעלה מחדש עם אותה פקודה";
 "Restart. It will run outside the %@ session." = "הפעלה מחדש. השרת יפעל מחוץ להפעלת %@.";
 "Resume in %@" = "המשך ב־%@";
@@ -220,6 +226,7 @@
 "Share" = "שיתוף";
 "Share with friends" = "שיתוף עם חברים";
 "Show branch names" = "הצגת שמות ענפים";
+"Show containers" = "הצגת קונטיינרים";
 "Show popover with ⌥⌘P" = "הצגת החלונית עם ⁦⌥⌘P⁩";
 "Show preview buttons" = "הצגת כפתורי תצוגה מקדימה";
 "Show the pull request for each branch" = "הצגת בקשת המשיכה לכל ענף";
@@ -234,6 +241,7 @@
 "Stop" = "עצירה";
 "Stop %d %@ · free %@" = "עצירת %d %@ · פינוי %@";
 "Stop %d processes" = "עצירת %d תהליכים";
+"Stop container" = "עצירת הקונטיינר";
 "Stop servers" = "עצירת שרתים";
 "Stopped %@" = "%@ נעצר";
 "Stopping" = "עוצר";

@@ -69,6 +69,16 @@ export function BranchIcon() {
   )
 }
 
+// The app's ContainerGlyph (SF Symbols shippingbox): marks a port a container publishes.
+export function ContainerIcon({ color = stroke(75), size = 11 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>
+      <path d="M6 1.2 10.6 3.5v5L6 10.8 1.4 8.5v-5z" fill="none" stroke={color} strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M1.4 3.5 6 5.8l4.6-2.3M6 5.8v5" fill="none" stroke={color} strokeWidth="1.1" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function ClaudeIcon({ color = stroke(75), size = 12, width = 1.4 }: { color?: string; size?: number; width?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>

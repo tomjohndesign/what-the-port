@@ -26,6 +26,18 @@ final class ServerMonitor: ObservableObject {
     /// notifications or automatic clean up.
     var handlesAlerts = true
 
+    /// Someone is looking at the servers: the popover is open, or `wtp` runs.
+    /// Container stats then follow the scan interval; otherwise every 5 seconds,
+    /// since each sample makes the engine read its VM's cgroups.
+    var isWatched = false {
+        didSet { updateContainerSampling() }
+    }
+
+    private func updateContainerSampling() {
+        let scanInterval = max(defaults.double(forKey: Preferences.scanInterval), 1)
+        engine.containerMonitor.setSampleInterval(isWatched ? scanInterval : max(scanInterval, 5))
+    }
+
     var minPort: Int = 3000
     var maxPort: Int = 65535
 
@@ -86,7 +98,8 @@ final class ServerMonitor: ObservableObject {
                    linkCodex: defaults.bool(forKey: Preferences.linkCodex),
                    linkConductor: defaults.bool(forKey: Preferences.linkConductor),
                    linkPane: defaults.bool(forKey: Preferences.linkPane),
-                   showBranches: defaults.bool(forKey: Preferences.showBranches))
+                   showBranches: defaults.bool(forKey: Preferences.showBranches),
+                   showContainers: defaults.bool(forKey: Preferences.showContainers))
     }
 
     // MARK: - Scanning
@@ -101,6 +114,7 @@ final class ServerMonitor: ObservableObject {
             .sink { [weak self] _ in
                 Task { @MainActor in
                     self?.scheduleTimer()
+                    self?.updateContainerSampling()
                     self?.objectWillChange.send()
                 }
             }
@@ -124,7 +138,7 @@ final class ServerMonitor: ObservableObject {
             let result = engine.scan(config)
             let system = ProcessInspector.systemMemory()
             let cpu = cpuSampler.sample()
-            let apps = appUsage.scan(excluding: Set(result.flatMap { $0.processStarts.keys }))
+            let apps = AppUsageScanner.excludingContainers(appUsage.scan(excluding: Set(result.flatMap { $0.processStarts.keys })), servers: result)
             Task { @MainActor in
                 self.servers = result
                 self.systemMemory = system
@@ -149,7 +163,7 @@ final class ServerMonitor: ObservableObject {
         systemMemory = ProcessInspector.systemMemory()
         if let cpu = queue.sync(execute: { cpuSampler.sample() }) { systemCPU = cpu }
         let excluded = Set(servers.flatMap { $0.processStarts.keys })
-        otherApps = queue.sync { appUsage.scan(excluding: excluded) }
+        otherApps = AppUsageScanner.excludingContainers(queue.sync { appUsage.scan(excluding: excluded) }, servers: servers)
         hasScanned = true
     }
 
@@ -168,9 +182,21 @@ final class ServerMonitor: ObservableObject {
     func status(of server: Server) -> ServerStatus { server.status(alertThreshold: alertThreshold) }
 
     func cleanUpReason(for server: Server) -> CleanUpReason? {
-        guard !server.isProtected, cleanUpMode != .off else { return nil }
+        Self.cleanUpReason(for: server, mode: cleanUpMode, idleThreshold: idleThreshold, longRunningThreshold: longRunningThreshold,
+                           deletedWorktree: defaults.bool(forKey: Preferences.cleanUpDeletedWorktree))
+    }
+
+    nonisolated static func cleanUpReason(for server: Server, mode: Preferences.CleanUpMode, idleThreshold: TimeInterval,
+                              longRunningThreshold: TimeInterval, deletedWorktree: Bool) -> CleanUpReason? {
+        guard !server.isProtected, mode != .off else { return nil }
+        // A container's traffic can stay inside its compose network, where the
+        // Mac never sees it, so idle and uptime don't say it's unused. Only a
+        // leak is listed, and leaks are never preselected or stopped automatically.
+        if server.container != nil {
+            return server.isLeaking() ? .leaking(UInt64(max(server.memoryGrowth, 0))) : nil
+        }
         if !server.cwdExists {
-            return defaults.bool(forKey: Preferences.cleanUpDeletedWorktree) ? .worktreeDeleted : nil
+            return deletedWorktree ? .worktreeDeleted : nil
         }
         if server.idleFor >= idleThreshold { return .idle(server.idleFor) }
         if let uptime = server.uptime, uptime >= longRunningThreshold { return .longRunning(uptime) }
@@ -213,17 +239,35 @@ final class ServerMonitor: ObservableObject {
         }
     }
 
-    private func key(for server: Server) -> String { "\(server.port)-\(server.rootPid)" }
+    private func key(for server: Server) -> String { server.identityKey }
 
     // MARK: - Actions
 
+    /// Containers stop through their runtime, never by signalling its helper.
     func stop(_ server: Server) {
-        ProcessControl.stop(server) { [weak self] in self?.scan() }
+        if let container = server.container {
+            DockerEngine.stop(container) { [weak self] _ in self?.scan() }
+        } else {
+            ProcessControl.stop(server) { [weak self] in self?.scan() }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.scan() }
     }
 
     func restart(_ server: Server) {
-        ProcessControl.restart(server) { [weak self] _ in self?.scan() }
+        if let container = server.container {
+            engine.containerMonitor.forgetStart(of: container)
+            DockerEngine.restart(container) { [weak self] _ in
+                self?.engine.containerMonitor.forgetStart(of: container)
+                self?.scan()
+            }
+        } else {
+            ProcessControl.restart(server) { [weak self] _ in self?.scan() }
+        }
+    }
+
+    /// Restart reruns the launch command, or for containers asks the runtime.
+    func canRestart(_ server: Server) -> Bool {
+        server.container != nil || (server.launch != nil && server.cwdExists)
     }
 
     // MARK: - Ports and processes

@@ -77,9 +77,12 @@
 "Colon + count" = "コロン＋件数";
 "Command" = "コマンド";
 "Confirmed" = "確認済み";
+"Container" = "コンテナ";
+"Containers" = "コンテナ";
 "Continue" = "続ける";
 "Copy URL" = "URL をコピー";
 "Copy command" = "コマンドをコピー";
+"Copy container ID" = "コンテナ ID をコピー";
 "Copy session ID" = "セッション ID をコピー";
 "Couldn’t add the login item. Try again or check System Settings." = "ログイン項目を追加できませんでした。再試行するか、システム設定を確認してください。";
 "Couldn’t request notifications. Try again or check System Settings." = "通知の許可をリクエストできませんでした。再試行するか、システム設定を確認してください。";
@@ -114,6 +117,7 @@
 "Have been running for" = "次の時間稼働している";
 "Help shape WhatThePort" = "WhatThePort の改善に協力";
 "Idle %@ · no connections" = "アイドル %@ · 接続なし";
+"Image" = "イメージ";
 "Installed" = "インストール済み";
 "Installs when you quit. Some updates may ask to restart the app." = "終了時にインストールします。アップデートによってはアプリの再起動が必要です。";
 "Install…" = "インストール…";
@@ -174,6 +178,7 @@
 "Pick servers to stop" = "停止するサーバーを選択";
 "Ports" = "ポート";
 "Ports & processes" = "ポートとプロセス";
+"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "Docker Desktop、OrbStack、Colima、Rancher Desktop のコンテナが公開しているポート。停止と再起動はランタイムではなくコンテナに対して行われます。";
 "Preview" = "プレビュー";
 "Preview build failed · %@" = "プレビューのビルドに失敗 · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "Vercel の GitHub デプロイから各ブランチのプレビューボタンを表示";
@@ -190,6 +195,7 @@
 "Report a bug" = "バグを報告";
 "Reset to defaults" = "初期設定に戻す";
 "Restart WhatThePort to apply the language change." = "言語の変更を適用するには WhatThePort を再起動してください。";
+"Restart container" = "コンテナを再起動";
 "Restart with the same command" = "同じコマンドで再起動";
 "Restart. It will run outside the %@ session." = "再起動します。%@ セッションの外で実行されます。";
 "Resume in %@" = "%@ で再開";
@@ -220,6 +226,7 @@
 "Share" = "共有";
 "Share with friends" = "友だちにシェア";
 "Show branch names" = "ブランチ名を表示";
+"Show containers" = "コンテナを表示";
 "Show popover with ⌥⌘P" = "⌥⌘P でポップオーバーを表示";
 "Show preview buttons" = "プレビューボタンを表示";
 "Show the pull request for each branch" = "各ブランチのプルリクエストを表示";
@@ -234,6 +241,7 @@
 "Stop" = "停止";
 "Stop %d %@ · free %@" = "%d %@を停止 · %@を解放";
 "Stop %d processes" = "%d 個のプロセスを停止";
+"Stop container" = "コンテナを停止";
 "Stop servers" = "サーバーを停止";
 "Stopped %@" = "%@ を停止しました";
 "Stopping" = "停止中";

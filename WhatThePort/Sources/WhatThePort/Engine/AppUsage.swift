@@ -38,6 +38,24 @@ final class AppUsageScanner: @unchecked Sendable {
             .sorted { $0.memory > $1.memory }
     }
 
+    /// Container memory lives inside the runtime app's VM, which already
+    /// counts it. Take it out of OrbStack or Docker so it's only counted once.
+    static func excludingContainers(_ apps: [AppMemory], servers: [Server]) -> [AppMemory] {
+        var byApp: [String: [String: UInt64]] = [:]
+        for server in servers {
+            guard let container = server.container, let app = container.runtime.appBundle else { continue }
+            byApp[app, default: [:]][container.id] = server.memory
+        }
+        guard !byApp.isEmpty else { return apps }
+        return apps.map { app in
+            guard let bundle = app.bundlePath, let containers = byApp[(bundle as NSString).lastPathComponent] else { return app }
+            let used = containers.values.reduce(0, +)
+            return AppMemory(id: app.id, name: app.name, bundlePath: app.bundlePath, agent: app.agent,
+                             memory: app.memory > used ? app.memory - used : 0)
+        }
+        .sorted { $0.memory > $1.memory }
+    }
+
     /// Who a process's memory belongs to: its own app bundle, a coding agent,
     /// the nearest app that launched it, or failing that its process name.
     private func owner(of process: ProcSnapshot, processes: [pid_t: ProcSnapshot],

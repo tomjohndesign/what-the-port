@@ -167,6 +167,19 @@ struct PillButtonStyle: ButtonStyle {
     }
 }
 
+/// Marks a port published by a container.
+struct ContainerGlyph: View {
+    var size: CGFloat = 12
+    var color: Color = Theme.text1.opacity(0.75)
+
+    var body: some View {
+        Image(systemName: "shippingbox")
+            .font(.system(size: size * 0.9, weight: .medium))
+            .foregroundStyle(color)
+            .frame(width: size, height: size)
+    }
+}
+
 /// Small monochrome marks for the agent that started a server.
 struct AgentGlyph: View {
     let kind: AgentKind

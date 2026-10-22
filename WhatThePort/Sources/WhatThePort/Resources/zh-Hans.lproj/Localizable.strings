@@ -77,9 +77,12 @@
 "Colon + count" = "冒号与数量";
 "Command" = "命令";
 "Confirmed" = "已确认";
+"Container" = "容器";
+"Containers" = "容器";
 "Continue" = "继续";
 "Copy URL" = "复制网址";
 "Copy command" = "复制命令";
+"Copy container ID" = "复制容器 ID";
 "Copy session ID" = "复制会话 ID";
 "Couldn’t add the login item. Try again or check System Settings." = "无法添加登录项，请重试或检查系统设置。";
 "Couldn’t request notifications. Try again or check System Settings." = "无法申请通知权限，请重试或检查系统设置。";
@@ -114,6 +117,7 @@
 "Have been running for" = "运行时间达到";
 "Help shape WhatThePort" = "帮助改进 WhatThePort";
 "Idle %@ · no connections" = "空闲 %@ · 无连接";
+"Image" = "镜像";
 "Installed" = "已安装";
 "Installs when you quit. Some updates may ask to restart the app." = "退出时安装。部分更新可能要求重启应用。";
 "Install…" = "安装…";
@@ -174,6 +178,7 @@
 "Pick servers to stop" = "选择要停止的服务器";
 "Ports" = "端口";
 "Ports & processes" = "端口与进程";
+"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "显示 Docker Desktop、OrbStack、Colima 和 Rancher Desktop 容器发布的端口。停止和重启只作用于容器，而不是运行环境。";
 "Preview" = "预览";
 "Preview build failed · %@" = "预览构建失败 · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "通过 Vercel 的 GitHub 部署为各分支提供预览按钮";
@@ -190,6 +195,7 @@
 "Report a bug" = "报告问题";
 "Reset to defaults" = "恢复默认设置";
 "Restart WhatThePort to apply the language change." = "重启 WhatThePort 后生效。";
+"Restart container" = "重启容器";
 "Restart with the same command" = "使用原命令重启";
 "Restart. It will run outside the %@ session." = "重启后将在 %@ 会话之外运行。";
 "Resume in %@" = "在 %@ 中恢复";
@@ -220,6 +226,7 @@
 "Share" = "分享";
 "Share with friends" = "分享给朋友";
 "Show branch names" = "显示分支名称";
+"Show containers" = "显示容器";
 "Show popover with ⌥⌘P" = "按 ⌥⌘P 打开面板";
 "Show preview buttons" = "显示预览按钮";
 "Show the pull request for each branch" = "显示各分支的拉取请求";
@@ -234,6 +241,7 @@
 "Stop" = "停止";
 "Stop %d %@ · free %@" = "停止 %d 个%@ · 释放 %@";
 "Stop %d processes" = "停止 %d 个进程";
+"Stop container" = "停止容器";
 "Stop servers" = "停止服务器";
 "Stopped %@" = "已停止 %@";
 "Stopping" = "停止方式";

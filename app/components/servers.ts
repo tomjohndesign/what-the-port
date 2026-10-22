@@ -23,6 +23,11 @@ export type Server = {
   processes: { pid: number; command: string; memory: number; cpu: number }[]
   info: [label: string, value: string][]
   cleanUp?: { reason: CleanUpReason; note: string; suggested: boolean }
+  // A port published by a container. Its one "process" stands for the container, so totals and Stop
+  // treat it as a unit, like ServerResources.swift keys containers by id.
+  container?: { runtime: string; image: string; id: string; branch: string }
+  // Protected from Clean up, like databases in the app.
+  protected?: true
   // The popover's row context, clean-up reason and running time, in the app's own phrases.
   lines: (l: Localizer) => { context: string; note?: string; running: string }
 }
@@ -113,6 +118,29 @@ export const SERVERS: Server[] = [
       ['Workspace', 'Conductor · lisbon'],
     ],
     cleanUp: { reason: 'idle', note: 'Idle 5h · no connections', suggested: true },
+  },
+  {
+    port: '5432',
+    name: 'shop-db-1',
+    branch: 'shop-db-1',
+    status: 'on',
+    memory: 182,
+    cpu: 1,
+    cpuNote: 'quiet',
+    uptime: 'up 2d',
+    context: { text: 'OrbStack · main · up 2d' },
+    lines: (l) => ({ context: `OrbStack · main · ${l.format('up %@', l.duration(2880, true))}`, running: l.duration(2880) }),
+    chart: 'steady',
+    spark: 'M0 11 L4 11 L8 10.5 L12 11 L16 11 L20 10.5 L24 11 L28 10.5 L32 11 L36 10.5 L40 11 L44 10.5',
+    processes: [{ pid: 54320, command: 'shop-db-1', memory: 182, cpu: 1 }],
+    info: [
+      ['Folder', '~/Code/shop'],
+      ['Image', 'postgres:16-alpine'],
+      ['Started', 'Mon 9:12 AM'],
+      ['Address', '0.0.0.0 · [::]'],
+    ],
+    container: { runtime: 'OrbStack', image: 'postgres:16-alpine', id: '4f2a9c81e7b3', branch: 'main' },
+    protected: true,
   },
   {
     port: '6006',
