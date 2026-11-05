@@ -39,8 +39,8 @@ struct ServersView: View {
             }
             if visibleServers.isEmpty {
                 emptyState
-            } else if visibleServers.count > maxVisibleRows {
-                ScrollView { rows }.frame(height: CGFloat(maxVisibleRows) * 52 + 12)
+            } else if rowsHeight > maxRowsHeight {
+                ScrollView { rows }.frame(height: maxRowsHeight)
             } else {
                 rows
             }
@@ -52,18 +52,26 @@ struct ServersView: View {
         }
     }
 
+    private var maxRowsHeight: CGFloat { CGFloat(maxVisibleRows) * 52 + 12 }
+    private var rowsHeight: CGFloat {
+        CGFloat(visibleServers.count) * 52 + CGFloat(sections.filter { $0.title != nil }.count) * ServerSectionHeader.height + 12
+    }
+
     /// Protected processes (databases) can't be stopped from Clean up or paused
     /// in bulk, so hide them there.
-    private var visibleServers: [Server] {
+    private var sections: [ServerSection] {
         let servers: [Server]
         switch mode {
         case .cleanUp: servers = monitor.servers.filter { !$0.isProtected }
         case .pause: servers = pausableServers
         case nil: servers = monitor.servers
         }
-        guard let heldOrder else { return sort.sorted(servers) }
-        return servers.sorted { (heldOrder.firstIndex(of: $0.port) ?? .max) < (heldOrder.firstIndex(of: $1.port) ?? .max) }
+        guard let heldOrder else { return ServerSection.arrange(sort.sorted(servers), sort: sort) }
+        let held = servers.sorted { (heldOrder.firstIndex(of: $0.port) ?? .max) < (heldOrder.firstIndex(of: $1.port) ?? .max) }
+        return ServerSection.arrange(held, sort: nil)
     }
+
+    private var visibleServers: [Server] { sections.flatMap(\.servers) }
 
     private var pausableServers: [Server] {
         monitor.servers.filter { !$0.isProtected && !$0.isPaused }
@@ -178,16 +186,24 @@ struct ServersView: View {
 
     private var rows: some View {
         VStack(spacing: 0) {
-            ForEach(visibleServers) { server in
-                ServerRow(server: server, monitor: monitor,
-                          isFocused: focusedPort == server.port,
-                          isDimmed: focus != nil && focusedPort != server.port,
-                          selecting: mode != nil ? RowSelection(isSelected: selection.contains(server.port),
-                                                                reason: isCleaning ? monitor.cleanUpReason(for: server) : nil) : nil,
-                          onHover: { hovering in
-                              if hovering { hoveredRow = server.port } else if hoveredRow == server.port { hoveredRow = nil }
-                          },
-                          open: { mode != nil ? toggle(server.port) : openServer(server) })
+            ForEach(sections) { section in
+                if section.title != nil {
+                    ServerSectionHeader(section: section, canStop: mode == nil) {
+                        Usage.record(.stop)
+                        monitor.stop(section.servers)
+                    }
+                }
+                ForEach(section.servers) { server in
+                    ServerRow(server: server, monitor: monitor,
+                              isFocused: focusedPort == server.port,
+                              isDimmed: focus != nil && focusedPort != server.port,
+                              selecting: mode != nil ? RowSelection(isSelected: selection.contains(server.port),
+                                                                    reason: isCleaning ? monitor.cleanUpReason(for: server) : nil) : nil,
+                              onHover: { hovering in
+                                  if hovering { hoveredRow = server.port } else if hoveredRow == server.port { hoveredRow = nil }
+                              },
+                              open: { mode != nil ? toggle(server.port) : openServer(server) })
+                }
             }
         }
         .padding(6)
@@ -391,6 +407,45 @@ extension ServerSort {
 
 // MARK: - Row
 
+/// Names a group of containers, with its total memory lined up with the rows'.
+private struct ServerSectionHeader: View {
+    static let height: CGFloat = 28
+
+    let section: ServerSection
+    let canStop: Bool
+    let stop: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Text(section.title ?? "")
+                .font(Theme.captionMedium)
+                .foregroundStyle(Theme.text1)
+                .lineLimit(1)
+            if let detail = section.detail {
+                Text(detail)
+                    .font(Theme.caption)
+                    .foregroundStyle(Theme.text3)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            Spacer(minLength: 6)
+            if isHovered && canStop {
+                IconButton(systemName: "stop.fill", tint: Theme.text1.opacity(0.8), background: .clear, size: 18, help: L10n.text("Stop all"), action: stop)
+            }
+            Text(Format.bytesString(section.memory))
+                .font(Theme.monoCaption)
+                .foregroundStyle(Theme.text3)
+                .fixedSize()
+        }
+        .padding(.horizontal, 10)
+        .frame(height: Self.height, alignment: .bottom)
+        .padding(.bottom, 2)
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
+    }
+}
+
 struct RowSelection {
     let isSelected: Bool
     let reason: CleanUpReason?
@@ -421,11 +476,11 @@ struct ServerRow: View {
                 .frame(width: 58, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(server.project.displayName.replacingOccurrences(of: "-", with: " "))
+                Text(server.listTitle.replacingOccurrences(of: "-", with: " "))
                     .font(Theme.bodyMedium)
                     .foregroundStyle(Theme.text1)
                     .lineLimit(1)
-                    .help(server.project.branch ?? server.project.name)
+                    .help(server.fullListTitle)
                 if let reason = selecting?.reason {
                     HStack(spacing: 5) {
                         Image(systemName: reason.symbol).font(.system(size: 9, weight: .medium))
@@ -485,17 +540,21 @@ struct ServerRow: View {
 
     @ViewBuilder private func context(status: ServerStatus) -> some View {
         if status == .attention, server.isLeaking() {
-            Text(L10n.format("+%@ in %@", Format.bytesString(UInt64(server.memoryGrowth)), L10n.duration(historySpan)))
-                .font(Theme.caption)
-                .foregroundStyle(Theme.amber)
+            attentionText(L10n.format("+%@ in %@", Format.bytesString(UInt64(server.memoryGrowth)), L10n.duration(historySpan)))
         } else if status == .attention {
-            Text(L10n.format("Over %@ GB", MemoryChart.trim(Double(monitor.alertThreshold) / Format.gigabyte)))
-                .font(Theme.caption)
-                .foregroundStyle(Theme.amber)
+            attentionText(L10n.format("Over %@ GB", MemoryChart.trim(Double(monitor.alertThreshold) / Format.gigabyte)))
         } else {
             HStack(spacing: 5) {
                 if let agent = server.agent { AgentGlyph(kind: agent.kind, size: 10) }
-                if server.cwdExists, server.project.branch != nil {
+                if let container = server.container {
+                    // Like native rows, only the image truncates; the time always shows.
+                    ServiceGlyph(service: container.service)
+                    HStack(spacing: 3) {
+                        Text(container.shortImage)
+                            .lineLimit(1).truncationMode(.tail).help(container.image)
+                        if !contextText.isEmpty { Text("· " + contextText).fixedSize() }
+                    }
+                } else if server.cwdExists, server.project.branch != nil {
                     HStack(spacing: 3) {
                         Text(server.project.name.replacingOccurrences(of: "-", with: " "))
                             .lineLimit(1).truncationMode(.tail).help(server.project.name)
@@ -510,15 +569,25 @@ struct ServerRow: View {
         }
     }
 
+    /// A container keeps its icon, so you can still see what's leaking.
+    private func attentionText(_ text: String) -> some View {
+        HStack(spacing: 5) {
+            if let container = server.container { ServiceGlyph(service: container.service, color: Theme.amber) }
+            Text(text)
+        }
+        .font(Theme.caption)
+        .foregroundStyle(Theme.amber)
+    }
+
     /// Uptime or idle time, prefixed with the location when there's no branch.
     private var contextText: String {
         if !server.cwdExists, !server.isPaused { return L10n.format("Worktree deleted · idle %@", L10n.duration(server.idleFor, short: true)) }
         let time = server.isPaused
             ? L10n.text("paused")
-            : server.idleFor > 60 * 60
+            : server.isIdle
                 ? L10n.format("idle %@", L10n.duration(server.idleFor, short: true))
                 : server.uptime.map { L10n.format("up %@", L10n.duration($0, short: true)) } ?? ""
-        if server.project.branch != nil { return time }
+        if server.project.branch != nil || server.container != nil { return time }
         return [server.locationLabel, time].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 

@@ -43,12 +43,64 @@ enum ServerSort: String, CaseIterable, Identifiable {
             case .recency where a.startedAt != b.startedAt:
                 return (a.startedAt ?? .distantPast) > (b.startedAt ?? .distantPast)
             case .name:
-                let order = a.project.displayName.localizedStandardCompare(b.project.displayName)
+                let order = a.listTitle.localizedStandardCompare(b.listTitle)
                 return order == .orderedSame ? a.port < b.port : order == .orderedAscending
             default:
                 return a.port < b.port
             }
         }
+    }
+}
+
+/// A block of rows on the Servers page: native servers first, with no header,
+/// then one group per compose project and one per runtime for other containers.
+struct ServerSection: Identifiable {
+    let id: String
+    /// Nil for native servers.
+    let title: String?
+    /// The runtime and compose folder's branch, which its rows then leave out.
+    let detail: String?
+    let servers: [Server]
+
+    var memory: UInt64 { ServerResources(servers).memory }
+
+    /// Keeps each section's rows in the order given. `sort` orders the groups;
+    /// nil keeps them in the order they first appear, so a list under the
+    /// pointer holds still.
+    static func arrange(_ servers: [Server], sort: ServerSort?) -> [ServerSection] {
+        let native = servers.filter { $0.container == nil }
+        var order: [String] = []
+        var byGroup: [String: [Server]] = [:]
+        for server in servers {
+            guard let key = server.container?.groupKey else { continue }
+            if byGroup[key] == nil { order.append(key) }
+            byGroup[key, default: []].append(server)
+        }
+        var groups = order.compactMap { key -> ServerSection? in
+            guard let rows = byGroup[key], let container = rows.first?.container else { return nil }
+            let project = container.composeProject
+            let detail = project == nil ? nil : [container.runtime.name, rows.first?.project.branch].compactMap { $0 }.joined(separator: " · ")
+            return ServerSection(id: key, title: project ?? container.runtime.name, detail: detail, servers: rows)
+        }
+        if let sort {
+            groups.sort { a, b in
+                let lowest = { (section: ServerSection) in section.servers.map(\.port).min() ?? 0 }
+                switch sort {
+                case .usage where a.memory != b.memory:
+                    return a.memory > b.memory
+                case .recency:
+                    let newest = { (section: ServerSection) in section.servers.compactMap(\.startedAt).max() ?? .distantPast }
+                    if newest(a) != newest(b) { return newest(a) > newest(b) }
+                case .name:
+                    let order = (a.title ?? "").localizedStandardCompare(b.title ?? "")
+                    if order != .orderedSame { return order == .orderedAscending }
+                default:
+                    break
+                }
+                return lowest(a) < lowest(b)
+            }
+        }
+        return (native.isEmpty ? [] : [ServerSection(id: "native", title: nil, detail: nil, servers: native)]) + groups
     }
 }
 
@@ -88,6 +140,10 @@ struct Server: Identifiable {
     var conductorWorkspace: String?
     var paneWorkspace: PaneWorkspace?
     var agent: AgentSession?
+    /// Set when the port is published by a Docker or OrbStack container. The
+    /// listening pid is then the runtime's helper, which must never be signalled:
+    /// `processes` and `processStarts` stay empty and Stop goes to the container.
+    var container: ContainerInfo? = nil
     var processes: [ServerProcess]
     /// Identity of every process in the tree, so we never signal a reused pid.
     var processStarts: [pid_t: Date]
@@ -104,7 +160,30 @@ struct Server: Identifiable {
     var isPaused: Bool
 
     var id: Int { port }
+    /// Which server this is across scans, for alerts and Clean up. Containers
+    /// share their runtime helper's pid, so they're told apart by container id.
+    var identityKey: String { "\(port)-\(container?.id ?? String(rootPid))" }
     var url: URL { URL(string: "http://localhost:\(port)")! }
+
+    /// Protected native databases stay quiet. Containers are only protected
+    /// from Clean up, and still warn when they use too much memory.
+    var getsAlerts: Bool { !isProtected || container != nil }
+
+    /// The name a list row leads with: the branch, or for containers the
+    /// compose service, since the group header already names the project.
+    var listTitle: String {
+        if let container { return container.composeService ?? container.name }
+        return project.displayName
+    }
+
+    /// `listTitle` with the branch's prefix, for the row's tooltip.
+    var fullListTitle: String {
+        container == nil ? project.branch ?? project.name : listTitle
+    }
+
+    /// Idle time says nothing about a container, whose traffic can stay inside
+    /// its compose network where the Mac never sees it.
+    var isIdle: Bool { container == nil && idleFor > 60 * 60 }
 
     var uptime: TimeInterval? { startedAt.map { Date().timeIntervalSince($0) } }
     var idleFor: TimeInterval { Date().timeIntervalSince(lastActive) }
@@ -124,7 +203,7 @@ struct Server: Identifiable {
         if isPaused { return .paused }
         if !cwdExists { return .idle }
         if memory >= alertThreshold || isLeaking() { return .attention }
-        if idleFor > 60 * 60 { return .idle }
+        if isIdle { return .idle }
         return .running
     }
 

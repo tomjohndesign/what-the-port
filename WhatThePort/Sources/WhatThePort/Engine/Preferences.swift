@@ -46,6 +46,7 @@ enum Preferences {
     static let linkPane = "integrations.pane"
     static let showBranches = "integrations.branches"
     static let showBranchPrefixes = "integrations.branchPrefixes"
+    static let showContainers = "integrations.containers"
     static let vercelPreviews = "integrations.vercelPreviews"
     static let githubPullRequests = "integrations.githubPullRequests"
 
@@ -94,6 +95,7 @@ enum Preferences {
             tipReminder: true,
             showBranches: true,
             showBranchPrefixes: false,
+            showContainers: true,
             // Both make network calls through `gh`, so they're opt-in.
             vercelPreviews: false,
             githubPullRequests: false,

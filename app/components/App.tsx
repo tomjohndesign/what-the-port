@@ -1,8 +1,8 @@
 'use client'
 
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
-import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, PauseIcon, PlayIcon, VercelIcon } from './icons'
+import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, ContainerIcon, DotGrid, OpenIcon, PauseIcon, PlayIcon, ServiceIcon, VercelIcon } from './icons'
 import { type AppLanguageCode, type Localizer, localizer } from './languages'
 import { GET_IT, TERMINAL } from './sections'
 import {
@@ -21,6 +21,7 @@ import {
   pausedServer,
   portColor,
   serverResources,
+  serverSections,
   shortBranch,
   sortServers,
   stoppedPorts,
@@ -241,8 +242,11 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
   const total = resources.memory
   const cpu = Math.round(resources.cpu / 8)
   const cleanUpCount = demo.running.filter((s) => s.cleanUp?.suggested).length
-  const pausable = demo.running.filter((s) => s.status !== 'paused')
-  const visible = sortServers(pausing ? pausable : demo.running, demo.sort)
+  // Protected servers can't be stopped from Clean up or paused in bulk, so they're hidden there, like the app.
+  const pausable = demo.running.filter((s) => s.status !== 'paused' && !s.protected)
+  const listed = pausing ? pausable : cleaning ? demo.running.filter((s) => !s.protected) : demo.running
+  const sections = serverSections(sortServers(listed, demo.sort), demo.sort)
+  const visible = sections.flatMap((section) => section.servers)
   const chosen = visible.filter((s) => demo.selected.includes(s.port))
   const freed = serverResources(chosen).memory
   const focusedServer = demo.running.find((s) => s.port === focus)
@@ -394,118 +398,142 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             </span>
           </div>
         )}
-        {visible.map((s) => (
-          <div
-            key={s.port}
-            role="button"
-            tabIndex={0}
-            className={styles.serverRow}
-            data-interactive
-            data-dim={s.status === 'idle' || (s.status === 'paused' && hoveredRow !== s.port) || (focus !== null && focus !== s.port)}
-            data-focused={focus === s.port}
-            data-cleaning={selecting}
-            aria-pressed={selecting ? demo.selected.includes(s.port) : undefined}
-            aria-label={`${selecting ? 'Select' : 'View'} ${shortBranch(s.branch)} on port ${s.port}`}
-            onMouseEnter={() => setHoveredRow(s.port)}
-            onMouseLeave={() => setHoveredRow(null)}
-            onClick={() => activate(s.port)}
-            onKeyDown={(e) => {
-              if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault()
-                activate(s.port)
-              }
-            }}
-          >
-            {selecting && (
-              <span className={styles.checkbox} data-checked={demo.selected.includes(s.port)} aria-hidden>
-                <svg width="10" height="10" viewBox="0 0 10 10">
+        {sections.map((section) => (
+          <Fragment key={section.id}>
+            {section.title && (
+              <div className={styles.serverGroup}>
+                <span className={styles.serverGroupTitle}>{section.title}</span>
+                <span className={styles.serverGroupDetail}>{section.detail}</span>
+                {!selecting && (
+                  <button
+                    type="button"
+                    className={styles.rowAction}
+                    aria-label={l.text('Stop all')}
+                    title={l.text('Stop all')}
+                    onClick={() => demo.stop(section.servers.map((s) => s.port))}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+                      <rect x="2.5" y="2.5" width="7" height="7" rx="1.5" fill="rgb(245 245 247 / 80%)" />
+                    </svg>
+                  </button>
+                )}
+                <span className={styles.serverGroupMemory}>{formatMemory(serverResources(section.servers).memory)}</span>
+              </div>
+            )}
+            {section.servers.map((s) => (
+              <div
+                key={s.port}
+                role="button"
+                tabIndex={0}
+                className={styles.serverRow}
+                data-interactive
+                data-dim={s.status === 'idle' || (s.status === 'paused' && hoveredRow !== s.port) || (focus !== null && focus !== s.port)}
+                data-focused={focus === s.port}
+                data-cleaning={selecting}
+                aria-pressed={selecting ? demo.selected.includes(s.port) : undefined}
+                aria-label={`${selecting ? 'Select' : 'View'} ${shortBranch(s.branch)} on port ${s.port}`}
+                onMouseEnter={() => setHoveredRow(s.port)}
+                onMouseLeave={() => setHoveredRow(null)}
+                onClick={() => activate(s.port)}
+                onKeyDown={(e) => {
+                  if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault()
+                    activate(s.port)
+                  }
+                }}
+              >
+                {selecting && (
+                  <span className={styles.checkbox} data-checked={demo.selected.includes(s.port)} aria-hidden>
+                    <svg width="10" height="10" viewBox="0 0 10 10">
+                      <path
+                        d="M2 5.2 4.1 7.3 8 2.8"
+                        fill="none"
+                        stroke="#0B0D12"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                )}
+                <span className={styles.portLabel}>
+                  <Colon state={s.status} color={portColor(s.port)} />
+                  <span className={styles.rowPort} style={{ color: portColor(s.port) }}>
+                    {s.port}
+                  </span>
+                </span>
+                <span className={styles.rowMain}>
+                  <span className={styles.rowName} title={s.branch}>
+                    {shortBranch(s.branch).replaceAll('-', ' ')}
+                  </span>
+                  <span className={styles.rowSub} style={{ color: s.context.tone === 'amber' ? AMBER : '#EBEBF599' }}>
+                    {cleaning && s.cleanUp ? REASON_ICONS[s.cleanUp.reason] : s.container ? <ServiceIcon service={s.container.service} color={s.context.tone === 'amber' ? AMBER : undefined} /> : <AgentIcon agent={s.context.agent} />}
+                    <span className={styles.ellipsis}>
+                      {flash === s.port
+                        ? `Opened localhost:${s.port}`
+                        : cleaning && s.cleanUp
+                          ? s.lines(l).note
+                          : s.lines(l).context}
+                    </span>
+                  </span>
+                </span>
+                <svg className={styles.rowSpark} width="40" height="18" viewBox="0 0 44 18" aria-hidden>
                   <path
-                    d="M2 5.2 4.1 7.3 8 2.8"
+                    d={s.spark}
                     fill="none"
-                    stroke="#0B0D12"
-                    strokeWidth="1.6"
+                    stroke={s.status === 'amber' ? AMBER : `rgb(245 245 247 / ${s.status === 'idle' ? 50 : 70}%)`}
+                    strokeWidth={s.status === 'amber' ? 1.5 : 1.25}
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    strokeDasharray={s.status === 'idle' ? '2 3' : undefined}
                   />
                 </svg>
-              </span>
-            )}
-            <span className={styles.portLabel}>
-              <Colon state={s.status} color={portColor(s.port)} />
-              <span className={styles.rowPort} style={{ color: portColor(s.port) }}>
-                {s.port}
-              </span>
-            </span>
-            <span className={styles.rowMain}>
-              <span className={styles.rowName} title={s.branch}>
-                {shortBranch(s.branch).replaceAll('-', ' ')}
-              </span>
-              <span className={styles.rowSub} style={{ color: s.context.tone === 'amber' ? AMBER : '#EBEBF599' }}>
-                {cleaning && s.cleanUp ? REASON_ICONS[s.cleanUp.reason] : <AgentIcon agent={s.context.agent} />}
-                <span className={styles.ellipsis}>
-                  {flash === s.port
-                    ? `Opened localhost:${s.port}`
-                    : cleaning && s.cleanUp
-                      ? s.lines(l).note
-                      : s.lines(l).context}
+                {!selecting && (
+                  <span className={styles.rowActions}>
+                    <button
+                      type="button"
+                      className={styles.rowAction}
+                      aria-label={l.text('Open in browser')}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        trigger(s.port)
+                      }}
+                    >
+                      <OpenIcon />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.rowAction}
+                      aria-label={l.text(s.status === 'paused' ? 'Resume' : 'Pause')}
+                      title={l.text(s.status === 'paused' ? 'Resume' : 'Pause')}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        demo.togglePause(s.port)
+                      }}
+                    >
+                      {s.status === 'paused' ? <PlayIcon color="rgb(245 245 247 / 80%)" /> : <PauseIcon color="rgb(245 245 247 / 80%)" />}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.rowAction}
+                      aria-label={l.text('Stop')}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        demo.stop([s.port])
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+                        <rect x="2.5" y="2.5" width="7" height="7" rx="1.5" fill="rgb(245 245 247 / 80%)" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                <span className={styles.rowMemory} style={{ color: s.status === 'amber' ? AMBER : undefined }}>
+                  {formatMemory(s.memory)}
                 </span>
-              </span>
-            </span>
-            <svg className={styles.rowSpark} width="40" height="18" viewBox="0 0 44 18" aria-hidden>
-              <path
-                d={s.spark}
-                fill="none"
-                stroke={s.status === 'amber' ? AMBER : `rgb(245 245 247 / ${s.status === 'idle' ? 50 : 70}%)`}
-                strokeWidth={s.status === 'amber' ? 1.5 : 1.25}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={s.status === 'idle' ? '2 3' : undefined}
-              />
-            </svg>
-            {!selecting && (
-              <span className={styles.rowActions}>
-                <button
-                  type="button"
-                  className={styles.rowAction}
-                  aria-label={l.text('Open in browser')}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    trigger(s.port)
-                  }}
-                >
-                  <OpenIcon />
-                </button>
-                <button
-                  type="button"
-                  className={styles.rowAction}
-                  aria-label={l.text(s.status === 'paused' ? 'Resume' : 'Pause')}
-                  title={l.text(s.status === 'paused' ? 'Resume' : 'Pause')}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    demo.togglePause(s.port)
-                  }}
-                >
-                  {s.status === 'paused' ? <PlayIcon color="rgb(245 245 247 / 80%)" /> : <PauseIcon color="rgb(245 245 247 / 80%)" />}
-                </button>
-                <button
-                  type="button"
-                  className={styles.rowAction}
-                  aria-label={l.text('Stop')}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    demo.stop([s.port])
-                  }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
-                    <rect x="2.5" y="2.5" width="7" height="7" rx="1.5" fill="rgb(245 245 247 / 80%)" />
-                  </svg>
-                </button>
-              </span>
-            )}
-            <span className={styles.rowMemory} style={{ color: s.status === 'amber' ? AMBER : undefined }}>
-              {formatMemory(s.memory)}
-            </span>
-          </div>
+              </div>
+            ))}
+          </Fragment>
         ))}
       </div>
 
@@ -622,7 +650,20 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
     return () => clearTimeout(timer)
   }, [restarting])
 
-  const shownInfo: [string, ReactNode][] = server.session
+  const shownInfo: [string, ReactNode][] = server.container
+    ? [
+        [
+          'Container',
+          <span key="container" className={styles.infoValue}>
+            {server.container ? <ServiceIcon service={server.container.service} /> : <ContainerIcon />}
+            <span className={`${styles.ellipsis} ${styles.t1}`}>
+              {server.container.runtime} · {server.name}
+            </span>
+          </span>,
+        ],
+        ['Branch', server.container.branch],
+      ]
+    : server.session
     ? [
         [
           'Session',
@@ -640,7 +681,7 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
         ['Folder', server.info[0][1]],
       ]
   const hiddenInfo: [string, string][] = server.info
-    .filter(([label]) => !(label === 'Folder' && !server.session) && label !== 'PID' && label !== 'Git')
+    .filter(([label]) => !(label === 'Folder' && !server.session && !server.container) && label !== 'PID' && label !== 'Git')
   if (server.session) hiddenInfo.push(['Session ID', server.session.id])
 
   return (
@@ -671,7 +712,9 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
                 aria-label="Restart"
                 disabled={worktreeDeleted || restarting}
                 title={
-                  worktreeDeleted ? 'Working directory no longer exists' : l.text('Restart with the same command')
+                  worktreeDeleted
+                    ? 'Working directory no longer exists'
+                    : l.text(server.container ? 'Restart container' : 'Restart with the same command')
                 }
                 data-spinning={restarting}
                 onClick={() => {
@@ -837,53 +880,67 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
         </div>
       </div>
 
-      <div className={styles.popSection}>
-        <button
-          type="button"
-          className={styles.processes}
-          onClick={() => setProcessesOpen((v) => !v)}
-          aria-expanded={processesOpen}
-          data-open={processesOpen}
-        >
-          <span className={styles.popDisplay} style={{ gap: 4 }}>
-            <span className={styles.t2}>{l.text('Processes')}</span>
-            <span className={styles.processesChevron}>
-              <Chevron direction="right" />
+      {server.container ? (
+        // A container's processes run inside the runtime's VM, so the app shows the container instead.
+        <div className={styles.popSection}>
+          <div className={styles.processes}>
+            <span className={styles.t2}>{l.text('Container')}</span>
+            <span className={`${styles.mono} ${styles.t2}`}>
+              {server.container.id} · {formatMemory(server.memory)}
             </span>
-          </span>
-          <span className={styles.popDisplay} style={{ gap: 8 }}>
-            <span className={`${styles.mono} ${styles.t3}`}>{server.processes.length} ·</span>
-            <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(server.memory)}</span>
-          </span>
-        </button>
-        <div className={styles.collapsible} data-open={processesOpen}>
-          <div>
-            <div className={styles.processList}>
-              {server.processes.map((p, index) => (
-                <div key={p.command} className={styles.processRow}>
-                  <span className={`${styles.mono} ${styles.ellipsis} ${styles.t1}`}>
-                    {index ? '└ ' : ''}
-                    {p.command}
-                  </span>
-                  <span className={styles.processBar}>
-                    <i style={{ width: `${(p.memory / Math.max(...server.processes.map((p) => p.memory))) * 100}%` }} />
-                  </span>
-                  <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(p.memory)}</span>
-                </div>
-              ))}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.popSection}>
+          <button
+            type="button"
+            className={styles.processes}
+            onClick={() => setProcessesOpen((v) => !v)}
+            aria-expanded={processesOpen}
+            data-open={processesOpen}
+          >
+            <span className={styles.popDisplay} style={{ gap: 4 }}>
+              <span className={styles.t2}>{l.text('Processes')}</span>
+              <span className={styles.processesChevron}>
+                <Chevron direction="right" />
+              </span>
+            </span>
+            <span className={styles.popDisplay} style={{ gap: 8 }}>
+              <span className={`${styles.mono} ${styles.t3}`}>{server.processes.length} ·</span>
+              <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(server.memory)}</span>
+            </span>
+          </button>
+          <div className={styles.collapsible} data-open={processesOpen}>
+            <div>
+              <div className={styles.processList}>
+                {server.processes.map((p, index) => (
+                  <div key={p.command} className={styles.processRow}>
+                    <span className={`${styles.mono} ${styles.ellipsis} ${styles.t1}`}>
+                      {index ? '└ ' : ''}
+                      {p.command}
+                    </span>
+                    <span className={styles.processBar}>
+                      <i style={{ width: `${(p.memory / Math.max(...server.processes.map((p) => p.memory))) * 100}%` }} />
+                    </span>
+                    <span className={`${styles.mono} ${styles.t2}`}>{formatMemory(p.memory)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className={`${styles.popSection} ${styles.actions}`}>
         <button type="button" className={styles.primaryAction} onClick={() => trigger('open')}>
           {flash === 'open' ? 'Opened in your browser' : l.format('Open localhost:%@', server.port)}
         </button>
-        <button type="button" className={styles.secondaryAction} onClick={() => trigger('preview')}>
-          <VercelIcon fill="rgb(235 235 245 / 75%)" width={11} height={10} />
-          {flash === 'preview' ? 'Opened' : l.text('Preview')}
-        </button>
+        {!server.container && (
+          <button type="button" className={styles.secondaryAction} onClick={() => trigger('preview')}>
+            <VercelIcon fill="rgb(235 235 245 / 75%)" width={11} height={10} />
+            {flash === 'preview' ? 'Opened' : l.text('Preview')}
+          </button>
+        )}
         <button type="button" className={styles.moreAction} aria-label="More">
           <span />
           <span />

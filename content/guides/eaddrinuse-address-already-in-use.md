@@ -2,6 +2,7 @@
 title: EADDRINUSE: address already in use, explained
 description: What EADDRINUSE means in Node.js, Next.js, nodemon, Python and Rails, why it happens on macOS, and how to fix it for good instead of killing ports by hand.
 published: 2026-09-25
+updated: 2026-10-22
 order: 2
 keywords: EADDRINUSE, address already in use, listen EADDRINUSE address already in use :::3000, nodemon EADDRINUSE, errno 48 address already in use, rails address already in use
 ---
@@ -71,7 +72,7 @@ Stopping a parent doesn’t always stop its children. Kill `npm` with `-9` and t
 A few ports are taken by macOS or other apps:
 
 - **5000 and 7000**: AirPlay Receiver on macOS 12 and later. See [Port 5000 in use on Mac](/guides/port-5000-in-use-mac-airplay).
-- **Docker Desktop**: a published container port shows up as a Docker process. Use `docker ps` and `docker stop` rather than killing Docker itself.
+- **Container runtimes**: a published container port shows up as the runtime’s own process: `com.docker.backend` for Docker Desktop, `OrbStack Helper` for OrbStack, or `ssh` for Colima. Use `docker ps` and `docker stop` rather than killing the runtime, which would stop every container. WhatThePort shows these as container rows and stops just that container.
 - **Databases**: Postgres on 5432, Redis on 6379, MySQL on 3306.
 
 ## Handle it in code

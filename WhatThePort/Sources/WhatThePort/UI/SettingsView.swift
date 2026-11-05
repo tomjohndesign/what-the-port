@@ -347,6 +347,7 @@ private struct IntegrationsPane: View {
     @AppStorage(Preferences.linkPane) private var pane = true
     @AppStorage(Preferences.showBranches) private var branches = true
     @AppStorage(Preferences.showBranchPrefixes) private var branchPrefixes = false
+    @AppStorage(Preferences.showContainers) private var containers = true
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.githubPullRequests) private var pullRequests = false
 
@@ -372,6 +373,11 @@ private struct IntegrationsPane: View {
                     SettingLabel(L10n.text("Show branch prefixes"), caption: L10n.text("List feature/login instead of login"))
                 }
                 .disabled(!branches)
+            }
+            Section(L10n.text("Containers")) {
+                Toggle(isOn: $containers) {
+                    SettingLabel(L10n.text("Show containers"), caption: L10n.text("Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime."))
+                }
             }
             Section {
                 Toggle(isOn: $previews) {

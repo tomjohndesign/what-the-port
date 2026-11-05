@@ -16,6 +16,7 @@ const KEYS = [
   'Open in browser', 'Pause', 'Resume', 'Paused', 'paused', 'Stop', 'Back',
   'Pause multiple', 'Pick servers to pause', 'Pause servers', 'Pause %d %@',
   'Sort servers', 'Usage', 'Recency', 'Name', 'Port',
+  'Container', 'Image', 'Restart container', 'Stop all',
   'up %@', 'idle %@', 'Worktree deleted · idle %@', '+%@ in %@',
   'Worktree deleted', 'Idle %@ · no connections', 'Leaking · +%@',
   '<1m', '%dm', '%dh', '%dh %dm', '%dd',
