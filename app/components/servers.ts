@@ -273,13 +273,18 @@ export function stoppedPorts(servers: Server[], selected: string[]) {
 export type ServerSort = 'usage' | 'recency' | 'name' | 'port'
 export const SERVER_SORTS: [ServerSort, string][] = [['usage', 'Usage'], ['recency', 'Recency'], ['name', 'Name'], ['port', 'Port']]
 
+// The branch without its prefix, as in ProjectInfo.listBranch with its default setting. The detail view keeps the full name.
+export function shortBranch(branch: string) {
+  return branch.slice(branch.lastIndexOf('/') + 1)
+}
+
 // Ties fall back to port, as in ServerSort in Server.swift.
 export function sortServers(servers: Server[], sort: ServerSort) {
   const byPort = (a: Server, b: Server) => Number(a.port) - Number(b.port)
   return [...servers].sort((a, b) => {
     if (sort === 'usage') return b.memory - a.memory || byPort(a, b)
     if (sort === 'recency') return a.startedMinutesAgo - b.startedMinutesAgo || byPort(a, b)
-    if (sort === 'name') return a.branch.localeCompare(b.branch, undefined, { numeric: true }) || byPort(a, b)
+    if (sort === 'name') return shortBranch(a.branch).localeCompare(shortBranch(b.branch), undefined, { numeric: true }) || byPort(a, b)
     return byPort(a, b)
   })
 }

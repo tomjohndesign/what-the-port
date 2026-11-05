@@ -173,7 +173,12 @@ struct Server: Identifiable {
     /// compose service, since the group header already names the project.
     var listTitle: String {
         if let container { return container.composeService ?? container.name }
-        return project.branch ?? project.name
+        return project.displayName
+    }
+
+    /// `listTitle` with the branch's prefix, for the row's tooltip.
+    var fullListTitle: String {
+        container == nil ? project.branch ?? project.name : listTitle
     }
 
     /// Idle time says nothing about a container, whose traffic can stay inside

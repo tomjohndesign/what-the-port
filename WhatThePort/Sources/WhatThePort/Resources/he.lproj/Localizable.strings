@@ -132,6 +132,7 @@
 "Link servers to Codex threads" = "קישור שרתים לשיחות Codex";
 "Link servers to the session that started them" = "קישור שרתים להפעלה שיצרה אותם";
 "Link servers to the terminal that started them" = "קישור שרתים למסוף שהפעיל אותם";
+"List feature/login instead of login" = "הצגת ⁦feature/login⁩ ברשימה במקום ⁦login⁩";
 "MERGED" = "מוזג";
 "Link copied" = "הקישור הועתק";
 "Made by Tomjohn" = "נוצר על ידי Tomjohn";
@@ -238,6 +239,7 @@
 "Share" = "שיתוף";
 "Share with friends" = "שיתוף עם חברים";
 "Show branch names" = "הצגת שמות ענפים";
+"Show branch prefixes" = "הצגת קידומות של ענפים";
 "Show containers" = "הצגת קונטיינרים";
 "Show popover with ⌥⌘P" = "הצגת החלונית עם ⁦⌥⌘P⁩";
 "Show preview buttons" = "הצגת כפתורי תצוגה מקדימה";

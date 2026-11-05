@@ -10,6 +10,7 @@ struct ScanConfig {
     var linkConductor = true
     var linkPane = true
     var showBranches = true
+    var showBranchPrefixes = false
     var showContainers = true
 }
 
@@ -172,6 +173,7 @@ final class ScanEngine: @unchecked Sendable {
             let command = rootArgs.map { Self.prettyCommand($0.arguments, comm: root.comm) }
             var project = projects.resolve(cwd: cwd, command: command)
             if !config.showBranches { project.branch = nil }
+            project.showsBranchPrefix = config.showBranchPrefixes
 
             // Restart from the highest process whose argv wasn't overwritten by a
             // title; e.g. the `sh -c "next dev -p 3000"` that npm spawns.
@@ -272,6 +274,7 @@ final class ScanEngine: @unchecked Sendable {
         project.name = container.name
         project.framework = nil
         if !config.showBranches { project.branch = nil }
+        project.showsBranchPrefix = config.showBranchPrefixes
 
         let memory = sample?.memory ?? 0
         let cpu = sample?.cpu ?? 0

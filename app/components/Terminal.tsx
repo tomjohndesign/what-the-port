@@ -17,6 +17,7 @@ import {
   serverResources,
   pausedServer,
   serverSections,
+  shortBranch,
   stoppedPorts,
 } from './servers'
 
@@ -936,7 +937,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
         <Line key={`${s.port}a`} selected={isSelected} onClick={click} className={idle}>
           {cleaning && <span className={on ? undefined : styles.tuiText3}>{on ? '[✓] ' : '[ ] '}</span>}
           <PortLabel server={s} />
-          <span className={styles.tuiName}>{s.branch.replace(/-/g, ' ')}</span>
+          <span className={styles.tuiName}>{shortBranch(s.branch).replace(/-/g, ' ')}</span>
           <span className={styles.tuiSpark} style={{ color: amber ? AMBER : undefined }}>
             <Cells text={sparkline(history(s))} />
           </span>

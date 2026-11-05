@@ -99,6 +99,7 @@ final class ServerMonitor: ObservableObject {
                    linkConductor: defaults.bool(forKey: Preferences.linkConductor),
                    linkPane: defaults.bool(forKey: Preferences.linkPane),
                    showBranches: defaults.bool(forKey: Preferences.showBranches),
+                   showBranchPrefixes: defaults.bool(forKey: Preferences.showBranchPrefixes),
                    showContainers: defaults.bool(forKey: Preferences.showContainers))
     }
 

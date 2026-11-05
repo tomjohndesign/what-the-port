@@ -132,6 +132,7 @@
 "Link servers to Codex threads" = "Vincular servidores a conversaciones de Codex";
 "Link servers to the session that started them" = "Vincular servidores a la sesión que los inició";
 "Link servers to the terminal that started them" = "Vincular servidores a la terminal que los inició";
+"List feature/login instead of login" = "Mostrar feature/login en la lista en lugar de login";
 "MERGED" = "FUSIONADA";
 "Link copied" = "Enlace copiado";
 "Made by Tomjohn" = "Creado por Tomjohn";
@@ -238,6 +239,7 @@
 "Share" = "Compartir";
 "Share with friends" = "Compartir con amigos";
 "Show branch names" = "Mostrar nombres de ramas";
+"Show branch prefixes" = "Mostrar prefijos de ramas";
 "Show containers" = "Mostrar contenedores";
 "Show popover with ⌥⌘P" = "Mostrar la ventana con ⌥⌘P";
 "Show preview buttons" = "Mostrar botones de vista previa";

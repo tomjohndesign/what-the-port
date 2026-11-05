@@ -112,7 +112,7 @@ Open Settings from the gear in the popover (⌘,):
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
-- **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names, containers, Vercel previews and pull requests
+- **Integrations** - Claude Code, Codex, Conductor and Pane session links, branch names and prefixes, containers, Vercel previews and pull requests
 - **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, a tip jar and a share link. Once a month, a notification asks for a tip or a share. Tipping turns it off, and so does **Monthly tip reminder**.
 
 ## How It Works
