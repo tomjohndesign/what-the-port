@@ -170,8 +170,19 @@
 "Opens when you sign in" = "Opens when you sign in";
 "Other apps" = "Other apps";
 "Over %@ GB" = "Over %@ GB";
+"Pause" = "Pause";
+"Pause %d %@" = "Pause %d %@";
+"Pause multiple" = "Pause multiple";
+"Pause servers" = "Pause servers";
+"Paused" = "Paused";
 "Paste it anywhere to share WhatThePort." = "Paste it anywhere to share WhatThePort.";
 "Pick servers to stop" = "Pick servers to stop";
+"Pick servers to pause" = "Pick servers to pause";
+"Name" = "Name";
+"Port" = "Port";
+"Recency" = "Recency";
+"Sort servers" = "Sort servers";
+"Usage" = "Usage";
 "Ports" = "Ports";
 "Ports & processes" = "Ports & processes";
 "Preview" = "Preview";
@@ -192,6 +203,7 @@
 "Restart WhatThePort to apply the language change." = "Restart WhatThePort to apply the language change.";
 "Restart with the same command" = "Restart with the same command";
 "Restart. It will run outside the %@ session." = "Restart. It will run outside the %@ session.";
+"Resume" = "Resume";
 "Resume in %@" = "Resume in %@";
 "Resume sessions in" = "Resume sessions in";
 "Reveal %@ workspace" = "Reveal %@ workspace";
@@ -302,3 +314,4 @@
 "Changes apply immediately." = "Changes apply immediately.";
 "servers (few)" = "servers (few)";
 "tools (few)" = "tools (few)";
+"paused" = "paused";

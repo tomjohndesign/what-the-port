@@ -2,13 +2,15 @@
 
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
-import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
+import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, PauseIcon, PlayIcon, VercelIcon } from './icons'
 import { type AppLanguageCode, type Localizer, localizer } from './languages'
 import { GET_IT, TERMINAL } from './sections'
 import {
   type Agent,
   type Server,
+  type ServerSort,
   SERVERS,
+  SERVER_SORTS,
   OTHER_APPS,
   OTHER_MEMORY,
   SYSTEM_MEMORY,
@@ -16,15 +18,17 @@ import {
   formatMemory,
   formatTotal,
   memoryChart,
+  pausedServer,
   portColor,
   serverResources,
+  sortServers,
   stoppedPorts,
 } from './servers'
 
 // A working copy of the WhatThePort popover. Scrolling picks the view for each
 // section; clicking around works like the real app until the next section.
 
-type View = { name: 'list' } | { name: 'detail'; port: string } | { name: 'cleanUp' }
+type View = { name: 'list' } | { name: 'detail'; port: string } | { name: 'cleanUp' } | { name: 'pauseMany' }
 
 const SECTION_VIEWS: View[] = [
   { name: 'list' },
@@ -41,11 +45,13 @@ const opensPopover = (section: number) => section !== GET_IT && section !== TERM
 
 const ramShare = (mb: number) => `${((mb / SYSTEM_MEMORY) * 100).toFixed(1)}%`
 
-const suggested = (running: string[]) =>
-  SERVERS.filter((s) => s.cleanUp?.suggested && running.includes(s.port)).map((s) => s.port)
+const suggested = (running: string[], paused: string[] = []) =>
+  SERVERS.filter((s) => s.cleanUp?.suggested && running.includes(s.port) && !paused.includes(s.port)).map((s) => s.port)
 
 export function useDemo(section: number) {
   const [running, setRunning] = useState(() => SERVERS.map((s) => s.port))
+  const [paused, setPaused] = useState<string[]>([])
+  const [sort, setSort] = useState<ServerSort>('port')
   const [view, setView] = useState<View>(SECTION_VIEWS[section])
   const [direction, setDirection] = useState(1)
   const [open, setOpen] = useState(opensPopover(section))
@@ -58,24 +64,26 @@ export function useDemo(section: number) {
     previous.current = section
     setView(SECTION_VIEWS[section])
     setOpen(opensPopover(section))
-    setSelected(suggested(running))
-    // `running` intentionally omitted: stopping a server shouldn't reset the view.
+    setSelected(suggested(running, paused))
+    // `running` and `paused` intentionally omitted: stopping a server shouldn't reset the view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section])
 
   const go = useCallback(
     (next: View, dir: number) => {
       setDirection(dir)
-      if (next.name === 'cleanUp') setSelected(suggested(running))
+      if (next.name === 'cleanUp') setSelected(suggested(running, paused))
+      if (next.name === 'pauseMany') setSelected([])
       setView(next)
     },
-    [running],
+    [running, paused],
   )
 
   const stop = useCallback((selectedPorts: string[]) => {
     const ports = stoppedPorts(SERVERS, selectedPorts)
     setRunning((current) => current.filter((port) => !ports.includes(port)))
     setSelected((current) => current.filter((port) => !ports.includes(port)))
+    setPaused((current) => current.filter((port) => !ports.includes(port)))
     setDirection(-1)
     setView((current) => {
       if (current.name === 'detail' && ports.includes(current.port)) {
@@ -88,7 +96,24 @@ export function useDemo(section: number) {
   const restartAll = useCallback(() => {
     const all = SERVERS.map((s) => s.port)
     setRunning(all)
+    setPaused([])
     setSelected(suggested(all))
+  }, [])
+
+  // Ports served by one process pause together, as they stop together.
+  const togglePause = useCallback((port: string) => {
+    const ports = stoppedPorts(SERVERS, [port])
+    setPaused((current) => (current.includes(port) ? current.filter((p) => !ports.includes(p)) : [...current, ...ports]))
+  }, [])
+
+  const pause = useCallback((ports: string[]) => {
+    const all = stoppedPorts(SERVERS, ports)
+    setPaused((current) => [...current, ...all.filter((port) => !current.includes(port))])
+  }, [])
+
+  const resume = useCallback((port: string) => {
+    const ports = stoppedPorts(SERVERS, [port])
+    setPaused((current) => current.filter((p) => !ports.includes(p)))
   }, [])
 
   const toggleSelected = useCallback((port: string) => {
@@ -99,15 +124,20 @@ export function useDemo(section: number) {
   const shown: View = view.name === 'detail' && !running.includes(view.port) ? { name: 'list' } : view
 
   return {
-    running: SERVERS.filter((s) => running.includes(s.port)),
+    running: SERVERS.filter((s) => running.includes(s.port)).map((s) => (paused.includes(s.port) ? pausedServer(s) : s)),
     view: shown,
     direction,
     open,
     setOpen,
     selected,
+    sort,
+    setSort,
     toggleSelected,
     go,
     stop,
+    togglePause,
+    pause,
+    resume,
     restartAll,
   }
 }
@@ -144,13 +174,11 @@ export function AppPopover({ demo, language = 'en' }: { demo: Demo; language?: A
     view.name === 'detail'
       ? `detail-${view.port}`
       : demo.running.length
-        ? view.name === 'cleanUp'
-          ? 'list'
-          : view.name
+        ? 'list'
         : 'empty'
 
   let content: ReactNode
-  if (view.name === 'detail') content = <DetailView demo={demo} server={SERVERS.find((s) => s.port === view.port)!} l={l} />
+  if (view.name === 'detail') content = <DetailView demo={demo} server={demo.running.find((s) => s.port === view.port)!} l={l} />
   else content = <ListView demo={demo} l={l} />
 
   return (
@@ -203,6 +231,8 @@ function useFlash() {
 function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
   const [flash, trigger] = useFlash()
   const cleaning = demo.view.name === 'cleanUp'
+  const pausing = demo.view.name === 'pauseMany'
+  const selecting = cleaning || pausing
   const [focus, setFocus] = useState<string | null>(null)
   const [hoveredRow, setHoveredRow] = useState<string | null>(null)
   const [cpuAll, setCpuAll] = useState(false)
@@ -210,17 +240,19 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
   const total = resources.memory
   const cpu = Math.round(resources.cpu / 8)
   const cleanUpCount = demo.running.filter((s) => s.cleanUp?.suggested).length
-  const chosen = demo.running.filter((s) => demo.selected.includes(s.port))
+  const pausable = demo.running.filter((s) => s.status !== 'paused')
+  const visible = sortServers(pausing ? pausable : demo.running, demo.sort)
+  const chosen = visible.filter((s) => demo.selected.includes(s.port))
   const freed = serverResources(chosen).memory
   const focusedServer = demo.running.find((s) => s.port === focus)
   const focusedApp = OTHER_APPS.find((app) => app.id === focus)
   const focusedMemory = focusedServer?.memory ?? focusedApp?.memory
   const [value, unit] = (
-    focusedServer ? formatMemory(focusedServer.memory) : formatTotal(focusedMemory ?? (cleaning ? freed : total))
+    focusedServer ? formatMemory(focusedServer.memory) : formatTotal(focusedMemory ?? (selecting ? freed : total))
   ).split(' ')
   const activePort = focus ?? hoveredRow
   const activate = (port: string) => {
-    if (cleaning) demo.toggleSelected(port)
+    if (selecting) demo.toggleSelected(port)
     else {
       setFocus(null)
       demo.go({ name: 'detail', port }, 1)
@@ -234,7 +266,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
           title={
             focusedServer
               ? `${focusedServer.name} :${focusedServer.port}`
-              : (focusedApp?.id === 'rest' ? l.text('Everything else') : (focusedApp?.name ?? l.text(cleaning ? 'Clean up' : 'Servers')))
+              : (focusedApp?.id === 'rest' ? l.text('Everything else') : (focusedApp?.name ?? l.text(cleaning ? 'Clean up' : pausing ? 'Pause multiple' : 'Servers')))
           }
         />
         <div className={styles.popDisplay}>
@@ -249,6 +281,12 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
                     ? l.format('%@ of RAM · CPU %@', ramShare(focusedMemory), `${focusedServer.cpu}%`)
                     : l.format('%@ of RAM', ramShare(focusedMemory))}
               </span>
+            ) : pausing ? (
+              chosen.length ? (
+                <span className={styles.mono}>{l.format('%@ of RAM · CPU %@', ramShare(freed), `${serverResources(chosen).cpu}%`)}</span>
+              ) : (
+                <span className={styles.t2}>{l.text('Pick servers to pause')}</span>
+              )
             ) : cleaning ? (
               <span className={styles.t2}>
                 {chosen.length ? l.format('freed by stopping %d', chosen.length) : l.text('Pick servers to stop')}
@@ -269,7 +307,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
           </span>
         </div>
         <div className={styles.shareBar} aria-label="Mac memory usage">
-          {demo.running.map((s) => (
+          {visible.map((s) => (
             <button
               key={s.port}
               type="button"
@@ -279,10 +317,10 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
               data-focused={activePort === s.port}
               data-dim={
                 (activePort !== null && activePort !== s.port) ||
-                (cleaning && !demo.selected.includes(s.port) && activePort !== s.port)
+                (selecting && !demo.selected.includes(s.port) && activePort !== s.port)
               }
               aria-label={`${s.name} :${s.port} · ${formatMemory(s.memory)}`}
-              aria-pressed={cleaning ? demo.selected.includes(s.port) : undefined}
+              aria-pressed={selecting ? demo.selected.includes(s.port) : undefined}
               onMouseEnter={() => setFocus(s.port)}
               onMouseLeave={() => setFocus(null)}
               onFocus={() => setFocus(s.port)}
@@ -327,6 +365,24 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
         </div>
       </div>
 
+      {visible.length > 0 && (
+        <div className={styles.sortDivider}>
+          <i />
+          <label className={styles.sortMenu} title={l.text('Sort servers')}>
+            {l.text(SERVER_SORTS.find(([id]) => id === demo.sort)![1])}
+            <Chevron direction="down" />
+            <select aria-label={l.text('Sort servers')} value={demo.sort} onChange={(e) => demo.setSort(e.target.value as ServerSort)}>
+              {SERVER_SORTS.map(([id, label]) => (
+                <option key={id} value={id}>
+                  {l.text(label)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <i />
+        </div>
+      )}
+
       <div className={`${styles.popSection} ${styles.rowList}`}>
         {!demo.running.length && (
           <div className={styles.emptyState}>
@@ -337,18 +393,18 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             </span>
           </div>
         )}
-        {demo.running.map((s) => (
+        {visible.map((s) => (
           <div
             key={s.port}
             role="button"
             tabIndex={0}
             className={styles.serverRow}
             data-interactive
-            data-dim={s.status === 'idle' || (focus !== null && focus !== s.port)}
+            data-dim={s.status === 'idle' || (s.status === 'paused' && hoveredRow !== s.port) || (focus !== null && focus !== s.port)}
             data-focused={focus === s.port}
-            data-cleaning={cleaning}
-            aria-pressed={cleaning ? demo.selected.includes(s.port) : undefined}
-            aria-label={`${cleaning ? 'Select' : 'View'} ${s.branch} on port ${s.port}`}
+            data-cleaning={selecting}
+            aria-pressed={selecting ? demo.selected.includes(s.port) : undefined}
+            aria-label={`${selecting ? 'Select' : 'View'} ${s.branch} on port ${s.port}`}
             onMouseEnter={() => setHoveredRow(s.port)}
             onMouseLeave={() => setHoveredRow(null)}
             onClick={() => activate(s.port)}
@@ -359,7 +415,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
               }
             }}
           >
-            {cleaning && (
+            {selecting && (
               <span className={styles.checkbox} data-checked={demo.selected.includes(s.port)} aria-hidden>
                 <svg width="10" height="10" viewBox="0 0 10 10">
                   <path
@@ -405,7 +461,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
                 strokeDasharray={s.status === 'idle' ? '2 3' : undefined}
               />
             </svg>
-            {!cleaning && (
+            {!selecting && (
               <span className={styles.rowActions}>
                 <button
                   type="button"
@@ -417,6 +473,18 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
                   }}
                 >
                   <OpenIcon />
+                </button>
+                <button
+                  type="button"
+                  className={styles.rowAction}
+                  aria-label={l.text(s.status === 'paused' ? 'Resume' : 'Pause')}
+                  title={l.text(s.status === 'paused' ? 'Resume' : 'Pause')}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    demo.togglePause(s.port)
+                  }}
+                >
+                  {s.status === 'paused' ? <PlayIcon color="rgb(245 245 247 / 80%)" /> : <PauseIcon color="rgb(245 245 247 / 80%)" />}
                 </button>
                 <button
                   type="button"
@@ -446,6 +514,23 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             Start the demo servers again
           </button>
         </div>
+      ) : pausing ? (
+        <div className={`${styles.popSection} ${styles.actions}`}>
+          <button type="button" className={styles.secondaryAction} onClick={() => demo.go({ name: 'list' }, -1)}>
+            {l.text('Cancel')}
+          </button>
+          <button
+            type="button"
+            className={styles.primaryAction}
+            disabled={!chosen.length}
+            onClick={() => {
+              demo.pause(chosen.map((s) => s.port))
+              demo.go({ name: 'list' }, -1)
+            }}
+          >
+            {chosen.length ? l.format('Pause %d %@', chosen.length, l.counted('server', 'servers', chosen.length)) : l.text('Pause servers')}
+          </button>
+        </div>
       ) : cleaning ? (
         <div className={`${styles.popSection} ${styles.actions}`}>
           <button type="button" className={styles.secondaryAction} onClick={() => demo.go({ name: 'list' }, -1)}>
@@ -467,21 +552,27 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
         </div>
       ) : (
         <div className={`${styles.popSection} ${styles.popFooter}`}>
-          <button type="button" className={styles.chip} onClick={() => demo.go({ name: 'cleanUp' }, 1)}>
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-              <path
-                d="M8.5 1.5 6 7M3 8.5h7l.8 4H2.2L3 8.5Z"
-                fill="none"
-                stroke="#F5F5F7"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path d="M5 10.5v2M7.5 10.5v2" fill="none" stroke="#F5F5F7" strokeWidth="1.1" strokeLinecap="round" />
-            </svg>
-            <span className={styles.popTitle}>{l.text('Clean up')}</span>
-            {cleanUpCount > 0 && <span className={styles.chipCount}>{cleanUpCount}</span>}
-          </button>
+          <span className={styles.footerActions}>
+            <button type="button" className={styles.chip} onClick={() => demo.go({ name: 'cleanUp' }, 1)}>
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+                <path
+                  d="M8.5 1.5 6 7M3 8.5h7l.8 4H2.2L3 8.5Z"
+                  fill="none"
+                  stroke="#F5F5F7"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path d="M5 10.5v2M7.5 10.5v2" fill="none" stroke="#F5F5F7" strokeWidth="1.1" strokeLinecap="round" />
+              </svg>
+              <span className={styles.popTitle}>{l.text('Clean up')}</span>
+              {cleanUpCount > 0 && <span className={styles.chipCount}>{cleanUpCount}</span>}
+            </button>
+            <button type="button" className={styles.chip} disabled={!pausable.length} onClick={() => demo.go({ name: 'pauseMany' }, 1)}>
+              <PauseIcon />
+              <span className={styles.popTitle}>{l.text('Pause multiple')}</span>
+            </button>
+          </span>
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
             <path
               d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
@@ -506,6 +597,8 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
   const [restarted, setRestarted] = useState(false)
   const [flash, trigger] = useFlash()
   const [hover, setHover] = useState<number | null>(null)
+  const isPaused = server.status === 'paused'
+  const worktreeDeleted = SERVERS.find((s) => s.port === server.port)?.status === 'idle'
   const memory = memoryChart(server)
   const bars = cpuBars(server)
   const sample = hover === null ? null : memory.points[Math.round(hover * (memory.points.length - 1))]
@@ -564,21 +657,26 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
             <span className={styles.t3}>
               {restarting
                 ? 'restarting…'
-                : restarted
-                  ? l.format('Running for %@', l.duration(0))
-                  : l.format('Running for %@', server.lines(l).running)}
+                : isPaused
+                  ? l.text('Paused')
+                  : restarted
+                    ? l.format('Running for %@', l.duration(0))
+                    : l.format('Running for %@', server.lines(l).running)}
             </span>
             <span className={styles.popDisplay}>
               <button
                 type="button"
                 className={styles.control}
                 aria-label="Restart"
-                disabled={server.status === 'idle' || restarting}
+                disabled={worktreeDeleted || restarting}
                 title={
-                  server.status === 'idle' ? 'Working directory no longer exists' : l.text('Restart with the same command')
+                  worktreeDeleted ? 'Working directory no longer exists' : l.text('Restart with the same command')
                 }
                 data-spinning={restarting}
-                onClick={() => setRestarting(true)}
+                onClick={() => {
+                  demo.resume(server.port)
+                  setRestarting(true)
+                }}
               >
                 <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden>
                   <path
@@ -597,6 +695,15 @@ function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Locali
                     strokeLinejoin="round"
                   />
                 </svg>
+              </button>
+              <button
+                type="button"
+                className={styles.control}
+                aria-label={l.text(isPaused ? 'Resume' : 'Pause')}
+                title={l.text(isPaused ? 'Resume' : 'Pause')}
+                onClick={() => demo.togglePause(server.port)}
+              >
+                {isPaused ? <PlayIcon /> : <PauseIcon />}
               </button>
               <button
                 type="button"

@@ -14,6 +14,7 @@ enum Usage {
         case openBrowser = "open-browser"
         case openEditor = "open-editor"
         case stop
+        case pause
         case restart
         case cleanUp = "clean-up"
         case autoCleanUp = "auto-clean-up"

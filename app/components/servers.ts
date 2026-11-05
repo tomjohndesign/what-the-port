@@ -16,6 +16,7 @@ export type Server = {
   cpu: number // % of one core
   cpuNote: string
   uptime: string
+  startedMinutesAgo: number
   context: { agent?: Agent; text: string; tone?: 'amber' }
   session?: { agent: Agent; title: string; id: string }
   chart: 'steady' | 'leaking' | 'flat'
@@ -37,6 +38,7 @@ export const SERVERS: Server[] = [
     cpu: 12,
     cpuNote: 'spikes on rebuild',
     uptime: 'up 3h 12m',
+    startedMinutesAgo: 192,
     context: { agent: 'claude', text: 'what the port · up 3h' },
     lines: (l) => ({ context: `what the port · ${l.format('up %@', l.duration(180, true))}`, running: l.duration(192) }),
     session: { agent: 'claude', title: 'Dot-grid menu bar icon', id: '68c8fda6' },
@@ -65,6 +67,7 @@ export const SERVERS: Server[] = [
     cpu: 2,
     cpuNote: 'quiet',
     uptime: 'up 1d 4h',
+    startedMinutesAgo: 1680,
     context: { text: 'tomjohn.design · up 1d' },
     lines: (l) => ({ context: `tomjohn.design · ${l.format('up %@', l.duration(1680, true))}`, running: l.duration(1680) }),
     chart: 'steady',
@@ -91,6 +94,7 @@ export const SERVERS: Server[] = [
     cpu: 0,
     cpuNote: 'idle since 8:31',
     uptime: 'idle 5h',
+    startedMinutesAgo: 300,
     context: { agent: 'codex', text: 'paper plugins · idle 5h' },
     lines: (l) => ({
       context: `paper plugins · ${l.format('idle %@', l.duration(300, true))}`,
@@ -123,6 +127,7 @@ export const SERVERS: Server[] = [
     cpu: 34,
     cpuNote: 'climbing since 1:14',
     uptime: 'up 2h 40m',
+    startedMinutesAgo: 160,
     context: { text: '+1.1 GB in 10 min', tone: 'amber' },
     lines: (l) => ({
       context: l.format('+%@ in %@', '1.1 GB', l.text('10 min')),
@@ -157,6 +162,7 @@ export const SERVERS: Server[] = [
     cpu: 0,
     cpuNote: 'no requests in 2d',
     uptime: 'idle 2d',
+    startedMinutesAgo: 2880,
     context: { text: 'Worktree deleted · idle 2d' },
     lines: (l) => ({
       context: l.format('Worktree deleted · idle %@', l.duration(2880, true)),
@@ -209,6 +215,35 @@ export function serverResources(servers: Server[]) {
 export function stoppedPorts(servers: Server[], selected: string[]) {
   const targets = new Set(servers.filter((s) => selected.includes(s.port)).flatMap((s) => s.processes.map((p) => p.pid)))
   return servers.filter((s) => s.processes.some((p) => targets.has(p.pid))).map((s) => s.port)
+}
+
+export type ServerSort = 'usage' | 'recency' | 'name' | 'port'
+export const SERVER_SORTS: [ServerSort, string][] = [['usage', 'Usage'], ['recency', 'Recency'], ['name', 'Name'], ['port', 'Port']]
+
+// Ties fall back to port, as in ServerSort in Server.swift.
+export function sortServers(servers: Server[], sort: ServerSort) {
+  const byPort = (a: Server, b: Server) => Number(a.port) - Number(b.port)
+  return [...servers].sort((a, b) => {
+    if (sort === 'usage') return b.memory - a.memory || byPort(a, b)
+    if (sort === 'recency') return a.startedMinutesAgo - b.startedMinutesAgo || byPort(a, b)
+    if (sort === 'name') return a.branch.localeCompare(b.branch, undefined, { numeric: true }) || byPort(a, b)
+    return byPort(a, b)
+  })
+}
+
+// A paused server is frozen: no CPU, no warnings, and Clean up leaves it alone.
+export function pausedServer(server: Server): Server {
+  const project = server.name.replaceAll('-', ' ')
+  return {
+    ...server,
+    status: 'paused',
+    cpu: 0,
+    uptime: 'Paused',
+    context: { agent: server.context.agent, text: `${project} · paused` },
+    cleanUp: undefined,
+    lines: (l) => ({ ...server.lines(l), context: `${project} · ${l.text('paused')}`, note: undefined }),
+    processes: server.processes.map((process) => ({ ...process, cpu: 0 })),
+  }
 }
 
 // Stable identities: stopping a server must not recolor the remaining ports.
@@ -275,6 +310,10 @@ const CPU = [
   2.5, 2.3, 3.1, 4.6, 3.5, 2.9, 3.3, 3.5, 1.1, 4.4, 3.9, 4.3, 4,
 ]
 
+// A paused server keeps its history; only the latest reading drops to zero.
 export function cpuBars(server: Server) {
-  return CPU.map((h) => Math.min(100, (h / CPU[CPU.length - 1]) * server.cpu))
+  const cpu = SERVERS.find((s) => s.port === server.port)?.cpu ?? server.cpu
+  const bars = CPU.map((h) => Math.min(100, (h / CPU[CPU.length - 1]) * cpu))
+  if (server.status === 'paused') bars[bars.length - 1] = 0
+  return bars
 }

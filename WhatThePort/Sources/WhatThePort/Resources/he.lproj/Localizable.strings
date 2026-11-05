@@ -170,8 +170,19 @@
 "Opens when you sign in" = "נפתח בהתחברות";
 "Other apps" = "יישומים אחרים";
 "Over %@ GB" = "מעל %@ GB";
+"Pause" = "השהיה";
+"Pause %d %@" = "השהיית %d %@";
+"Pause multiple" = "השהיית כמה";
+"Pause servers" = "השהיית שרתים";
+"Paused" = "מושהה";
 "Paste it anywhere to share WhatThePort." = "הדביקו אותו בכל מקום כדי לשתף את WhatThePort.";
 "Pick servers to stop" = "בחירת שרתים לעצירה";
+"Pick servers to pause" = "בחירת שרתים להשהיה";
+"Name" = "שם";
+"Port" = "פורט";
+"Recency" = "אחרונים";
+"Sort servers" = "מיון שרתים";
+"Usage" = "שימוש";
 "Ports" = "פורטים";
 "Ports & processes" = "פורטים ותהליכים";
 "Preview" = "תצוגה מקדימה";
@@ -192,6 +203,7 @@
 "Restart WhatThePort to apply the language change." = "יש להפעיל מחדש את WhatThePort כדי לשנות שפה.";
 "Restart with the same command" = "הפעלה מחדש עם אותה פקודה";
 "Restart. It will run outside the %@ session." = "הפעלה מחדש. השרת יפעל מחוץ להפעלת %@.";
+"Resume" = "המשך";
 "Resume in %@" = "המשך ב־%@";
 "Resume sessions in" = "המשך הפעלות באמצעות";
 "Reveal %@ workspace" = "הצגת סביבת העבודה %@";
@@ -302,3 +314,4 @@
 "Changes apply immediately." = "השינויים חלים מיד.";
 "servers (few)" = "שרתים";
 "tools (few)" = "כלים";
+"paused" = "מושהה";

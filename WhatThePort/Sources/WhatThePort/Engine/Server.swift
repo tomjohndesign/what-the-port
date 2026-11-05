@@ -19,6 +19,7 @@ enum ServerStatus {
     case running
     case attention
     case idle
+    case paused
 }
 
 enum CleanUpReason: Equatable {
@@ -26,6 +27,29 @@ enum CleanUpReason: Equatable {
     case idle(TimeInterval)
     case longRunning(TimeInterval)
     case leaking(UInt64)
+}
+
+/// How the Servers page orders its rows. Ties fall back to port.
+enum ServerSort: String, CaseIterable, Identifiable {
+    case usage, recency, name, port
+
+    var id: String { rawValue }
+
+    func sorted(_ servers: [Server]) -> [Server] {
+        servers.sorted { a, b in
+            switch self {
+            case .usage where a.memory != b.memory:
+                return a.memory > b.memory
+            case .recency where a.startedAt != b.startedAt:
+                return (a.startedAt ?? .distantPast) > (b.startedAt ?? .distantPast)
+            case .name:
+                let order = (a.project.branch ?? a.project.name).localizedStandardCompare(b.project.branch ?? b.project.name)
+                return order == .orderedSame ? a.port < b.port : order == .orderedAscending
+            default:
+                return a.port < b.port
+            }
+        }
+    }
 }
 
 /// The Pane terminal a server was started from.
@@ -67,12 +91,17 @@ struct Server: Identifiable {
     var processes: [ServerProcess]
     /// Identity of every process in the tree, so we never signal a reused pid.
     var processStarts: [pid_t: Date]
+    /// What Pause freezes: `processStarts`, except a launcher a terminal is waiting on.
+    var pauseTargets: [pid_t: Date]
     var memory: UInt64
     var cpu: Double
     var connections: Int
     var history: [Sample]
     var lastActive: Date
     var isProtected: Bool
+    /// Read from the process itself, so it also covers Ctrl-Z, and the menu bar
+    /// app and `wtp` always agree.
+    var isPaused: Bool
 
     var id: Int { port }
     var url: URL { URL(string: "http://localhost:\(port)")! }
@@ -92,6 +121,7 @@ struct Server: Identifiable {
     }
 
     func status(alertThreshold: UInt64) -> ServerStatus {
+        if isPaused { return .paused }
         if !cwdExists { return .idle }
         if memory >= alertThreshold || isLeaking() { return .attention }
         if idleFor > 60 * 60 { return .idle }

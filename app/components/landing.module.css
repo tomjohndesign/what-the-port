@@ -1205,6 +1205,49 @@
   padding: 12px;
 }
 
+.footerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.sortDivider {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 0;
+}
+
+.sortDivider i {
+  height: 0.5px;
+  background: #ffffff14;
+}
+
+.sortDivider i:first-child { flex-grow: 1; }
+.sortDivider i:last-child { width: 10px; }
+
+.sortDivider + .popSection { border-top: 0; }
+
+.sortMenu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 14px;
+  color: #ebebf566;
+  white-space: nowrap;
+}
+
+.sortMenu select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 13px;
+}
+
 .chip {
   cursor: default;
   transition: background-color 0.12s ease;

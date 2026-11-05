@@ -27,7 +27,7 @@ export function DotGrid({ state = 'rest', size = 18 }: { state?: GridState; size
   )
 }
 
-export type ColonState = 'on' | 'amber' | 'idle'
+export type ColonState = 'on' | 'amber' | 'idle' | 'paused'
 
 // The two status dots that prefix every port.
 export function Colon({
@@ -48,6 +48,10 @@ export function Colon({
     style.boxShadow = `${color ?? AMBER} 0 0 5px`
   }
   if (state === 'idle') style.boxShadow = `${color ?? '#EBEBF580'} 0 0 0 1.1px inset`
+  if (state === 'paused') {
+    style.backgroundColor = color ?? '#F5F5F7'
+    style.opacity = 0.4
+  }
   return (
     <span style={{ display: 'flex', flexDirection: 'column', gap, width: dot === 4 ? 9 : undefined, flexShrink: 0 }}>
       <span style={style} />
@@ -122,6 +126,23 @@ export function OpenIcon({ color = '#F5F5F7' }: { color?: string }) {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>
       <path d="M4 2.5h5.5V8M9.5 2.5 2.5 9.5" fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function PauseIcon({ color = '#F5F5F7' }: { color?: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>
+      <rect x="2.5" y="2" width="2.6" height="8" rx="0.8" fill={color} />
+      <rect x="6.9" y="2" width="2.6" height="8" rx="0.8" fill={color} />
+    </svg>
+  )
+}
+
+export function PlayIcon({ color = '#F5F5F7' }: { color?: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ flexShrink: 0 }}>
+      <path d="M3.5 2.5a.6.6 0 0 1 .9-.5l5.2 3.5a.6.6 0 0 1 0 1L4.4 10a.6.6 0 0 1-.9-.5v-7Z" fill={color} />
     </svg>
   )
 }

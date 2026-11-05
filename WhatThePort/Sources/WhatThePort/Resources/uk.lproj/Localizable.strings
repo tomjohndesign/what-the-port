@@ -170,8 +170,19 @@
 "Opens when you sign in" = "Відкривається під час входу";
 "Other apps" = "Інші програми";
 "Over %@ GB" = "Понад %@ ГБ";
+"Pause" = "Призупинити";
+"Pause %d %@" = "Призупинити %d %@";
+"Pause multiple" = "Призупинити кілька";
+"Pause servers" = "Призупинити сервери";
+"Paused" = "Призупинено";
 "Paste it anywhere to share WhatThePort." = "Вставте його будь-де, щоб поділитися WhatThePort.";
 "Pick servers to stop" = "Виберіть сервери для зупинки";
+"Pick servers to pause" = "Виберіть сервери для призупинення";
+"Name" = "Назва";
+"Port" = "Порт";
+"Recency" = "Нещодавні";
+"Sort servers" = "Сортувати сервери";
+"Usage" = "Використання";
 "Ports" = "Порти";
 "Ports & processes" = "Порти й процеси";
 "Preview" = "Перегляд";
@@ -192,6 +203,7 @@
 "Restart WhatThePort to apply the language change." = "Перезапустіть WhatThePort, щоб застосувати зміну мови.";
 "Restart with the same command" = "Перезапустити тією самою командою";
 "Restart. It will run outside the %@ session." = "Перезапустити. Сервер працюватиме поза сеансом %@.";
+"Resume" = "Продовжити";
 "Resume in %@" = "Продовжити в %@";
 "Resume sessions in" = "Продовжувати сеанси в";
 "Reveal %@ workspace" = "Показати робочий простір %@";
@@ -302,3 +314,4 @@
 "Changes apply immediately." = "Зміни застосовуються одразу.";
 "servers (few)" = "сервери";
 "tools (few)" = "інструменти";
+"paused" = "призупинено";

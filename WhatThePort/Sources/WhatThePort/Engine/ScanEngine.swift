@@ -121,10 +121,19 @@ final class ScanEngine: @unchecked Sendable {
             }
             let launcher = launchChain.reversed().first { Self.hasIntactArguments(args(for: $0)) } ?? root
 
+            // A shell notices when the command it's waiting on stops: it prints
+            // "suspended" and takes the terminal back, so Ctrl-C no longer reaches
+            // the server. A launcher like `npm run dev` only waits, so it can keep running.
+            var pauseTargets = starts
+            if root.pid != listener.pid, let parent = processes[root.ppid], Self.shells.contains(parent.comm) {
+                pauseTargets[root.pid] = nil
+            }
+
             let key = "\(socket.port)-\(root.pid)-\(root.startTime.timeIntervalSince1970)"
             seenKeys.insert(key)
             let connections = sockets.inboundConnections[socket.port] ?? 0
-            if cpuPercent >= 2 || connections > 0 || lastActive[key] == nil {
+            // Time spent paused doesn't count as idle.
+            if listener.isStopped || cpuPercent >= 2 || connections > 0 || lastActive[key] == nil {
                 lastActive[key] = now
             }
 
@@ -151,12 +160,14 @@ final class ScanEngine: @unchecked Sendable {
                 agent: agents.resolve(environment: environment, cwd: cwd, claude: config.linkClaude, codex: config.linkCodex),
                 processes: nodes,
                 processStarts: starts,
+                pauseTargets: pauseTargets,
                 memory: memory,
                 cpu: cpuPercent,
                 connections: connections,
                 history: history,
                 lastActive: lastActive[key] ?? now,
-                isProtected: config.protected.contains(socket.command)
+                isProtected: config.protected.contains(socket.command),
+                isPaused: listener.isStopped
             ))
         }
 

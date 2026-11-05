@@ -167,8 +167,9 @@ final class ServerMonitor: ObservableObject {
 
     func status(of server: Server) -> ServerStatus { server.status(alertThreshold: alertThreshold) }
 
+    /// A paused server was kept on purpose, so it's never suggested or auto-stopped.
     func cleanUpReason(for server: Server) -> CleanUpReason? {
-        guard !server.isProtected, cleanUpMode != .off else { return nil }
+        guard !server.isProtected, !server.isPaused, cleanUpMode != .off else { return nil }
         if !server.cwdExists {
             return defaults.bool(forKey: Preferences.cleanUpDeletedWorktree) ? .worktreeDeleted : nil
         }
@@ -224,6 +225,19 @@ final class ServerMonitor: ObservableObject {
 
     func restart(_ server: Server) {
         ProcessControl.restart(server) { [weak self] _ in self?.scan() }
+    }
+
+    func pause(_ servers: [Server]) {
+        for server in servers where !server.isPaused { togglePause(server) }
+    }
+
+    func togglePause(_ server: Server) {
+        if server.isPaused { ProcessControl.resume(server) } else { ProcessControl.pause(server) }
+        // Show it now rather than at the next scan. Ports served by one process pause together.
+        for index in servers.indices where servers[index].rootPid == server.rootPid {
+            servers[index].isPaused = !server.isPaused
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.scan() }
     }
 
     // MARK: - Ports and processes

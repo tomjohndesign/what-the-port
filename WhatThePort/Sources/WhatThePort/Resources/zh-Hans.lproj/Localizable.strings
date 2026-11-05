@@ -170,8 +170,19 @@
 "Opens when you sign in" = "登录时自动打开";
 "Other apps" = "其他应用";
 "Over %@ GB" = "超过 %@ GB";
+"Pause" = "暂停";
+"Pause %d %@" = "暂停 %d 个%@";
+"Pause multiple" = "暂停多个";
+"Pause servers" = "暂停服务器";
+"Paused" = "已暂停";
 "Paste it anywhere to share WhatThePort." = "粘贴到任意位置即可分享 WhatThePort。";
 "Pick servers to stop" = "选择要停止的服务器";
+"Pick servers to pause" = "选择要暂停的服务器";
+"Name" = "名称";
+"Port" = "端口";
+"Recency" = "最近启动";
+"Sort servers" = "排序服务器";
+"Usage" = "用量";
 "Ports" = "端口";
 "Ports & processes" = "端口与进程";
 "Preview" = "预览";
@@ -192,6 +203,7 @@
 "Restart WhatThePort to apply the language change." = "重启 WhatThePort 后生效。";
 "Restart with the same command" = "使用原命令重启";
 "Restart. It will run outside the %@ session." = "重启后将在 %@ 会话之外运行。";
+"Resume" = "恢复";
 "Resume in %@" = "在 %@ 中恢复";
 "Resume sessions in" = "会话恢复终端";
 "Reveal %@ workspace" = "显示 %@ 工作区";
@@ -302,3 +314,4 @@
 "Changes apply immediately." = "更改立即生效。";
 "servers (few)" = "服务器";
 "tools (few)" = "工具";
+"paused" = "已暂停";

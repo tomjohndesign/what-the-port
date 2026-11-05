@@ -11,23 +11,32 @@ struct ServersView: View {
     /// Row under the pointer; lights up its bar segment without changing the header.
     @State private var hoveredRow: Int?
     private var focusedPort: Int? { if case .server(let port) = focus { return port } else { return nil } }
-    /// Clean up is a mode of this page: checkboxes slide in and the footer
-    /// turns into Cancel / Stop.
-    @State private var isCleaning: Bool
+    /// Clean up and Pause multiple are modes of this page: checkboxes slide in
+    /// and the footer turns into Cancel / Stop or Pause.
+    private enum SelectionMode { case cleanUp, pause }
+    @State private var mode: SelectionMode?
+    private var isCleaning: Bool { mode == .cleanUp }
+    @AppStorage(Preferences.serverSort) private var sort = ServerSort.port
+    /// Rows hold still under the pointer, so a re-sort can't move Stop onto another server.
+    @State private var heldOrder: [Int]?
     @State private var selection: Set<Int> = []
 
     init(monitor: ServerMonitor, startCleaning: Bool = false, openServer: @escaping (Server) -> Void, openSettings: @escaping () -> Void) {
         self.monitor = monitor
         self.openServer = openServer
         self.openSettings = openSettings
-        _isCleaning = State(initialValue: startCleaning)
+        _mode = State(initialValue: startCleaning ? .cleanUp : nil)
         _selection = State(initialValue: startCleaning ? Self.suggestedSelection(monitor) : [])
     }
 
     var body: some View {
         VStack(spacing: 0) {
             summary
-            SectionDivider()
+            if visibleServers.isEmpty {
+                SectionDivider()
+            } else {
+                SortDivider(sort: $sort)
+            }
             if visibleServers.isEmpty {
                 emptyState
             } else if visibleServers.count > maxVisibleRows {
@@ -38,11 +47,26 @@ struct ServersView: View {
             SectionDivider()
             footer
         }
+        .onChange(of: hoveredRow != nil || focus != nil) { _, holding in
+            heldOrder = holding ? visibleServers.map(\.port) : nil
+        }
     }
 
-    /// Protected processes (databases) can't be stopped from Clean up, so hide them there.
+    /// Protected processes (databases) can't be stopped from Clean up or paused
+    /// in bulk, so hide them there.
     private var visibleServers: [Server] {
-        isCleaning ? monitor.servers.filter { !$0.isProtected } : monitor.servers
+        let servers: [Server]
+        switch mode {
+        case .cleanUp: servers = monitor.servers.filter { !$0.isProtected }
+        case .pause: servers = pausableServers
+        case nil: servers = monitor.servers
+        }
+        guard let heldOrder else { return sort.sorted(servers) }
+        return servers.sorted { (heldOrder.firstIndex(of: $0.port) ?? .max) < (heldOrder.firstIndex(of: $1.port) ?? .max) }
+    }
+
+    private var pausableServers: [Server] {
+        monitor.servers.filter { !$0.isProtected && !$0.isPaused }
     }
 
     private var selectedServers: [Server] {
@@ -65,8 +89,8 @@ struct ServersView: View {
                 summaryDetail
             }
             MemoryShareBar(servers: visibleServers, monitor: monitor, focus: $focus, highlightedPort: hoveredRow,
-                           selection: isCleaning ? selection : nil) { server in
-                if isCleaning { toggle(server.port) } else { openServer(server) }
+                           selection: mode != nil ? selection : nil) { server in
+                if mode != nil { toggle(server.port) } else { openServer(server) }
             }
             .frame(height: 16)
             MemoryLegend(monitor: monitor)
@@ -101,7 +125,7 @@ struct ServersView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 20)
         case nil:
-            PageHeader(title: isCleaning ? L10n.text("Clean up") : L10n.text("Servers"))
+            PageHeader(title: L10n.text(mode == .cleanUp ? "Clean up" : mode == .pause ? "Pause multiple" : "Servers"))
         }
     }
 
@@ -111,7 +135,7 @@ struct ServersView: View {
         case .app(let id): return Format.bytes(monitor.otherApps.first { $0.id == id }?.memory ?? 0)
         case .rest: return Format.total(MemoryBreakdown(monitor: monitor).everythingElse)
         case nil:
-            if isCleaning { return Format.total(ServerResources(selectedServers).memory) }
+            if mode != nil { return Format.total(ServerResources(selectedServers).memory) }
             return Format.total(monitor.totalMemory)
         }
     }
@@ -131,7 +155,15 @@ struct ServersView: View {
         case .rest:
             Text(L10n.text("System and smaller apps")).font(Theme.body).foregroundStyle(Theme.text2)
         case nil:
-            if isCleaning {
+            if mode == .pause {
+                if selectedServers.isEmpty {
+                    Text(L10n.text("Pick servers to pause")).font(Theme.body).foregroundStyle(Theme.text2)
+                } else {
+                    let selected = ServerResources(selectedServers)
+                    Text(L10n.format("%@ of RAM · CPU %@", share(selected.memory, of: ram), Format.percent(selected.cpu)))
+                        .font(Theme.mono).foregroundStyle(Theme.text2)
+                }
+            } else if isCleaning {
                 Text(selection.isEmpty ? L10n.text("Pick servers to stop") : L10n.format("freed by stopping %d", selectedServers.count))
                     .font(Theme.body).foregroundStyle(Theme.text2)
             } else {
@@ -150,12 +182,12 @@ struct ServersView: View {
                 ServerRow(server: server, monitor: monitor,
                           isFocused: focusedPort == server.port,
                           isDimmed: focus != nil && focusedPort != server.port,
-                          cleaning: isCleaning ? CleaningState(isSelected: selection.contains(server.port),
-                                                               reason: monitor.cleanUpReason(for: server)) : nil,
+                          selecting: mode != nil ? RowSelection(isSelected: selection.contains(server.port),
+                                                                reason: isCleaning ? monitor.cleanUpReason(for: server) : nil) : nil,
                           onHover: { hovering in
                               if hovering { hoveredRow = server.port } else if hoveredRow == server.port { hoveredRow = nil }
                           },
-                          open: { isCleaning ? toggle(server.port) : openServer(server) })
+                          open: { mode != nil ? toggle(server.port) : openServer(server) })
             }
         }
         .padding(6)
@@ -178,30 +210,33 @@ struct ServersView: View {
     // MARK: - Footer
 
     @ViewBuilder private var footer: some View {
-        if isCleaning {
+        if let mode {
             HStack(spacing: 8) {
-                Button(L10n.text("Cancel")) { setCleaning(false) }
+                Button(L10n.text("Cancel")) { setMode(nil) }
                     .buttonStyle(PillButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Button {
-                    Usage.record(.cleanUp)
-                    for server in selectedServers { monitor.stop(server) }
-                    setCleaning(false)
+                    switch mode {
+                    case .cleanUp:
+                        Usage.record(.cleanUp)
+                        for server in selectedServers { monitor.stop(server) }
+                    case .pause:
+                        Usage.record(.pause)
+                        monitor.pause(selectedServers)
+                    }
+                    setMode(nil)
                 } label: {
-                    Text(selection.isEmpty
-                         ? L10n.text("Stop servers")
-                         : L10n.format("Stop %d %@ · free %@", selectedServers.count, L10n.counted("server", "servers", count: selectedServers.count), Format.bytesString(ServerResources(selectedServers).memory)))
-                        .frame(maxWidth: .infinity)
+                    Text(selectionActionLabel(mode)).frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PillButtonStyle(kind: .destructive))
-                .disabled(selection.isEmpty)
-                .opacity(selection.isEmpty ? 0.5 : 1)
+                .buttonStyle(PillButtonStyle(kind: mode == .cleanUp ? .destructive : .primary))
+                .disabled(selectedServers.isEmpty)
+                .opacity(selectedServers.isEmpty ? 0.5 : 1)
             }
             .padding(12)
             .transition(.opacity)
         } else {
-            HStack {
-                Button { setCleaning(true) } label: {
+            HStack(spacing: 8) {
+                Button { setMode(.cleanUp) } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "paintbrush")
                             .font(.system(size: 11, weight: .medium))
@@ -214,6 +249,17 @@ struct ServersView: View {
                 }
                 .buttonStyle(PillButtonStyle())
                 .disabled(monitor.servers.isEmpty)
+
+                Button { setMode(.pause) } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "pause.fill")
+                            .font(.system(size: 11, weight: .medium))
+                        Text(L10n.text("Pause multiple"))
+                    }
+                }
+                .buttonStyle(PillButtonStyle())
+                .disabled(pausableServers.isEmpty)
+                .opacity(pausableServers.isEmpty ? 0.5 : 1)
 
                 Spacer()
 
@@ -233,12 +279,23 @@ struct ServersView: View {
         }
     }
 
-    // MARK: - Clean up mode
+    // MARK: - Selection modes
 
-    private func setCleaning(_ cleaning: Bool) {
+    private func setMode(_ next: SelectionMode?) {
         withAnimation(.snappy(duration: 0.25)) {
-            selection = cleaning ? Self.suggestedSelection(monitor) : []
-            isCleaning = cleaning
+            selection = next == .cleanUp ? Self.suggestedSelection(monitor) : []
+            mode = next
+        }
+    }
+
+    private func selectionActionLabel(_ mode: SelectionMode) -> String {
+        let count = selectedServers.count
+        let noun = L10n.counted("server", "servers", count: count)
+        switch mode {
+        case .cleanUp:
+            return count == 0 ? L10n.text("Stop servers") : L10n.format("Stop %d %@ · free %@", count, noun, Format.bytesString(ServerResources(selectedServers).memory))
+        case .pause:
+            return count == 0 ? L10n.text("Pause servers") : L10n.format("Pause %d %@", count, noun)
         }
     }
 
@@ -280,9 +337,61 @@ private struct CPUToggle: View {
     }
 }
 
+/// The line above the rows, with the sort menu set into it in small text.
+private struct SortDivider: View {
+    @Binding var sort: ServerSort
+    private let gap: CGFloat = 6
+
+    var body: some View {
+        HStack(spacing: gap) {
+            SectionDivider()
+            Menu {
+                Picker(selection: $sort) {
+                    ForEach(ServerSort.allCases) { option in
+                        Text(option.label).tag(option)
+                    }
+                } label: {
+                    EmptyView()
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            } label: {
+                HStack(spacing: 3) {
+                    Text(sort.label).font(Theme.caption).foregroundStyle(Theme.text3)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(Theme.text3)
+                }
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help(L10n.text("Sort servers"))
+            SectionDivider().frame(width: Theme.inset - gap)
+        }
+        // Takes up no more room than the plain divider it replaces.
+        .frame(height: 14)
+        .padding(.vertical, -7)
+        .zIndex(1)
+    }
+}
+
+extension ServerSort {
+    var label: String {
+        switch self {
+        case .usage: return L10n.text("Usage")
+        case .recency: return L10n.text("Recency")
+        case .name: return L10n.text("Name")
+        case .port: return L10n.text("Port")
+        }
+    }
+}
+
 // MARK: - Row
 
-struct CleaningState {
+struct RowSelection {
     let isSelected: Bool
     let reason: CleanUpReason?
 }
@@ -292,8 +401,8 @@ struct ServerRow: View {
     @ObservedObject var monitor: ServerMonitor
     var isFocused = false
     var isDimmed = false
-    /// Non-nil while the page is in Clean up mode.
-    var cleaning: CleaningState?
+    /// Non-nil while the page is in Clean up or Pause multiple mode.
+    var selecting: RowSelection?
     var onHover: (Bool) -> Void = { _ in }
     let open: () -> Void
     @State private var isHovered = false
@@ -302,8 +411,8 @@ struct ServerRow: View {
         let status = monitor.status(of: server)
         let attention = status == .attention
         HStack(spacing: 0) {
-            if let cleaning {
-                Checkbox(isOn: cleaning.isSelected)
+            if let selecting {
+                Checkbox(isOn: selecting.isSelected)
                     .padding(.trailing, 12)
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
@@ -317,7 +426,7 @@ struct ServerRow: View {
                     .foregroundStyle(Theme.text1)
                     .lineLimit(1)
                     .help(primaryName)
-                if let reason = cleaning?.reason {
+                if let reason = selecting?.reason {
                     HStack(spacing: 5) {
                         Image(systemName: reason.symbol).font(.system(size: 9, weight: .medium))
                         Text(reason.label).lineLimit(1)
@@ -333,11 +442,15 @@ struct ServerRow: View {
             Spacer(minLength: 0)
 
             Group {
-                if isHovered && cleaning == nil {
+                if isHovered && selecting == nil {
                     HStack(spacing: 2) {
                         IconButton(systemName: "arrow.up.right", size: 22, help: L10n.text("Open in browser")) {
                             Usage.record(.openBrowser)
                             NSWorkspace.shared.open(server.url)
+                        }
+                        IconButton(systemName: server.isPaused ? "play.fill" : "pause.fill", tint: Theme.text1.opacity(0.8), background: .clear, size: 22, help: L10n.text(server.isPaused ? "Resume" : "Pause")) {
+                            if !server.isPaused { Usage.record(.pause) }
+                            monitor.togglePause(server)
                         }
                         IconButton(systemName: "stop.fill", tint: Theme.text1.opacity(0.8), background: .clear, size: 22, help: L10n.text("Stop")) {
                             Usage.record(.stop)
@@ -350,7 +463,7 @@ struct ServerRow: View {
                               lineWidth: attention ? 1.5 : 1.25)
                 }
             }
-            .frame(width: 40, height: 18)
+            .frame(width: isHovered && selecting == nil ? 70 : 40, height: 18)
 
             Text(Format.bytesString(server.memory))
                 .font(Theme.mono)
@@ -359,7 +472,7 @@ struct ServerRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
-        .opacity(isDimmed ? 0.35 : (status == .idle && !server.cwdExists ? 0.55 : 1))
+        .opacity(isDimmed ? 0.35 : ((status == .idle && !server.cwdExists) || (status == .paused && !isHovered) ? 0.55 : 1))
         .hoverHighlight(isHovered || isFocused)
         .animation(.easeOut(duration: 0.12), value: isDimmed)
         .contentShape(Rectangle())
@@ -403,10 +516,12 @@ struct ServerRow: View {
 
     /// Uptime or idle time, prefixed with the location when there's no branch.
     private var contextText: String {
-        if !server.cwdExists { return L10n.format("Worktree deleted · idle %@", L10n.duration(server.idleFor, short: true)) }
-        let time = server.idleFor > 60 * 60
-            ? L10n.format("idle %@", L10n.duration(server.idleFor, short: true))
-            : server.uptime.map { L10n.format("up %@", L10n.duration($0, short: true)) } ?? ""
+        if !server.cwdExists, !server.isPaused { return L10n.format("Worktree deleted · idle %@", L10n.duration(server.idleFor, short: true)) }
+        let time = server.isPaused
+            ? L10n.text("paused")
+            : server.idleFor > 60 * 60
+                ? L10n.format("idle %@", L10n.duration(server.idleFor, short: true))
+                : server.uptime.map { L10n.format("up %@", L10n.duration($0, short: true)) } ?? ""
         if server.project.branch != nil { return time }
         return [server.locationLabel, time].filter { !$0.isEmpty }.joined(separator: " · ")
     }
