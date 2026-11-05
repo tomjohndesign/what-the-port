@@ -56,7 +56,7 @@ Existing installations from before this feature must download and install the fi
 
 [Rebuild and deploy site and app](../.github/workflows/deploy.yml) builds the app on every push to `main`. It builds ad-hoc without an update feed until every secret below exists, then switches to Developer ID signing, notarization and a signed Sparkle feed at `https://whattheport.dev/updates/appcast.xml`. If only some are set, the workflow stops rather than shipping an unsigned build by mistake.
 
-The version comes from `Info.plist`. Increase `CFBundleVersion` (and usually `CFBundleShortVersionString`) in the same change as anything you want installed copies to receive. Merges that leave the build number unchanged republish the same version, so installed copies do not update. Each deployment publishes a feed containing only the current build.
+The version comes from `Info.plist`. Increase `CFBundleVersion` (and usually `CFBundleShortVersionString`) in the same change as anything you want installed copies to receive. Merges that change the app without raising the build number would republish different code under the same version, so [`scripts/check-app-version.mjs`](../scripts/check-app-version.mjs) fails the pull request and stops the deploy before anything is published. Merges that leave the app alone, like website changes, keep the same build, so installed copies do not update. Each deployment publishes a feed containing only the current build.
 
 ### One-time setup once the Apple Developer membership is active
 

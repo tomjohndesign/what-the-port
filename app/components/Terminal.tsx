@@ -215,7 +215,7 @@ function reply(input: string, ports: string[], language: AppLanguageCode): { lin
     }))
     return { lines: JSON.stringify(servers, null, 2).split('\n').map((text) => ({ text })) }
   }
-  if (/^wtp (-v|--version|version)$/.test(command)) return { lines: [{ text: 'wtp 2.5' }] }
+  if (/^wtp (-v|--version|version)$/.test(command)) return { lines: [{ text: 'wtp 2.6' }] }
   if (/^wtp (-h|--help|help)$/.test(command)) {
     return {
       lines: [
