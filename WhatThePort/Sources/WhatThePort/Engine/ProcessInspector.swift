@@ -7,6 +7,8 @@ struct ProcSnapshot {
     let ppid: pid_t
     let comm: String
     let startTime: Date
+    /// Frozen by SIGSTOP or Ctrl-Z.
+    var isStopped = false
 }
 
 /// Launch details for a process, read from `KERN_PROCARGS2`.
@@ -86,7 +88,7 @@ enum ProcessInspector {
         guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return nil }
         let comm = string(fromTuple: info.pbi_comm)
         let start = Date(timeIntervalSince1970: TimeInterval(info.pbi_start_tvsec) + TimeInterval(info.pbi_start_tvusec) / 1_000_000)
-        return ProcSnapshot(pid: pid, ppid: pid_t(info.pbi_ppid), comm: comm, startTime: start)
+        return ProcSnapshot(pid: pid, ppid: pid_t(info.pbi_ppid), comm: comm, startTime: start, isStopped: info.pbi_status == SSTOP)
     }
 
     static func usage(_ pid: pid_t) -> ProcUsage? {

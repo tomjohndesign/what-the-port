@@ -68,6 +68,8 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         for server in servers where !server.isProtected {
             let key = "\(server.port)-\(server.rootPid)"
             liveKeys.insert(key)
+            // Frozen servers can't grow, and pausing is already a response to the alert.
+            if server.isPaused { continue }
             var kinds = fired[key] ?? []
 
             // Memory over threshold, sustained. Re-arm below 90% to avoid flapping.

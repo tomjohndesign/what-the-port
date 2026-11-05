@@ -44,8 +44,16 @@ struct ServerDetailView: View {
                 PortLabel(port: server.port, status: status, color: Theme.portColor(at: monitor.colorIndex(for: server.port)), large: true)
                 Spacer()
                 HStack(spacing: 10) {
-                    if let uptime = server.uptime {
-                        Text(L10n.format("Running for %@", L10n.duration(uptime))).font(Theme.body).foregroundStyle(Theme.text3)
+                    if server.isPaused {
+                        Text(L10n.text("Paused")).font(Theme.body).foregroundStyle(Theme.text3)
+                    } else if let uptime = server.uptime {
+                        // Longer translations don't fit beside three buttons.
+                        ViewThatFits(in: .horizontal) {
+                            Text(L10n.format("Running for %@", L10n.duration(uptime)))
+                            Text(L10n.format("up %@", L10n.duration(uptime, short: true)))
+                        }
+                        .font(Theme.body)
+                        .foregroundStyle(Theme.text3)
                     }
                     HStack(spacing: 6) {
                         IconButton(systemName: "arrow.clockwise", help: restartHelp) {
@@ -53,6 +61,10 @@ struct ServerDetailView: View {
                             monitor.restart(server)
                         }
                         .disabled(server.launch == nil || !server.cwdExists)
+                        IconButton(systemName: server.isPaused ? "play.fill" : "pause.fill", help: L10n.text(server.isPaused ? "Resume" : "Pause")) {
+                            if !server.isPaused { Usage.record(.pause) }
+                            monitor.togglePause(server)
+                        }
                         IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: L10n.format("Stop %d processes", server.processes.count)) {
                             Usage.record(.stop)
                             monitor.stop(server)

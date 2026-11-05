@@ -11,12 +11,13 @@
 
 ## What it does
 
-- **Every dev server at a glance.** Port, project name, git branch, uptime and memory for each local server, with stable port colors and a whole-Mac memory bar for servers, other apps and free RAM.
+- **Every dev server at a glance.** Port, project name, git branch, uptime and memory for each local server, with stable port colors and a whole-Mac memory bar for servers, other apps and free RAM. Sort the list by usage, recency, name or port.
 - **Knows which agent started it.** Servers launched by Claude Code, Codex, Conductor or [Pane](https://runpane.com) link back to the session that started them, so you can resume the conversation (`claude --resume`, `codex resume`), find the Conductor workspace, or open the Pane terminal that started the server.
 - **Leak detection.** When a server passes 2 GB of memory or grows more than 500 MB in ten minutes, its memory reading and the menu bar icon turn amber and you get one notification with Details, Stop and Snooze. Thresholds are adjustable.
 - **Resource charts.** Ten minutes of memory and CPU history per server, summed across its own process tree.
 - **Clean up.** Preselects servers from deleted git worktrees or idle for hours, then stops each server’s own process tree in bulk. Postgres, Redis, MongoDB and MySQL are protected by default. Cleanup can be Off, Ask or Automatic; leaking servers are never stopped automatically.
 - **Stop and restart.** Stop sends SIGTERM to the server’s own process tree, then SIGKILL after a short delay. Restart reruns the original command in the same folder.
+- **Pause and resume.** Pause freezes the server’s own process tree with SIGSTOP: it keeps its port and memory but uses no CPU, and requests wait until you resume it with SIGCONT. Pause multiple picks several at once, leaving out protected databases. Clean up doesn’t suggest or automatically stop paused servers. If you started the server itself in a terminal, without a launcher like `npm run dev`, the shell reports it as suspended; after resuming, run `fg` there to get Ctrl-C back.
 - **Previews and pull requests (optional).** A Vercel preview button and the branch’s pull request, through the GitHub CLI you’re already signed in to.
 - **Terminal UI.** `wtp` shows the same servers, details and Clean up in your terminal. `wtp list --json` prints them as JSON for scripts and coding agents.
 - **Global shortcut.** ⌥⌘P opens the popover.
@@ -42,11 +43,11 @@ wtp list --json   Print servers as JSON
 wtp --version     Print the version
 ```
 
-`wtp list --json` prints an array of servers. Each has `port`, `url`, `pid`, `name`, `branch`, `framework`, `folder`, `command`, `startedAt`, `memoryBytes`, `cpuPercent`, `status` (`running`, `attention` or `idle`), `protected`, `processes` and, when an agent started it, `session` (`kind`, `id`, `title`).
+`wtp list --json` prints an array of servers. Each has `port`, `url`, `pid`, `name`, `branch`, `framework`, `folder`, `command`, `startedAt`, `memoryBytes`, `cpuPercent`, `status` (`running`, `attention`, `idle` or `paused`), `protected`, `processes` and, when an agent started it, `session` (`kind`, `id`, `title`).
 
 ## How it works
 
-WhatThePort reads listening TCP sockets with `lsof`, then inspects each server’s process tree through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest (package.json, pyproject.toml, Cargo.toml, go.mod, Gemfile), framework and git branch. Session links come from environment variables that Claude Code, Conductor and Pane pass to the commands they run, and from Codex’s session files. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Stopping or restarting that process affects all ports it serves.
+WhatThePort reads listening TCP sockets with `lsof`, then inspects each server’s process tree through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest (package.json, pyproject.toml, Cargo.toml, go.mod, Gemfile), framework and git branch. Session links come from environment variables that Claude Code, Conductor and Pane pass to the commands they run, and from Codex’s session files. It rescans every 2 seconds. In monorepos, sibling servers stay separate from their shared task runner. When one process serves several ports, each row shows its server’s usage; totals count each process once, and the memory bar divides shared usage between those ports. Pausing, stopping or restarting that process affects all ports it serves.
 
 By default it watches ports 3000–65535 and processes that look like dev servers: node, bun, deno, python, uvicorn, gunicorn, ruby, rails, puma, php, java, go, cargo, dotnet, elixir, nginx, postgres, redis, mongod, mysql and more. Both are configurable in Settings → Ports & processes. Standard Homebrew and python.org framework interpreters are supported, including their Python.app wrapper; backends embedded in desktop apps remain excluded.
 

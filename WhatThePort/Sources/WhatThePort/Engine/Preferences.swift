@@ -16,6 +16,7 @@ enum Preferences {
     static let usageAsked = "general.usageAsked"
     /// Set once people know about `wtp`: from onboarding, or the 2.5 update notification.
     static let announcedTUI = "general.announcedTUI"
+    static let serverSort = "servers.sort"
 
     // Support
     /// The monthly tip reminder. Tipping turns it off: the tip jar's thank-you page opens whattheport://tipped.

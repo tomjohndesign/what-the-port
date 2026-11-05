@@ -12,6 +12,7 @@ const FEATURES = new Set([
   'open-browser',
   'open-editor',
   'stop',
+  'pause',
   'restart',
   'clean-up',
   'auto-clean-up',

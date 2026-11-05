@@ -348,6 +348,7 @@ final class TerminalApp {
         }
         items.append(ServerAction(label: server.agent.map { "Restart · runs outside \($0.kind.rawValue)" } ?? "Restart", key: "r",
                                   isEnabled: server.launch != nil && server.cwdExists) { [unowned self] in restart(server) })
+        items.append(ServerAction(label: server.isPaused ? "Resume" : "Pause", key: "z") { [unowned self] in togglePause(server) })
         let count = server.processes.count
         items.append(ServerAction(label: "Stop \(count) \(count == 1 ? "process" : "processes")", key: "s", isDestructive: true) { [unowned self] in
             confirmingStop = server.port
@@ -467,6 +468,11 @@ final class TerminalApp {
         monitor.stop(server)
         if page == .detail(server.port) { page = .servers }
         show("Stopping \(server.project.name) :\(server.port)")
+    }
+
+    private func togglePause(_ server: Server) {
+        monitor.togglePause(server)
+        show("\(server.isPaused ? "Resumed" : "Paused") \(server.project.name) :\(server.port)")
     }
 
     private func restart(_ server: Server) {
@@ -744,7 +750,7 @@ final class TerminalApp {
         let lineTwo = second + context(for: server, status: status, reason: reason, width: contextWidth)
 
         var lines = [lineOne, lineTwo.fitted(to: content)]
-        if !server.cwdExists, status == .idle { lines = lines.map { palette.faded($0, 0.55) } }
+        if (!server.cwdExists && status == .idle) || status == .paused { lines = lines.map { palette.faded($0, 0.55) } }
         let highlight = isSelected ? palette.highlight : nil
         return lines.enumerated().map { index, line in
             // Without a highlight color, a marker shows the selection.
@@ -758,7 +764,7 @@ final class TerminalApp {
         switch status {
         case .running: colon = style
         case .attention: colon = style.bold()
-        case .idle: colon = palette.faded(style, 0.45)
+        case .idle, .paused: colon = palette.faded(style, 0.45)
         }
         return [Span(":", colon), Span(String(port), style.bold())]
     }
@@ -791,10 +797,12 @@ final class TerminalApp {
 
     /// Uptime or idle time, prefixed with the location when there's no branch.
     private func contextText(_ server: Server) -> String {
-        if !server.cwdExists { return "Worktree deleted · idle \(Format.shortDuration(server.idleFor))" }
-        let time = server.idleFor > 60 * 60
-            ? "idle \(Format.shortDuration(server.idleFor))"
-            : server.uptime.map { "up \(Format.shortDuration($0))" } ?? ""
+        if !server.cwdExists, !server.isPaused { return "Worktree deleted · idle \(Format.shortDuration(server.idleFor))" }
+        let time = server.isPaused
+            ? "paused"
+            : server.idleFor > 60 * 60
+                ? "idle \(Format.shortDuration(server.idleFor))"
+                : server.uptime.map { "up \(Format.shortDuration($0))" } ?? ""
         if server.project.branch != nil { return time }
         return [server.locationLabel, time].filter { !$0.isEmpty }.joined(separator: " · ")
     }
@@ -834,7 +842,9 @@ final class TerminalApp {
 
         let status = monitor.status(of: server)
         let port = portLabel(server.port, status: status, style: palette.port(monitor.colorIndex(for: server.port)))
-        let running: Line = server.uptime.map { [Span("Running for \(Format.duration($0))", palette.text3)] } ?? []
+        let running: Line = server.isPaused
+            ? [Span("Paused", palette.text3)]
+            : server.uptime.map { [Span("Running for \(Format.duration($0))", palette.text3)] } ?? []
         block.add(padded(Line.split(port, running, width: inner)))
         block.add(divider())
         return block
@@ -1180,7 +1190,7 @@ final class TerminalApp {
             ("Servers", [("↑ ↓  j k", "Select"), ("⏎", "Details"), ("space", "Actions"), ("c", "Clean up"),
                          ("t", "CPU for servers or the whole Mac")]),
             ("Actions", [("o", "Open in browser"), ("v", "Vercel preview"), ("u", "Pull request"), ("a", "Resume agent session"),
-                         ("r", "Restart"), ("s", "Stop"), ("e", "Open in editor"), ("f", "Reveal in Finder"),
+                         ("r", "Restart"), ("z", "Pause or resume"), ("s", "Stop"), ("e", "Open in editor"), ("f", "Reveal in Finder"),
                          ("y", "Copy URL"), ("Y", "Copy command")]),
             ("Clean up", [("space", "Select or deselect"), ("a", "Select all"), ("⏎", "Stop selected"), ("esc", "Cancel")]),
             ("Details", [("⏎", "Open in browser"), ("space", "Actions"), ("i", "More or less info"), ("p", "Show or hide processes"),

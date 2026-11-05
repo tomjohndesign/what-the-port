@@ -12,7 +12,7 @@ Free and open source · macOS 14 or later · No account
 
 ## Know what’s running
 
-WhatThePort is a native Swift app that lives in your menu bar, with no Dock icon. Press **⌥⌘P** to see your local development servers: project names, ports, git branches, uptime, and resource use. Open a server in your browser, inspect its processes, or stop and restart it without hunting through terminals.
+WhatThePort is a native Swift app that lives in your menu bar, with no Dock icon. Press **⌥⌘P** to see your local development servers: project names, ports, git branches, uptime, and resource use. Open a server in your browser, inspect its processes, or pause, stop and restart it without hunting through terminals.
 
 ### Knows which agent started it
 

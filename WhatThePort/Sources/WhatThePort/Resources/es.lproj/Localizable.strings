@@ -170,8 +170,19 @@
 "Opens when you sign in" = "Se abre al iniciar sesión";
 "Other apps" = "Otras apps";
 "Over %@ GB" = "Más de %@ GB";
+"Pause" = "Pausar";
+"Pause %d %@" = "Pausar %d %@";
+"Pause multiple" = "Pausar varios";
+"Pause servers" = "Pausar servidores";
+"Paused" = "En pausa";
 "Paste it anywhere to share WhatThePort." = "Pégalo donde quieras para compartir WhatThePort.";
 "Pick servers to stop" = "Elige los servidores que quieres detener";
+"Pick servers to pause" = "Elige los servidores que quieres pausar";
+"Name" = "Nombre";
+"Port" = "Puerto";
+"Recency" = "Recientes";
+"Sort servers" = "Ordenar servidores";
+"Usage" = "Uso";
 "Ports" = "Puertos";
 "Ports & processes" = "Puertos y procesos";
 "Preview" = "Vista previa";
@@ -192,6 +203,7 @@
 "Restart WhatThePort to apply the language change." = "Reinicia WhatThePort para aplicar el idioma.";
 "Restart with the same command" = "Reiniciar con el mismo comando";
 "Restart. It will run outside the %@ session." = "Reiniciar. Se ejecutará fuera de la sesión de %@.";
+"Resume" = "Reanudar";
 "Resume in %@" = "Reanudar en %@";
 "Resume sessions in" = "Reanudar sesiones en";
 "Reveal %@ workspace" = "Mostrar espacio de trabajo de %@";
@@ -302,3 +314,4 @@
 "Changes apply immediately." = "Los cambios se aplican de inmediato.";
 "servers (few)" = "servidores";
 "tools (few)" = "herramientas";
+"paused" = "en pausa";

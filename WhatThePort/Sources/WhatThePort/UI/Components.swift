@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Port-colored dots; a glow marks attention and an outline marks idle.
+/// Port-colored dots; a glow marks attention, an outline marks idle and dim marks paused.
 struct ColonStatus: View {
     let status: ServerStatus
     let color: Color
@@ -23,6 +23,8 @@ struct ColonStatus: View {
                 .shadow(color: color.opacity(0.7), radius: 2.5)
         case .idle:
             Circle().strokeBorder(color, lineWidth: 1.1).frame(width: dot, height: dot)
+        case .paused:
+            Circle().fill(color.opacity(0.4)).frame(width: dot, height: dot)
         }
     }
 }

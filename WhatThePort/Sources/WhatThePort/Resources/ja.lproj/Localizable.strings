@@ -170,8 +170,19 @@
 "Opens when you sign in" = "ログイン時に開く";
 "Other apps" = "ほかのアプリ";
 "Over %@ GB" = "%@ GB 超";
+"Pause" = "一時停止";
+"Pause %d %@" = "%d %@を一時停止";
+"Pause multiple" = "複数を一時停止";
+"Pause servers" = "サーバーを一時停止";
+"Paused" = "一時停止中";
 "Paste it anywhere to share WhatThePort." = "好きな場所に貼り付けて WhatThePort をシェアできます。";
 "Pick servers to stop" = "停止するサーバーを選択";
+"Pick servers to pause" = "一時停止するサーバーを選択";
+"Name" = "名前";
+"Port" = "ポート";
+"Recency" = "最近";
+"Sort servers" = "サーバーを並べ替え";
+"Usage" = "使用量";
 "Ports" = "ポート";
 "Ports & processes" = "ポートとプロセス";
 "Preview" = "プレビュー";
@@ -192,6 +203,7 @@
 "Restart WhatThePort to apply the language change." = "言語の変更を適用するには WhatThePort を再起動してください。";
 "Restart with the same command" = "同じコマンドで再起動";
 "Restart. It will run outside the %@ session." = "再起動します。%@ セッションの外で実行されます。";
+"Resume" = "再開";
 "Resume in %@" = "%@ で再開";
 "Resume sessions in" = "セッションを再開するアプリ";
 "Reveal %@ workspace" = "%@ ワークスペースを表示";
@@ -302,3 +314,4 @@
 "Changes apply immediately." = "変更はすぐに適用されます。";
 "servers (few)" = "サーバー";
 "tools (few)" = "ツール";
+"paused" = "一時停止中";

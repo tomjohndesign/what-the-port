@@ -39,6 +39,138 @@ struct ScanEngineTests {
         }
     }
 
+    @Test func pausedServersReportPausedAndDontGoIdle() {
+        let f = Fixture()
+        f.process(10, memory: 3_000_000_000)
+        f.listen(10, port: 3000)
+        #expect(f.scan()[0].isPaused == false)
+        #expect(f.scan()[0].status(alertThreshold: 1) == .attention)
+
+        f.processes[10]?.isStopped = true
+        let paused = f.scan(after: 7200)[0]
+        #expect(paused.isPaused)
+        #expect(paused.status(alertThreshold: 1) == .paused)
+        #expect(paused.lastActive == f.epoch.addingTimeInterval(7200))
+
+        f.processes[10]?.isStopped = false
+        #expect(f.scan(after: 7201)[0].lastActive == f.epoch.addingTimeInterval(7200))
+    }
+
+    @Test func pauseLeavesATerminalsLauncherRunning() {
+        let f = Fixture()
+        f.process(5, name: "zsh")
+        f.process(10, parent: 5, name: "npm")
+        f.process(20, parent: 10)
+        f.listen(20, port: 3000)
+        let launched = f.scan()[0]
+        #expect(launched.rootPid == 10)
+        #expect(Set(launched.processStarts.keys) == [10, 20])
+        #expect(Set(launched.pauseTargets.keys) == [20])
+
+        // Started directly, the server itself is the command the shell waits on.
+        f.process(30, parent: 5)
+        f.listen(30, port: 3001)
+        #expect(Set(f.scan()[1].pauseTargets.keys) == [30])
+
+        // Without a shell above it, nothing is waiting, so the whole tree freezes.
+        f.process(40, name: "npm")
+        f.process(50, parent: 40)
+        f.listen(50, port: 3002)
+        #expect(Set(f.scan()[2].pauseTargets.keys) == [40, 50])
+    }
+
+    @Test func sortsByUsageRecencyNameAndPort() {
+        let f = Fixture()
+        f.config.showBranches = false
+        f.process(10, memory: 100)
+        f.process(20, memory: 300)
+        f.process(30, memory: 200)
+        f.process(40, memory: 200)
+        f.processes[20] = ProcSnapshot(pid: 20, ppid: 1, comm: "node", startTime: f.epoch.addingTimeInterval(30))
+        f.processes[30] = ProcSnapshot(pid: 30, ppid: 1, comm: "node", startTime: f.epoch.addingTimeInterval(60))
+        f.listen(40, port: 3004)
+        f.listen(30, port: 3003)
+        f.listen(20, port: 3002)
+        f.listen(10, port: 3001)
+        var rows = f.scan()
+        for (index, name) in ["delta", "alpha", "Charlie", "bravo"].enumerated() {
+            rows[index].project.name = name
+        }
+        func ports(_ sort: ServerSort) -> [Int] { sort.sorted(rows).map(\.port) }
+        #expect(ports(.port) == [3001, 3002, 3003, 3004])
+        #expect(ports(.usage) == [3002, 3003, 3004, 3001])
+        #expect(ports(.recency) == [3003, 3002, 3001, 3004])
+        #expect(ports(.name) == [rows[1].port, rows[3].port, rows[2].port, rows[0].port])
+    }
+
+    @MainActor @Test func pausesOnlyTheChosenServers() async throws {
+        func listener(port: Int) throws -> Process {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/nc")
+            process.arguments = ["-l", String(port)]
+            process.currentDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            process.standardInput = FileHandle.nullDevice
+            process.standardOutput = FileHandle.nullDevice
+            try process.run()
+            return process
+        }
+        let processes = try [38151, 38152, 38153].map(listener)
+        defer { processes.forEach { kill($0.processIdentifier, SIGKILL) } }
+        try await Task.sleep(for: .milliseconds(300))
+
+        let monitor = ServerMonitor()
+        monitor.minPort = 38151
+        monitor.maxPort = 38153
+        monitor.allowlist = ["nc"]
+        monitor.scanNow()
+        #expect(monitor.servers.map(\.port).sorted() == [38151, 38152, 38153])
+
+        monitor.pause(monitor.servers.filter { $0.port != 38153 })
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(processes.map { ProcessInspector.snapshot($0.processIdentifier)?.isStopped } == [true, true, false])
+        #expect(monitor.servers.filter(\.isPaused).map(\.port).sorted() == [38151, 38152])
+
+        // Pausing again doesn't toggle a paused server back on.
+        monitor.pause(monitor.servers)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(processes.map { ProcessInspector.snapshot($0.processIdentifier)?.isStopped } == [true, true, true])
+    }
+
+    @Test func pausesResumesAndStopsARealProcess() async throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        process.arguments = ["60"]
+        try process.run()
+        defer { if process.isRunning { process.terminate() } }
+        let pid = process.processIdentifier
+
+        let f = Fixture()
+        f.config.allowlist.insert("sleep")
+        f.process(pid)
+        f.processes[pid] = ProcessInspector.snapshot(pid)
+        f.listen(pid, port: 3000)
+        let server = try #require(f.scan().first)
+
+        func isStopped() async -> Bool {
+            try? await Task.sleep(for: .milliseconds(100))
+            return ProcessInspector.snapshot(pid)?.isStopped ?? false
+        }
+
+        #expect(await isStopped() == false)
+        ProcessControl.pause(server)
+        #expect(await isStopped())
+        ProcessControl.resume(server)
+        #expect(await isStopped() == false)
+
+        // A paused process still gets to handle SIGTERM rather than waiting for SIGKILL.
+        ProcessControl.pause(server)
+        #expect(await isStopped())
+        ProcessControl.stop(server)
+        for _ in 0..<20 where process.isRunning { try await Task.sleep(for: .milliseconds(50)) }
+        #expect(!process.isRunning)
+        #expect(process.terminationStatus == SIGTERM)
+    }
+
     @Test func siblingsHaveSeparateResourcesAndStopTargets() {
         let f = Fixture()
         f.process(10, memory: 1000) // shared orchestrator must not be charged to either row

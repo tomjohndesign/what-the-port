@@ -8,18 +8,33 @@ enum ProcessControl {
     }
 
     /// Sends SIGTERM to every process in the server's tree, then SIGKILL to
-    /// anything still running after a grace period. Each pid is re-checked
-    /// against its start time first so a reused pid is never signalled.
+    /// anything still running after a grace period. A paused process only sees
+    /// SIGTERM once it's continued, so SIGCONT follows it.
     static func stop(_ server: Server, completion: (() -> Void)? = nil) {
         let targets = server.processStarts
-        for pid in targets.keys where isSameProcess(pid, startedAt: targets[pid]) {
-            kill(pid, SIGTERM)
-        }
+        send(SIGTERM, to: targets)
+        send(SIGCONT, to: targets)
         DispatchQueue.global().asyncAfter(deadline: .now() + forceQuitDelay) {
-            for pid in targets.keys where isSameProcess(pid, startedAt: targets[pid]) {
-                kill(pid, SIGKILL)
-            }
+            send(SIGKILL, to: targets)
             if let completion { DispatchQueue.main.async(execute: completion) }
+        }
+    }
+
+    /// Freezes every process in the server's tree. It keeps its port and memory
+    /// but uses no CPU, and requests wait until it's resumed.
+    static func pause(_ server: Server) {
+        send(SIGSTOP, to: server.pauseTargets)
+    }
+
+    static func resume(_ server: Server) {
+        send(SIGCONT, to: server.processStarts)
+    }
+
+    /// Each pid is re-checked against its start time first so a reused pid is
+    /// never signalled.
+    private static func send(_ signal: Int32, to targets: [pid_t: Date]) {
+        for pid in targets.keys where isSameProcess(pid, startedAt: targets[pid]) {
+            kill(pid, signal)
         }
     }
 

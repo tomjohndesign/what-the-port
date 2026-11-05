@@ -168,6 +168,7 @@ enum TerminalCommand {
                     case .running: return "running"
                     case .attention: return "attention"
                     case .idle: return "idle"
+                    case .paused: return "paused"
                     }
                 }(),
                 "protected": server.isProtected,

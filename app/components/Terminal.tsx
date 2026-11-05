@@ -15,6 +15,7 @@ import {
   memoryChart,
   portColor,
   serverResources,
+  pausedServer,
   stoppedPorts,
 } from './servers'
 
@@ -132,7 +133,7 @@ const T3 = ({ children }: { children: ReactNode }) => <span className={styles.tu
 function PortLabel({ server }: { server: Server }) {
   return (
     <span className={styles.tuiPort} style={{ color: portColor(server.port) }}>
-      <span style={{ opacity: server.status === 'idle' ? 0.45 : 1, fontWeight: server.status === 'amber' ? 700 : 400 }}>
+      <span style={{ opacity: server.status === 'idle' || server.status === 'paused' ? 0.45 : 1, fontWeight: server.status === 'amber' ? 700 : 400 }}>
         :
       </span>
       {server.port}
@@ -375,6 +376,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
   const [confirm, setConfirm] = useState<string | null>(null)
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null)
   const [cleaning, setCleaning] = useState(false)
+  const [paused, setPaused] = useState<string[]>([])
   const [checked, setChecked] = useState<string[]>([])
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [processesExpanded, setProcessesExpanded] = useState(false)
@@ -382,7 +384,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
   const [offset, setOffset] = useState(0)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
 
-  const servers = SERVERS.filter((s) => running.includes(s.port))
+  const servers = SERVERS.filter((s) => running.includes(s.port)).map((s) => (paused.includes(s.port) ? pausedServer(s) : s))
 
   const show = useCallback((text: string, error = false) => {
     setToast({ text, error })
@@ -408,6 +410,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     setClosed(false)
     setMode('shell')
     setRunning(SERVERS.map((s) => s.port))
+    setPaused([])
     setSelected(SERVERS[0].port)
     setLines([{ text: lastLogin('ttys002') }])
     setInput('')
@@ -435,7 +438,15 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     const ports = stoppedPorts(servers, selectedPorts)
     setRunning((current) => current.filter((port) => !ports.includes(port)))
     setChecked((current) => current.filter((port) => !ports.includes(port)))
+    setPaused((current) => current.filter((port) => !ports.includes(port)))
     if (page.name === 'detail' && ports.includes(page.port)) setPage({ name: 'list' })
+  }
+
+  const togglePause = (server: Server) => {
+    const ports = stoppedPorts(servers, [server.port])
+    const isPaused = server.status === 'paused'
+    setPaused((current) => (isPaused ? current.filter((port) => !ports.includes(port)) : [...current, ...ports]))
+    show(`${isPaused ? 'Resumed' : 'Paused'} ${server.name} :${server.port}`)
   }
 
   const actionsFor = (server: Server): Action[] => {
@@ -443,7 +454,15 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     const count = server.processes.length
     const items: Action[] = [{ label: `Open localhost:${server.port}`, key: 'o', run: () => show(`Opened localhost:${server.port}`) }]
     if (agent) items.push({ label: `Resume ${agent} in Terminal`, key: 'a', run: () => show('Resuming in Terminal') })
-    items.push({ label: agent ? `Restart · runs outside ${agent}` : 'Restart', key: 'r', run: () => show(`Restarting :${server.port}`) })
+    items.push({
+      label: agent ? `Restart · runs outside ${agent}` : 'Restart',
+      key: 'r',
+      run: () => {
+        setPaused((current) => current.filter((port) => !stoppedPorts(servers, [server.port]).includes(port)))
+        show(`Restarting :${server.port}`)
+      },
+    })
+    items.push({ label: server.status === 'paused' ? 'Resume' : 'Pause', key: 'z', run: () => togglePause(server) })
     items.push({
       label: `Stop ${count} ${count === 1 ? 'process' : 'processes'}`,
       key: 's',
@@ -511,7 +530,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     }
 
     if (menu) {
-      const server = SERVERS.find((s) => s.port === menu.port)
+      const server = servers.find((s) => s.port === menu.port)
       const items = server ? actionsFor(server) : []
       if (key === 'ArrowUp' || key === 'k') setMenu({ ...menu, index: (menu.index + items.length - 1) % items.length })
       else if (key === 'ArrowDown' || key === 'j' || key === 'Tab') setMenu({ ...menu, index: (menu.index + 1) % items.length })
@@ -540,7 +559,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     }
 
     if (page.name === 'detail') {
-      const server = SERVERS.find((s) => s.port === page.port)
+      const server = servers.find((s) => s.port === page.port)
       if (!server) return false
       switch (key) {
         case 'Escape':
@@ -886,7 +905,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
         else if (isSelected) openDetail(s.port)
         else setSelected(s.port)
       }
-      const idle = s.status === 'idle' ? styles.tuiIdle : undefined
+      const idle = s.status === 'idle' || s.status === 'paused' ? styles.tuiIdle : undefined
       if (index > 0) rows.push(blank(`gap${s.port}`))
       rows.push(
         <Line key={`${s.port}a`} selected={isSelected} onClick={click} className={idle}>
@@ -1113,7 +1132,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
       ['Servers', [['↑ ↓  j k', 'Select'], ['⏎', 'Details'], ['space', 'Actions'], ['c', 'Clean up'], ['t', 'CPU for servers or the whole Mac']]],
       [
         'Actions',
-        [['o', 'Open in browser'], ['a', 'Resume agent session'], ['r', 'Restart'], ['s', 'Stop'], ['e', 'Open in editor'], ['f', 'Reveal in Finder'], ['y', 'Copy URL'], ['Y', 'Copy command']],
+        [['o', 'Open in browser'], ['a', 'Resume agent session'], ['r', 'Restart'], ['z', 'Pause or resume'], ['s', 'Stop'], ['e', 'Open in editor'], ['f', 'Reveal in Finder'], ['y', 'Copy URL'], ['Y', 'Copy command']],
       ],
       ['Clean up', [['space', 'Select or deselect'], ['a', 'Select all'], ['⏎', 'Stop selected'], ['esc', 'Cancel']]],
       ['Details', [['⏎', 'Open in browser'], ['space', 'Actions'], ['i', 'More or less info'], ['p', 'Show or hide processes'], ['tab', 'Next server'], ['esc', 'Back']]],
@@ -1172,7 +1191,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
       ]
     }
     if (menu) {
-      const server = SERVERS.find((s) => s.port === menu.port)!
+      const server = servers.find((s) => s.port === menu.port)!
       return [
         divider('f-d'),
         <Line key="menu-title">
@@ -1262,7 +1281,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     let content: ReactNode[] = []
     let scroll = offset
     if (page.name === 'detail') {
-      const server = SERVERS.find((s) => s.port === page.port)
+      const server = servers.find((s) => s.port === page.port)
       if (server) [top, content] = detailLines(server)
     } else if (page.name === 'help') {
       ;[top, content] = helpLines()
