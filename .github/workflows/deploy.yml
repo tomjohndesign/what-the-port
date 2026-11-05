@@ -25,13 +25,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Stops before anything is published, so one version never means two different apps.
-      - name: Require a new build number for app changes
-        if: github.event_name == 'push'
-        env:
-          BASE: ${{ github.event.before }}
-          HEAD: ${{ github.sha }}
-        run: node scripts/check-app-version.mjs "$BASE" "$HEAD"
+      # Every merge is a release: this commit gets its own version.
+      - name: Set the release version
+        run: node scripts/set-release-version.mjs
 
       # Release signing turns on once every signing secret exists. Until then, build ad-hoc.
       - name: Choose signing mode
@@ -102,7 +98,6 @@ jobs:
            printf '%s\n' "$NOTARY_API_KEY" > "$RUNNER_TEMP/notary-key.p8"
            printf '%s\n' "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle-key")
 
-      # Info.plist sets the version. Bump CFBundleVersion to offer an update to installed copies.
       - name: Build, notarize and sign the update
         if: steps.mode.outputs.mode == 'release'
         env:
@@ -152,6 +147,8 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check deployment configuration
         run: |
@@ -167,6 +164,9 @@ jobs:
           node-version: '24'
           cache: npm
 
+      # The same version as the app, for the checks below and the site's structured data.
+      - name: Set the release version
+        run: node scripts/set-release-version.mjs
 
       - uses: actions/download-artifact@v4
         with:

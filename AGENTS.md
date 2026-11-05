@@ -2,9 +2,9 @@
 
 Never commit `public/WhatThePort.dmg` or `public/updates/`. The deploy workflow builds them for each production deploy, and `scripts/check-download.mjs` fails production builds whose download isn't this commit's release. Local dev and previews redirect the download to production. Don't link a versioned archive such as `/updates/WhatThePort-4.zip` from the site or README; always link `/WhatThePort.dmg`.
 
-# App changes need a new build number
+# Every merge is a release
 
-Installed copies only update when `CFBundleVersion` in `WhatThePort/Info.plist` goes up. Any change to the app raises it in the same PR, along with `CFBundleShortVersionString`: patch for fixes, minor for features. `scripts/check-app-version.mjs` fails the pull request and stops the deploy otherwise. See `WhatThePort/UPDATES.md`.
+Each merge to `main` publishes a new app version to installed copies. `scripts/set-release-version.mjs` sets the numbers during the deploy, so don't bump `CFBundleVersion` by hand. Change `CFBundleShortVersionString` in `WhatThePort/Info.plist` only to start a new major or minor version. See `WhatThePort/UPDATES.md`.
 
 # Keep the marketing demo in sync with the product
 
