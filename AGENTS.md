@@ -2,6 +2,10 @@
 
 Never commit `public/WhatThePort.dmg` or `public/updates/`. The deploy workflow builds them for each production deploy, and `scripts/check-download.mjs` fails production builds whose download isn't this commit's release. Local dev and previews redirect the download to production. Don't link a versioned archive such as `/updates/WhatThePort-4.zip` from the site or README; always link `/WhatThePort.dmg`.
 
+# App changes need a new build number
+
+Installed copies only update when `CFBundleVersion` in `WhatThePort/Info.plist` goes up. Any change to the app raises it in the same PR, along with `CFBundleShortVersionString`: patch for fixes, minor for features. `scripts/check-app-version.mjs` fails the pull request and stops the deploy otherwise. See `WhatThePort/UPDATES.md`.
+
 # Keep the marketing demo in sync with the product
 
 The native macOS app is the source of truth for product UI and behavior. Whenever a change affects a screen, control, label, visual style, or interaction represented on the marketing website, update the website in the **same change**. Do not leave the marketing demo showing an older version of the product.

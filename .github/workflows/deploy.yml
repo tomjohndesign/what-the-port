@@ -22,6 +22,16 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Stops before anything is published, so one version never means two different apps.
+      - name: Require a new build number for app changes
+        if: github.event_name == 'push'
+        env:
+          BASE: ${{ github.event.before }}
+          HEAD: ${{ github.sha }}
+        run: node scripts/check-app-version.mjs "$BASE" "$HEAD"
 
       # Release signing turns on once every signing secret exists. Until then, build ad-hoc.
       - name: Choose signing mode
