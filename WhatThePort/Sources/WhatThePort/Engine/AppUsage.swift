@@ -38,6 +38,35 @@ final class AppUsageScanner: @unchecked Sendable {
             .sorted { $0.memory > $1.memory }
     }
 
+    /// Container memory lives inside the runtime's VM, which already counts it.
+    /// Take it out of the runtime's app so it's only counted once. Colima has
+    /// no app, so it comes out of the largest process that could be its VM.
+    static func excludingContainers(_ apps: [AppMemory], servers: [Server]) -> [AppMemory] {
+        var byApp: [String: [String: UInt64]] = [:]
+        var withoutApp: [String: UInt64] = [:]
+        for server in servers {
+            guard let container = server.container else { continue }
+            if let app = container.runtime.appBundle {
+                byApp[app, default: [:]][container.id] = server.memory
+            } else {
+                withoutApp[container.id] = server.memory
+            }
+        }
+        guard !byApp.isEmpty || !withoutApp.isEmpty else { return apps }
+        let vm = apps.filter { app in app.bundlePath == nil && vmProcesses.contains { app.name.hasPrefix($0) } }.max { $0.memory < $1.memory }
+        return apps.map { app in
+            var used = app.bundlePath.flatMap { byApp[($0 as NSString).lastPathComponent]?.values.reduce(0, +) } ?? 0
+            if app.id == vm?.id { used += withoutApp.values.reduce(0, +) }
+            guard used > 0 else { return app }
+            return AppMemory(id: app.id, name: app.name, bundlePath: app.bundlePath, agent: app.agent,
+                             memory: app.memory > used ? app.memory - used : 0)
+        }
+        .sorted { $0.memory > $1.memory }
+    }
+
+    /// Process names a Lima VM runs under. Names can be cut short by the kernel.
+    private static let vmProcesses = ["qemu-system", "limactl", "com.apple.Virtual"]
+
     /// Who a process's memory belongs to: its own app bundle, a coding agent,
     /// the nearest app that launched it, or failing that its process name.
     private func owner(of process: ProcSnapshot, processes: [pid_t: ProcSnapshot],

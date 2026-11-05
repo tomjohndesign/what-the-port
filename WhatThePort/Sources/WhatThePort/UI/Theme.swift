@@ -53,6 +53,7 @@ enum Theme {
     static let body = Font.custom("Geist-Regular", fixedSize: 13)
     static let bodyMedium = Font.custom("Geist-Medium", fixedSize: 13)
     static let caption = Font.custom("Geist-Regular", fixedSize: 11)
+    static let captionMedium = Font.custom("Geist-Medium", fixedSize: 11)
     static let mono = Font.custom("GeistMono-Regular", fixedSize: 13)
     static let monoMedium = Font.custom("GeistMono-Medium", fixedSize: 13)
     static let monoCaption = Font.custom("GeistMono-Regular", fixedSize: 11)

@@ -16,6 +16,7 @@ import {
   portColor,
   serverResources,
   pausedServer,
+  serverSections,
   stoppedPorts,
 } from './servers'
 
@@ -181,10 +182,10 @@ const FILES = 'README.md  Terminal.tsx  WhatThePort.dmg  landing.module.css  ser
 const JOKE = 'This is a web page dressed as a terminal. Type wtp, or download the real thing.'
 
 function table(ports: string[]): Output[] {
-  const servers = SERVERS.filter((server) => ports.includes(server.port))
+  const servers = serverSections(SERVERS.filter((server) => ports.includes(server.port)), 'port').flatMap((section) => section.servers)
   if (!servers.length) return [{ text: 'Nothing listening on ports 3000–65535.' }]
   const header = ['PORT', 'NAME', 'BRANCH', 'MEMORY']
-  const rows = servers.map((s) => [`:${s.port}`, s.name, s.branch, formatMemory(s.memory)])
+  const rows = servers.map((s) => [`:${s.port}`, s.name, s.container?.branch ?? s.branch, formatMemory(s.memory)])
   const widths = header.map((_, column) => Math.max(...[header, ...rows].map((row) => row[column].length)))
   const format = (row: string[]) =>
     row.map((cell, i) => (i === 3 ? cell.padStart(widths[i]) : cell.padEnd(widths[i]))).join('  ')
@@ -210,12 +211,22 @@ function reply(input: string, ports: string[], language: AppLanguageCode): { lin
     const servers = SERVERS.filter((s) => ports.includes(s.port)).map((s) => ({
       port: Number(s.port),
       name: s.name,
-      branch: s.branch,
+      branch: s.container?.branch ?? s.branch,
       memoryBytes: s.memory * 1_048_576,
+      ...(s.container && {
+        container: {
+          id: s.container.id,
+          name: s.name,
+          image: s.container.image,
+          runtime: s.container.runtime,
+          composeProject: s.container.project,
+          composeService: s.branch,
+        },
+      }),
     }))
     return { lines: JSON.stringify(servers, null, 2).split('\n').map((text) => ({ text })) }
   }
-  if (/^wtp (-v|--version|version)$/.test(command)) return { lines: [{ text: 'wtp 2.6' }] }
+  if (/^wtp (-v|--version|version)$/.test(command)) return { lines: [{ text: 'wtp 2.7' }] }
   if (/^wtp (-h|--help|help)$/.test(command)) {
     return {
       lines: [
@@ -384,7 +395,10 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
   const [offset, setOffset] = useState(0)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
 
-  const servers = SERVERS.filter((s) => running.includes(s.port)).map((s) => (paused.includes(s.port) ? pausedServer(s) : s))
+  const allServers = SERVERS.filter((s) => running.includes(s.port)).map((s) => (paused.includes(s.port) ? pausedServer(s) : s))
+  // Clean up hides protected servers, like the app. Containers sit in groups after native servers.
+  const sections = serverSections(cleaning ? allServers.filter((s) => !s.protected) : allServers, 'port')
+  const servers = sections.flatMap((section) => section.servers)
 
   const show = useCallback((text: string, error = false) => {
     setToast({ text, error })
@@ -455,7 +469,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     const items: Action[] = [{ label: `Open localhost:${server.port}`, key: 'o', run: () => show(`Opened localhost:${server.port}`) }]
     if (agent) items.push({ label: `Resume ${agent} in Terminal`, key: 'a', run: () => show('Resuming in Terminal') })
     items.push({
-      label: agent ? `Restart · runs outside ${agent}` : 'Restart',
+      label: agent ? `Restart · runs outside ${agent}` : server.container ? 'Restart container' : 'Restart',
       key: 'r',
       run: () => {
         setPaused((current) => current.filter((port) => !stoppedPorts(servers, [server.port]).includes(port)))
@@ -464,7 +478,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
     })
     items.push({ label: server.status === 'paused' ? 'Resume' : 'Pause', key: 'z', run: () => togglePause(server) })
     items.push({
-      label: `Stop ${count} ${count === 1 ? 'process' : 'processes'}`,
+      label: server.container ? 'Stop container' : `Stop ${count} ${count === 1 ? 'process' : 'processes'}`,
       key: 's',
       destructive: true,
       run: () => setConfirm(server.port),
@@ -813,7 +827,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
 
   function listLines(): [ReactNode[], ReactNode[]] {
     const chosen = servers.filter((s) => checked.includes(s.port))
-    const resources = serverResources(servers)
+    const resources = serverResources(allServers)
     const total = resources.memory
     const [number, unit] = formatTotal(cleaning ? serverResources(chosen).memory : total).split(' ')
     const cpu = Math.round(resources.cpu / 8)
@@ -895,6 +909,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
 
     const rows: ReactNode[] = [blank('r0')]
     servers.forEach((s, index) => {
+      const section = sections.find((candidate) => candidate.servers[0].port === s.port)
       const isSelected = s.port === selected
       const amber = s.status === 'amber'
       const reason = cleaning ? s.cleanUp : undefined
@@ -907,6 +922,16 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
       }
       const idle = s.status === 'idle' || s.status === 'paused' ? styles.tuiIdle : undefined
       if (index > 0) rows.push(blank(`gap${s.port}`))
+      if (section?.title) {
+        rows.push(
+          <Line key={`${section.id}-header`}>
+            <strong>{section.title}</strong>
+            <T3>&nbsp;&nbsp;{section.detail}</T3>
+            <Spacer />
+            <T3>{formatMemory(serverResources(section.servers).memory)}</T3>
+          </Line>,
+        )
+      }
       rows.push(
         <Line key={`${s.port}a`} selected={isSelected} onClick={click} className={idle}>
           {cleaning && <span className={on ? undefined : styles.tuiText3}>{on ? '[✓] ' : '[ ] '}</span>}
@@ -1093,7 +1118,18 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
       blank('c2'),
       divider('d3'),
       blank('p0'),
-      <Line key="ph" onClick={() => setProcessesExpanded((v) => !v)}>
+      ...(server.container
+        ? [
+            <Line key="ph">
+              <T2>Container</T2>
+              <Spacer />
+              <T2>
+                {server.container.id} · {formatMemory(server.memory)}
+              </T2>
+            </Line>,
+          ]
+        : []),
+      ...(server.container ? [] : [<Line key="ph" onClick={() => setProcessesExpanded((v) => !v)}>
         <T2>Processes </T2>
         <T3>{processesExpanded ? '▾' : '▸'}</T3>
         <strong className={styles.tuiText2}>&nbsp;&nbsp;&nbsp;p</strong>
@@ -1101,8 +1137,8 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
         <T2>
           {server.processes.length} · {formatMemory(processTotal)}
         </T2>
-      </Line>,
-      ...(processesExpanded
+      </Line>]),
+      ...(processesExpanded && !server.container
         ? server.processes.map((process, index) => {
             const filled = Math.max(Math.round((8 * process.memory) / largest), 1)
             return (
@@ -1178,8 +1214,8 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
         divider('f-d'),
         <Line key="confirm">
           <span className={styles.tuiName} style={{ fontWeight: 400 }}>
-            Stop {server.name} <span style={{ color: portColor(server.port), fontWeight: 500 }}>:{server.port}</span> and its{' '}
-            {count} {count === 1 ? 'process' : 'processes'}?
+            Stop {server.name} <span style={{ color: portColor(server.port), fontWeight: 500 }}>:{server.port}</span>
+            {server.container ? '?' : ` and its ${count} ${count === 1 ? 'process' : 'processes'}?`}
           </span>
           <span style={{ color: RED }}>
             <strong>y</strong> Stop
@@ -1242,7 +1278,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
           ['⏎', `Open localhost:${page.port}`],
           ['space', 'Actions'],
           ['i', infoExpanded ? 'Less info' : 'More info'],
-          ['p', processesExpanded ? 'Hide processes' : 'Processes'],
+          ...(SERVERS.find((s) => s.port === page.port)?.container ? [] : [['p', processesExpanded ? 'Hide processes' : 'Processes'] as [string, string]]),
           ['?', 'Keys'],
           ['esc', 'Back'],
         ],
@@ -1293,7 +1329,8 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
         0,
       )
       const available = rows - top.length - footer.length
-      scroll = Math.max(0, 1 + index * 3 + 2 - available + (index === servers.length - 1 ? 1 : 0))
+      const headersAbove = sections.filter((section) => section.title && servers.findIndex((s) => s.port === section.servers[0].port) <= index).length
+      scroll = Math.max(0, 1 + index * 3 + headersAbove + 2 - available + (index === servers.length - 1 ? 1 : 0))
     }
     const available = rows - top.length - footer.length
     scroll = Math.min(Math.max(scroll, 0), Math.max(content.length - available, 0))
