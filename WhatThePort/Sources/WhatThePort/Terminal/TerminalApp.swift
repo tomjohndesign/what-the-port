@@ -737,7 +737,7 @@ final class TerminalApp {
         first.append(Span(String(repeating: " ", count: max(indent, 1))))
         second.append(Span("       "))
 
-        let name = (server.project.branch ?? server.project.name).replacingOccurrences(of: "-", with: " ")
+        let name = server.project.displayName.replacingOccurrences(of: "-", with: " ")
         first.append(Span(name, palette.text1.bold()))
 
         let memoryStyle = attention ? palette.amber : palette.text1

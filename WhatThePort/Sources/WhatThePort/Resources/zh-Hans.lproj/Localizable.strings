@@ -128,6 +128,7 @@
 "Link servers to Codex threads" = "关联服务器与 Codex 会话";
 "Link servers to the session that started them" = "关联启动服务器的会话";
 "Link servers to the terminal that started them" = "关联启动服务器的终端";
+"List feature/login instead of login" = "在列表中显示 feature/login，而不是 login";
 "MERGED" = "已合并";
 "Link copied" = "链接已复制";
 "Made by Tomjohn" = "作者 Tomjohn";
@@ -232,6 +233,7 @@
 "Share" = "分享";
 "Share with friends" = "分享给朋友";
 "Show branch names" = "显示分支名称";
+"Show branch prefixes" = "显示分支前缀";
 "Show popover with ⌥⌘P" = "按 ⌥⌘P 打开面板";
 "Show preview buttons" = "显示预览按钮";
 "Show the pull request for each branch" = "显示各分支的拉取请求";

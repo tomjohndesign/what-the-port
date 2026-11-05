@@ -421,11 +421,11 @@ struct ServerRow: View {
                 .frame(width: 58, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(primaryName.replacingOccurrences(of: "-", with: " "))
+                Text(server.project.displayName.replacingOccurrences(of: "-", with: " "))
                     .font(Theme.bodyMedium)
                     .foregroundStyle(Theme.text1)
                     .lineLimit(1)
-                    .help(primaryName)
+                    .help(server.project.branch ?? server.project.name)
                 if let reason = selecting?.reason {
                     HStack(spacing: 5) {
                         Image(systemName: reason.symbol).font(.system(size: 9, weight: .medium))
@@ -508,10 +508,6 @@ struct ServerRow: View {
             .font(Theme.caption)
             .foregroundStyle(Theme.text2)
         }
-    }
-
-    private var primaryName: String {
-        server.project.branch ?? server.project.name
     }
 
     /// Uptime or idle time, prefixed with the location when there's no branch.

@@ -21,6 +21,7 @@ import {
   pausedServer,
   portColor,
   serverResources,
+  shortBranch,
   sortServers,
   stoppedPorts,
 } from './servers'
@@ -404,7 +405,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             data-focused={focus === s.port}
             data-cleaning={selecting}
             aria-pressed={selecting ? demo.selected.includes(s.port) : undefined}
-            aria-label={`${selecting ? 'Select' : 'View'} ${s.branch} on port ${s.port}`}
+            aria-label={`${selecting ? 'Select' : 'View'} ${shortBranch(s.branch)} on port ${s.port}`}
             onMouseEnter={() => setHoveredRow(s.port)}
             onMouseLeave={() => setHoveredRow(null)}
             onClick={() => activate(s.port)}
@@ -437,7 +438,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             </span>
             <span className={styles.rowMain}>
               <span className={styles.rowName} title={s.branch}>
-                {s.branch.replaceAll('-', ' ')}
+                {shortBranch(s.branch).replaceAll('-', ' ')}
               </span>
               <span className={styles.rowSub} style={{ color: s.context.tone === 'amber' ? AMBER : '#EBEBF599' }}>
                 {cleaning && s.cleanUp ? REASON_ICONS[s.cleanUp.reason] : <AgentIcon agent={s.context.agent} />}

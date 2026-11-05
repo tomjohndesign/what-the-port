@@ -346,6 +346,7 @@ private struct IntegrationsPane: View {
     @AppStorage(Preferences.linkConductor) private var conductor = true
     @AppStorage(Preferences.linkPane) private var pane = true
     @AppStorage(Preferences.showBranches) private var branches = true
+    @AppStorage(Preferences.showBranchPrefixes) private var branchPrefixes = false
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.githubPullRequests) private var pullRequests = false
 
@@ -367,6 +368,10 @@ private struct IntegrationsPane: View {
             }
             Section("Git") {
                 Toggle(L10n.text("Show branch names"), isOn: $branches)
+                Toggle(isOn: $branchPrefixes) {
+                    SettingLabel(L10n.text("Show branch prefixes"), caption: L10n.text("List feature/login instead of login"))
+                }
+                .disabled(!branches)
             }
             Section {
                 Toggle(isOn: $previews) {

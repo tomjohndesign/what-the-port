@@ -8,6 +8,12 @@ struct ProjectInfo: Equatable {
     var isWorktree: Bool = false
     var worktreeName: String?
     var hasVercel: Bool = false
+    var showsBranchPrefix: Bool = false
+
+    /// The branch as lists show it: `tom/route-selection` is `route-selection`, unless prefixes are on.
+    var listBranch: String? { showsBranchPrefix ? branch : branch?.components(separatedBy: "/").last }
+    /// What lists call the server. The detail view and `wtp list` keep the full branch.
+    var displayName: String { listBranch ?? name }
 }
 
 /// Works out what a server is for from its working directory: the project

@@ -128,6 +128,7 @@
 "Link servers to Codex threads" = "サーバーを Codex スレッドにリンク";
 "Link servers to the session that started them" = "サーバーを起動元のセッションにリンク";
 "Link servers to the terminal that started them" = "サーバーを起動元のターミナルにリンク";
+"List feature/login instead of login" = "一覧に login ではなく feature/login と表示";
 "MERGED" = "マージ済み";
 "Link copied" = "リンクをコピーしました";
 "Made by Tomjohn" = "制作：Tomjohn";
@@ -232,6 +233,7 @@
 "Share" = "共有";
 "Share with friends" = "友だちにシェア";
 "Show branch names" = "ブランチ名を表示";
+"Show branch prefixes" = "ブランチのプレフィックスを表示";
 "Show popover with ⌥⌘P" = "⌥⌘P でポップオーバーを表示";
 "Show preview buttons" = "プレビューボタンを表示";
 "Show the pull request for each branch" = "各ブランチのプルリクエストを表示";

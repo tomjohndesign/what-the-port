@@ -103,6 +103,28 @@ struct ScanEngineTests {
         #expect(ports(.name) == [rows[1].port, rows[3].port, rows[2].port, rows[0].port])
     }
 
+    @Test func listsDropTheBranchNamespace() {
+        var project = ProjectInfo(name: "site")
+        #expect(project.listBranch == nil)
+        #expect(project.displayName == "site")
+        project.branch = "main"
+        #expect(project.displayName == "main")
+        project.branch = "tom/fix/route-selection"
+        #expect(project.listBranch == "route-selection")
+        #expect(project.displayName == "route-selection")
+        project.showsBranchPrefix = true
+        #expect(project.displayName == "tom/fix/route-selection")
+    }
+
+    @Test func scansApplyTheBranchPrefixSetting() throws {
+        let f = Fixture()
+        f.process(10)
+        f.listen(10, port: 3001)
+        #expect(try #require(f.scan().first).project.showsBranchPrefix == false)
+        f.config.showBranchPrefixes = true
+        #expect(try #require(f.scan().first).project.showsBranchPrefix == true)
+    }
+
     @MainActor @Test func pausesOnlyTheChosenServers() async throws {
         func listener(port: Int) throws -> Process {
             let process = Process()

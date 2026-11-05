@@ -43,7 +43,7 @@ enum ServerSort: String, CaseIterable, Identifiable {
             case .recency where a.startedAt != b.startedAt:
                 return (a.startedAt ?? .distantPast) > (b.startedAt ?? .distantPast)
             case .name:
-                let order = (a.project.branch ?? a.project.name).localizedStandardCompare(b.project.branch ?? b.project.name)
+                let order = a.project.displayName.localizedStandardCompare(b.project.displayName)
                 return order == .orderedSame ? a.port < b.port : order == .orderedAscending
             default:
                 return a.port < b.port

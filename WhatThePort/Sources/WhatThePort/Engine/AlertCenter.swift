@@ -233,7 +233,7 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private func context(for server: Server) -> String {
-        [server.project.branch, server.agent.map { L10n.format("%@ session", $0.kind.rawValue) }].compactMap { $0 }.joined(separator: " · ")
+        [server.project.listBranch, server.agent.map { L10n.format("%@ session", $0.kind.rawValue) }].compactMap { $0 }.joined(separator: " · ")
     }
 
     // MARK: - UNUserNotificationCenterDelegate
