@@ -1068,6 +1068,53 @@
   padding: 6px;
 }
 
+.serverGroup {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 8px 10px 0;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.serverGroupTitle {
+  font-weight: 500;
+  color: #f5f5f7;
+}
+
+.serverGroupDetail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: rgb(235 235 245 / 40%);
+}
+
+.serverGroupMemory {
+  font-family: var(--font-geist-mono), monospace;
+  white-space: nowrap;
+  color: rgb(235 235 245 / 40%);
+}
+
+.serverGroup .rowAction {
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+}
+
+.serverGroup:hover .rowAction,
+.serverGroup .rowAction:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .serverGroup .rowAction {
+    opacity: 1;
+  }
+}
+
 .serverRow {
   width: 100%;
   display: flex;

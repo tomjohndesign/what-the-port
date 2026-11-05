@@ -25,7 +25,7 @@ enum StatusItemMenu {
         let browser = NSMenuItem(title: L10n.text("Open in Browser"), action: nil, keyEquivalent: "")
         let servers = NSMenu()
         for server in monitor.servers {
-            servers.addItem(ActionItem("localhost:\(String(server.port))  \(server.project.branch ?? server.project.name)") {
+            servers.addItem(ActionItem("localhost:\(String(server.port))  \(server.listTitle)") {
                 Usage.record(.openBrowser)
                 NSWorkspace.shared.open(server.url)
             })

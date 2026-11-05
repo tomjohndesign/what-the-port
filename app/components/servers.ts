@@ -1,4 +1,4 @@
-import type { ColonState } from './icons'
+import type { ColonState, ServiceIconName } from './icons'
 import type { Localizer } from './languages'
 
 // Sample data for the marketing demo. Keep presentation aligned with the native SwiftUI views.
@@ -24,6 +24,11 @@ export type Server = {
   processes: { pid: number; command: string; memory: number; cpu: number }[]
   info: [label: string, value: string][]
   cleanUp?: { reason: CleanUpReason; note: string; suggested: boolean }
+  // A port published by a container. Its one "process" stands for the container, so totals and Stop
+  // treat it as a unit, like ServerResources.swift keys containers by id.
+  container?: { runtime: string; image: string; id: string; branch: string; project: string; service: ServiceIconName }
+  // Protected from Clean up, like databases in the app.
+  protected?: true
   // The popover's row context, clean-up reason and running time, in the app's own phrases.
   lines: (l: Localizer) => { context: string; note?: string; running: string }
 }
@@ -117,6 +122,54 @@ export const SERVERS: Server[] = [
       ['Workspace', 'Conductor · lisbon'],
     ],
     cleanUp: { reason: 'idle', note: 'Idle 5h · no connections', suggested: true },
+  },
+  {
+    port: '5432',
+    name: 'shop-db-1',
+    branch: 'db',
+    status: 'on',
+    memory: 182,
+    cpu: 1,
+    cpuNote: 'quiet',
+    uptime: 'up 2d',
+    startedMinutesAgo: 2880,
+    context: { text: 'postgres:16-alpine · up 2d' },
+    lines: (l) => ({ context: `postgres:16-alpine · ${l.format('up %@', l.duration(2880, true))}`, running: l.duration(2880) }),
+    chart: 'steady',
+    spark: 'M0 11 L4 11 L8 10.5 L12 11 L16 11 L20 10.5 L24 11 L28 10.5 L32 11 L36 10.5 L40 11 L44 10.5',
+    processes: [{ pid: 54320, command: 'shop-db-1', memory: 182, cpu: 1 }],
+    info: [
+      ['Folder', '~/Code/shop'],
+      ['Image', 'postgres:16-alpine'],
+      ['Started', 'Mon 9:12 AM'],
+      ['Address', '0.0.0.0 · [::]'],
+    ],
+    container: { runtime: 'OrbStack', image: 'postgres:16-alpine', id: '4f2a9c81e7b3', branch: 'main', project: 'shop', service: 'postgres' },
+    protected: true,
+  },
+  {
+    port: '6379',
+    name: 'shop-redis-1',
+    branch: 'redis',
+    status: 'on',
+    memory: 24,
+    cpu: 1,
+    cpuNote: 'quiet',
+    uptime: 'up 2d',
+    startedMinutesAgo: 2880,
+    context: { text: 'redis:7-alpine · up 2d' },
+    lines: (l) => ({ context: `redis:7-alpine · ${l.format('up %@', l.duration(2880, true))}`, running: l.duration(2880) }),
+    chart: 'flat',
+    spark: 'M0 10 L4 10 L8 10 L12 9.5 L16 10 L20 10 L24 10 L28 9.5 L32 10 L36 10 L40 10 L44 10',
+    processes: [{ pid: 54321, command: 'shop-redis-1', memory: 24, cpu: 1 }],
+    info: [
+      ['Folder', '~/Code/shop'],
+      ['Image', 'redis:7-alpine'],
+      ['Started', 'Mon 9:12 AM'],
+      ['Address', '0.0.0.0 · [::]'],
+    ],
+    container: { runtime: 'OrbStack', image: 'redis:7-alpine', id: '9c1e7d2ab04f', branch: 'main', project: 'shop', service: 'redis' },
+    protected: true,
   },
   {
     port: '6006',
@@ -231,9 +284,41 @@ export function sortServers(servers: Server[], sort: ServerSort) {
   })
 }
 
+// Native servers come first with no header, then one group per compose project, as in
+// ServerSection in Server.swift. Takes servers already in display order.
+export type ServerSection = { id: string; title?: string; detail?: string; servers: Server[] }
+export function serverSections(servers: Server[], sort: ServerSort): ServerSection[] {
+  const groups = new Map<string, Server[]>()
+  for (const server of servers) {
+    if (!server.container) continue
+    const key = `${server.container.runtime}/${server.container.project}`
+    groups.set(key, [...(groups.get(key) ?? []), server])
+  }
+  const lowest = (rows: Server[]) => Math.min(...rows.map((s) => Number(s.port)))
+  const total = (rows: Server[]) => serverResources(rows).memory
+  const newest = (rows: Server[]) => Math.min(...rows.map((s) => s.startedMinutesAgo))
+  const ordered = Array.from(groups.entries()).sort(([, a], [, b]) => {
+    if (sort === 'usage' && total(a) !== total(b)) return total(b) - total(a)
+    if (sort === 'recency' && newest(a) !== newest(b)) return newest(a) - newest(b)
+    if (sort === 'name') {
+      const order = a[0].container!.project.localeCompare(b[0].container!.project, undefined, { numeric: true })
+      if (order) return order
+    }
+    return lowest(a) - lowest(b)
+  })
+  const native = servers.filter((s) => !s.container)
+  return [
+    ...(native.length ? [{ id: 'native', servers: native }] : []),
+    ...ordered.map(([id, rows]) => {
+      const { project, runtime, branch } = rows[0].container!
+      return { id, title: project, detail: `${runtime} · ${branch}`, servers: rows }
+    }),
+  ]
+}
+
 // A paused server is frozen: no CPU, no warnings, and Clean up leaves it alone.
 export function pausedServer(server: Server): Server {
-  const project = server.name.replaceAll('-', ' ')
+  const project = server.container?.image ?? server.name.replaceAll('-', ' ')
   return {
     ...server,
     status: 'paused',
