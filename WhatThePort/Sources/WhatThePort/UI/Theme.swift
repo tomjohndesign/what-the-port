@@ -15,6 +15,10 @@ enum Theme {
     static let onPrimary = adaptive(light: 0xFAFAFC, dark: 0x0B0D12)
     static let windowBackground = adaptive(light: 0xF5F5F7, dark: 0x1E1E21)
     static let popoverBackground = adaptive(light: 0xF5F5F7, dark: 0x202024)
+    /// Laid over the menu bar panel's system glass. Clear Liquid Glass (macOS 27)
+    /// takes on a dark wallpaper and leaves light-mode text on mid-grey, so the
+    /// tint keeps the panel close to its usual shade whatever is behind it.
+    static let popoverTint = adaptive(light: 0xF5F5F7, dark: 0x202024, lightAlpha: 0.75, darkAlpha: 0.75)
     static let snapshotBackground = adaptive(light: 0xE5E7EB, dark: 0x0B0D12)
 
     static let amber = adaptive(Palette.amber)
