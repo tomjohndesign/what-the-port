@@ -634,7 +634,7 @@ extension CleanUpReason {
         case .worktreeDeleted: return L10n.text("Worktree deleted")
         case .idle(let duration): return L10n.format("Idle %@ · no connections", L10n.duration(duration, short: true))
         case .longRunning(let duration): return L10n.format("Running for %@", L10n.duration(duration, short: true))
-        case .leaking(let growth): return L10n.format("Leaking · +%@", Format.bytesString(growth))
+        case .leaking(let growth): return L10n.format("Growing · +%@", Format.bytesString(growth))
         }
     }
 }

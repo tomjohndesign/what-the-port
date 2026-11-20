@@ -22,7 +22,7 @@ Servers launched by Claude Code, Codex, Conductor, or [Pane](https://runpane.com
 
 ### Notices before your fans do
 
-When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the server’s own process tree. Adjust thresholds and snooze alerts in Settings.
+When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Growth has to hold for 30 seconds, so a build step that spikes and exits doesn’t count. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the server’s own process tree. Adjust thresholds and snooze alerts in Settings.
 
 ![Marketing demo showing a rising memory chart and the amber alert threshold for a development server](docs/images/leaks.jpg)
 
@@ -30,7 +30,7 @@ When a server passes the default 2 GB memory threshold or grows more than 500 MB
 
 **Clean up** adds checkboxes to the server list and preselects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops each server’s own process tree. Database processes such as Postgres and Redis are protected by default.
 
-Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Leaking servers are never stopped automatically.
+Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Fast-growing servers are never stopped automatically.
 
 ![Marketing demo of Clean up with idle and deleted-worktree servers selected for removal](docs/images/clean-up.jpg)
 
@@ -53,8 +53,8 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
 - **Stop and restart** - Stops the server’s own process tree; restart reruns the original command in the same folder
 - **Containers** - Ports published by Docker Desktop, OrbStack, Colima, Rancher Desktop and Kiri containers are grouped below native servers, one group per compose project, with each service’s icon, the compose folder’s branch and the container’s memory and CPU. Stop, restart and pause go to the container, never to the runtime
-- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
-- **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
+- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or grows fast
+- **Automatic clean up (optional)** - Off, Ask or Automatic; fast-growing servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
 - **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
 - **Global shortcut** - ⌥⌘P opens the popover
@@ -152,17 +152,23 @@ To package a local build as the download's disk image, run `./make-dmg.sh` after
 ## Automatic deployment
 
 Every push to `main`, including a merged pull request, runs
-[Rebuild and deploy site and app](.github/workflows/deploy.yml). It builds the
-Apple Silicon Mac app on macOS, verifies its ad-hoc signature, and packages it as
+[Deploy site and release app](.github/workflows/deploy.yml), which builds the
+Next.js site and deploys it to production on Vercel with the published app copied
+over from production. Installed copies have to restart to update, so the app
+releases at most once a day: a daily run at 10:00 UTC releases a new version only if
+the app's code changed since the last release
+([`scripts/plan-release.mjs`](scripts/plan-release.mjs)). To release one
+straight away, run the workflow with **Release a new app version now** checked.
+
+A release builds the Apple Silicon Mac app on macOS, verifies its signature, and packages it as
 `WhatThePort.dmg` ([`make-dmg.sh`](WhatThePort/make-dmg.sh)): the app beside an
 Applications shortcut, on a background designed in Paper
-([`WhatThePort/dmg/`](WhatThePort/dmg)). A Linux job then puts that artifact at `public/WhatThePort.dmg`,
-builds the Next.js site, and deploys both together to production on Vercel. A
-failed app or site build stops deployment.
+([`WhatThePort/dmg/`](WhatThePort/dmg)). A Linux job then puts that artifact at `public/WhatThePort.dmg`
+and deploys it with the site. A failed app or site build stops deployment.
 
 The download is never checked in, so the site always serves the latest release.
-Production builds fail unless `public/WhatThePort.dmg` is a disk image and any
-update feed is for this commit's build ([`scripts/check-download.mjs`](scripts/check-download.mjs)). Local dev
+Production builds fail unless `public/WhatThePort.dmg` is a disk image and
+`public/release.json` and any update feed are for the same build ([`scripts/check-download.mjs`](scripts/check-download.mjs)). Local dev
 and preview deployments don't have the file, so they redirect downloads to
 production.
 
@@ -189,11 +195,13 @@ and redirect to `https://whattheport.dev/thanks`. That page opens
 `whattheport://tipped`, which turns off the app's monthly tip reminder.
 
 `vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
-workflow publishes production with the freshly built app. Other branches retain
+workflow publishes production, always with the latest app release. Other branches retain
 Vercel's normal preview deployments. To retry production,
-use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
+use **Actions → Deploy site and release app → Run workflow** with `main`
 selected. Production runs are serialized; GitHub may replace a pending run with
-a newer one when several merges arrive during an active deployment.
+a newer one when several merges arrive during an active deployment. If that
+replaces the daily release, the app waits for the next day's, unless you release it
+by hand.
 
 Until its signing secrets are configured, the workflow uses ad-hoc signing and
 builds without an update feed. Once they are, it signs with Developer ID,

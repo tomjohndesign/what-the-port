@@ -275,11 +275,38 @@ struct ScanEngineTests {
         f.listen(30, port: 8000)
         _ = f.scan()
         f.usages[30] = ProcUsage(footprint: 100 + 600 * 1_048_576, cpuNanoseconds: 0)
+        _ = f.scan(after: 91)
         let rows = f.scan(after: 121)
         #expect(rows[0].memoryGrowth == 0)
         #expect(!rows[0].isLeaking())
         #expect(rows[1].memoryGrowth == 600 * 1_048_576)
         #expect(rows[1].isLeaking())
+    }
+
+    @Test func buildStepSpikesDontReadAsGrowth() {
+        let mib: UInt64 = 1_048_576
+        let f = Fixture()
+        f.process(10, memory: 800 * mib)
+        f.listen(10, port: 3000)
+        for second in stride(from: 0.0, through: 120, by: 5) { _ = f.scan(after: second) }
+
+        // A compiler child takes 600 MiB for 14 seconds, then exits.
+        f.process(11, parent: 10, name: "clang", memory: 600 * mib)
+        for second in stride(from: 125.0, through: 135, by: 5) {
+            let row = f.scan(after: second)[0]
+            #expect(row.memory == 1400 * mib, "The whole tree is still counted")
+            #expect(!row.isLeaking())
+        }
+        f.processes[11] = nil
+        #expect(f.scan(after: 140)[0].memoryGrowth == 0)
+
+        // Growth that holds for 30 seconds still counts.
+        f.process(11, parent: 10, name: "clang", memory: 600 * mib)
+        for second in stride(from: 145.0, through: 170, by: 5) { #expect(!f.scan(after: second)[0].isLeaking()) }
+        let held = f.scan(after: 175)[0]
+        #expect(held.memoryGrowth == Int64(600 * mib))
+        #expect(held.isLeaking())
+        #expect(held.status(alertThreshold: 2 * 1024 * mib) == .attention)
     }
 
     @Test func hiddenListenersStillLimitOwnership() {
@@ -624,6 +651,8 @@ struct ScanEngineTests {
         var row = f.scan()[0]
         row.lastActive = f.epoch.addingTimeInterval(-86_400)
         #expect(ServerMonitor.cleanUpReason(for: row, mode: .automatic, idleThreshold: 60, longRunningThreshold: 60, deletedWorktree: true) == nil)
+        f.sample("api", memory: 900_000_000, after: 120)
+        _ = f.scan(after: 120)
         f.sample("api", memory: 900_000_000, after: 150)
         row = f.scan(after: 150)[0]
         #expect(ServerMonitor.cleanUpReason(for: row, mode: .ask, idleThreshold: 60, longRunningThreshold: 60, deletedWorktree: true)?.isLeak == true)

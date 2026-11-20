@@ -1,10 +1,10 @@
 # The download is always the latest release
 
-Never commit `public/WhatThePort.dmg` or `public/updates/`. The deploy workflow builds them for each production deploy, and `scripts/check-download.mjs` fails production builds whose download isn't this commit's release. Local dev and previews redirect the download to production. Don't link a versioned archive such as `/updates/WhatThePort-4.zip` from the site or README; always link `/WhatThePort.dmg`.
+Never commit `public/WhatThePort.dmg`, `public/updates/` or `public/release.json`. The deploy workflow builds them when it releases the app and carries them over from production otherwise, and `scripts/check-download.mjs` fails production builds whose download isn't the published release. Local dev and previews redirect the download to production. Don't link a versioned archive such as `/updates/WhatThePort-4.zip` from the site or README; always link `/WhatThePort.dmg`.
 
-# Every merge is a release
+# The app releases once a day
 
-Each merge to `main` publishes a new app version to installed copies. `scripts/set-release-version.mjs` sets the numbers during the deploy, so don't bump `CFBundleVersion` by hand. Change `CFBundleShortVersionString` in `WhatThePort/Info.plist` only to start a new major or minor version. See `WhatThePort/UPDATES.md`.
+Each merge to `main` deploys the website straight away, but reuses the published app. A daily run at 10:00 UTC releases a new app version only if `WhatThePort/` (other than its tests and docs) changed since the last release, so a day's merges reach installed copies as one update. Until then, the marketing demo can show app changes a day before the download has them. To release sooner, run the deploy workflow with **Release a new app version now**. `scripts/set-release-version.mjs` sets the numbers during the release, so don't bump `CFBundleVersion` by hand. Change `CFBundleShortVersionString` in `WhatThePort/Info.plist` only to start a new major or minor version. See `WhatThePort/UPDATES.md`.
 
 # Keep the marketing demo in sync with the product
 

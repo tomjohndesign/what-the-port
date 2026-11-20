@@ -1,9 +1,20 @@
-name: Rebuild and deploy site and app
+name: Deploy site and release app
 
+# The site deploys on every merge. The app releases at most once a day, because
+# installed copies have to restart to update: each merge reuses the published
+# app, and the daily run releases a new version only if the app has changed.
 on:
   push:
     branches: [main]
+  # 10:00 UTC, early morning in California. GitHub can start scheduled runs late.
+  schedule:
+    - cron: '0 10 * * *'
   workflow_dispatch:
+    inputs:
+      release_app:
+        description: Release a new app version now, instead of waiting for the daily release
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -14,8 +25,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-app:
+  plan:
     if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      deploy: ${{ steps.plan.outputs.deploy }}
+      version: ${{ steps.plan.outputs.version }}
+      build: ${{ steps.plan.outputs.build }}
+      commit: ${{ steps.plan.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Decide whether to release the app
+        id: plan
+        env:
+          RELEASE_APP: ${{ inputs.release_app }}
+        run: |
+          args=()
+          if [ "$RELEASE_APP" = true ]; then args=(--release-app); fi
+          node scripts/plan-release.mjs "$GITHUB_EVENT_NAME" "${args[@]}"
+
+  build-app:
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
     # Build with the macOS 26 SDK. SwiftUI keeps older behavior, like popovers
     # that don't resize to fit, in apps built with older SDKs.
     runs-on: macos-26
@@ -25,7 +65,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Every merge is a release: this commit gets its own version.
+      # This commit gets its own version, recorded in dist/release.json.
       - name: Set the release version
         run: node scripts/set-release-version.mjs
 
@@ -138,7 +178,11 @@ jobs:
           retention-days: 14
 
   deploy:
-    needs: build-app
+    needs: [plan, build-app]
+    # Runs after a new app is built, or without one when the site reuses the published app.
+    if: >-
+      !cancelled() && needs.plan.outputs.deploy == 'true' &&
+      (needs.build-app.result == 'success' || needs.build-app.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -147,8 +191,6 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Check deployment configuration
         run: |
@@ -164,23 +206,49 @@ jobs:
           node-version: '24'
           cache: npm
 
-      # The same version as the app, for the checks below and the site's structured data.
-      - name: Set the release version
-        run: node scripts/set-release-version.mjs
-
+      # Signed builds also bring public/updates/ with the Sparkle feed and archive.
       - uses: actions/download-artifact@v4
+        if: needs.plan.outputs.release == 'true'
         with:
           name: mac-app
           path: public
 
-      # Signed builds also bring public/updates/ with the Sparkle feed and archive.
-      - name: Verify the rebuilt download
+      # Copy the live download, feed and archive byte for byte, so their signatures still hold.
+      - name: Carry over the published app
+        if: needs.plan.outputs.release != 'true'
+        env:
+          SITE: https://whattheport.dev
+          VERSION: ${{ needs.plan.outputs.version }}
+          BUILD: ${{ needs.plan.outputs.build }}
+          COMMIT: ${{ needs.plan.outputs.commit }}
         run: |
-          if [ -d public/updates ]; then
-            test -f public/updates/appcast.xml
-            ls public/updates
+          fetch() { curl -fsSL --retry 3 -o "$2" "$1"; }
+          fetch "$SITE/WhatThePort.dmg" public/WhatThePort.dmg
+          # Ad-hoc releases have no feed. Any other failure stops the deploy rather than drop it.
+          mkdir -p public/updates
+          status="$(curl -sSL --retry 3 -o public/updates/appcast.xml -w '%{http_code}' "$SITE/updates/appcast.xml")"
+          if [ "$status" = 200 ]; then
+            archive="$(grep -o '<enclosure[^>]* url="[^"]*"' public/updates/appcast.xml | head -1 | sed 's/.* url="\([^"]*\)"/\1/')"
+            case "$archive" in
+              "$SITE"/updates/*.zip) fetch "$archive" "public/updates/${archive##*/}" ;;
+              *) echo "::error::The published feed's archive isn't on $SITE: $archive"; exit 1 ;;
+            esac
+          elif [ "$status" = 404 ]; then
+            rm -r public/updates
+          else
+            echo "::error::Couldn't read the published feed (HTTP $status)."
+            exit 1
           fi
-          VERCEL_ENV=production node scripts/check-download.mjs
+          printf '{\n  "version": "%s",\n  "build": "%s",\n  "commit": "%s"\n}\n' \
+            "$VERSION" "$BUILD" "$COMMIT" > public/release.json
+          ls -R public/updates public/release.json 2>/dev/null || true
+
+      # The released app's version, for the checks below and the site's structured data.
+      - name: Set the app version
+        run: node scripts/set-release-version.mjs --published public/release.json
+
+      - name: Verify the download
+        run: VERCEL_ENV=production node scripts/check-download.mjs
 
       - name: Install dependencies and Vercel CLI
         run: |
@@ -190,7 +258,7 @@ jobs:
       - name: Pull production configuration
         run: vercel pull --yes --environment=production
 
-      - name: Build the site with the rebuilt app
+      - name: Build the site
         run: vercel build --prod
 
       - name: Deploy to production

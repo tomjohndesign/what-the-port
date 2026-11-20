@@ -31,7 +31,7 @@
 "2 seconds" = "2 segundos";
 "4 hours" = "4 horas";
 "5 seconds" = "5 segundos";
-":%d %@ is leaking" = ":%d %@ tiene una fuga de memoria";
+":%d %@ is growing fast" = ":%d %@ crece rápido";
 ":%d %@ is using %@" = ":%d %@ usa %@";
 ":%d %@ started" = ":%d %@ iniciado";
 ":%d stopped" = ":%d detenido";
@@ -112,7 +112,7 @@
 "General" = "General";
 "Get started" = "Empezar";
 "Global shortcut" = "Atajo global";
-"Grows more than 500 MB in 10 minutes" = "Aumenta más de 500 MB en 10 minutos";
+"Grows 500 MB in 10 minutes and stays up for 30 seconds" = "Aumenta 500 MB en 10 minutos y se mantiene 30 segundos";
 "Have been idle for" = "Llevan inactivos";
 "Have been running for" = "Llevan en ejecución";
 "Help shape WhatThePort" = "Ayuda a mejorar WhatThePort";
@@ -126,7 +126,7 @@
 "Language" = "Idioma";
 "Last checked %@" = "Última comprobación %@";
 "Launch at login" = "Abrir al iniciar sesión";
-"Leaking · +%@" = "Fuga de memoria · +%@";
+"Growing · +%@" = "Creciendo · +%@";
 "Less" = "Menos";
 "Leave a tip in the tip jar, or share it with friends." = "Deja una propina o compártelo con tus amigos.";
 "Link servers to Codex threads" = "Vincular servidores a conversaciones de Codex";

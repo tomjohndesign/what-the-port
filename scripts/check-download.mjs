@@ -1,5 +1,6 @@
-// Production must serve the app built from this commit. The deploy workflow
-// builds it into public/; nothing else should publish a download.
+// Production must serve the latest app release. The deploy workflow puts it in
+// public/, either freshly built or carried over from production, and sets
+// Info.plist to its version. Nothing else should publish a download.
 import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'node:fs'
 
 const production = process.env.VERCEL_ENV === 'production' || process.env.VERCEL_TARGET_ENV === 'production'
@@ -7,7 +8,7 @@ if (!production) process.exit(0)
 
 const fail = (message) => {
   console.error(`check-download: ${message}`)
-  console.error('Deploy production through .github/workflows/deploy.yml, which builds the app first.')
+  console.error('Deploy production through .github/workflows/deploy.yml, which publishes the app first.')
   process.exit(1)
 }
 
@@ -20,12 +21,17 @@ readSync(fd, trailer, 0, 4, statSync(dmg).size - 512)
 closeSync(fd)
 if (trailer.toString('latin1') !== 'koly') fail(`${dmg} isn't a disk image.`)
 
-// Release builds also publish the signed feed. Its newest item must be this
-// commit's build, and its update archive must be published alongside it.
+// Every release records its version and commit, so later deploys can reuse it.
+const plist = readFileSync('WhatThePort/Info.plist', 'utf8')
+const build = plist.match(/<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/)?.[1]
+const release = 'public/release.json'
+if (!existsSync(release)) fail(`${release} is missing.`)
+if (JSON.parse(readFileSync(release, 'utf8')).build !== build) fail(`${release} isn't for build ${build}.`)
+
+// Signed releases also publish the feed. Its newest item must be the release's
+// build, and its update archive must be published alongside it.
 const feed = 'public/updates/appcast.xml'
 if (existsSync(feed)) {
-  const plist = readFileSync('WhatThePort/Info.plist', 'utf8')
-  const build = plist.match(/<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/)?.[1]
   const item = readFileSync(feed, 'utf8').match(/<item>[\s\S]*?<\/item>/)?.[0] ?? ''
   const feedBuild = item.match(/<sparkle:version>([^<]+)<\/sparkle:version>/)?.[1]
   const url = item.match(/<enclosure[^>]*\surl="([^"]+)"/)?.[1] ?? ''

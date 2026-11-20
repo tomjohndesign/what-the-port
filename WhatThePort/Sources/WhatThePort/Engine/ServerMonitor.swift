@@ -8,8 +8,11 @@ final class ServerMonitor: ObservableObject {
             for port in servers.map(\.port).sorted() where portColorIndices[port] == nil {
                 portColorIndices[port] = portColorIndices.count
             }
+            updateMenuBar()
         }
     }
+    /// What the menu bar icon shows, published only when it changes.
+    let menuBar = MenuBarIconState()
     /// Keep port identities stable across reordering, filtering, and restarts.
     private var portColorIndices: [Int: Int] = [:]
     @Published private(set) var hasScanned = false
@@ -116,6 +119,7 @@ final class ServerMonitor: ObservableObject {
                 Task { @MainActor in
                     self?.scheduleTimer()
                     self?.updateContainerSampling()
+                    self?.updateMenuBar()
                     self?.objectWillChange.send()
                 }
             }
@@ -199,6 +203,10 @@ final class ServerMonitor: ObservableObject {
     /// Servers' CPU as a share of the whole Mac, comparable with `systemCPU`.
     var serversShareOfCPU: Double { totalCPU / Double(max(ProcessInfo.processInfo.activeProcessorCount, 1)) }
     var needsAttention: Bool { servers.contains { $0.status(alertThreshold: alertThreshold) == .attention } }
+
+    private func updateMenuBar() {
+        menuBar.update(count: servers.count, needsAttention: needsAttention)
+    }
 
     func server(port: Int) -> Server? { servers.first { $0.port == port } }
 
@@ -355,5 +363,19 @@ final class ServerMonitor: ObservableObject {
     private func saveAllowlist() {
         defaults.set(Array(allowlist), forKey: "allowlist")
         scan()
+    }
+}
+
+/// The menu bar icon's inputs. Unlike the monitor, it publishes only when they
+/// change, so the icon isn't redrawn on every scan.
+@MainActor
+final class MenuBarIconState: ObservableObject {
+    @Published private(set) var count = 0
+    @Published private(set) var needsAttention = false
+
+    func update(count: Int, needsAttention: Bool) {
+        // Assigning an equal value would still publish.
+        if count != self.count { self.count = count }
+        if needsAttention != self.needsAttention { self.needsAttention = needsAttention }
     }
 }
