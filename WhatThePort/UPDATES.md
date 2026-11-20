@@ -54,9 +54,11 @@ Existing installations from before this feature must download and install the fi
 
 ## Release from GitHub Actions
 
-[Rebuild and deploy site and app](../.github/workflows/deploy.yml) builds the app on every push to `main`. It builds ad-hoc without an update feed until every secret below exists, then switches to Developer ID signing, notarization and a signed Sparkle feed at `https://whattheport.dev/updates/appcast.xml`. If only some are set, the workflow stops rather than shipping an unsigned build by mistake.
+[Deploy site and release app](../.github/workflows/deploy.yml) deploys the website on every push to `main` and releases the app at most once a day. When it builds the app, it builds ad-hoc without an update feed until every secret below exists, then switches to Developer ID signing, notarization and a signed Sparkle feed at `https://whattheport.dev/updates/appcast.xml`. If only some are set, the workflow stops rather than shipping an unsigned build by mistake.
 
-Every merge to `main` is a release, including website-only changes. [`scripts/set-release-version.mjs`](../scripts/set-release-version.mjs) sets the build number to the number of commits on `main`, and the version to the major and minor from `Info.plist` plus that build, like 2.6.44. Nothing is committed back. To start a new major or minor version, change `CFBundleShortVersionString` in `Info.plist`; don't edit `CFBundleVersion`, which only applies to local builds. If `main` is ever rewritten to fewer commits, the deploy stops rather than publishing a build that installed copies would ignore. Each deployment publishes a feed containing only the current build.
+Installed copies have to restart to update, so merges are batched into one release a day. A push to `main` deploys the website with the published app copied over from production unchanged: the disk image, the signed feed and its archive. Every day at 10:00 UTC (GitHub can start scheduled runs late), [`scripts/plan-release.mjs`](../scripts/plan-release.mjs) compares `main` with the commit of the published app, which each release records in `/release.json`. If anything in `WhatThePort/` other than its tests and Markdown changed, it builds, signs and publishes a new version with the website; otherwise the run does nothing. To release straight away, run **Actions → Deploy site and release app → Run workflow** on `main` with **Release a new app version now** checked. GitHub turns off scheduled workflows in a repository with no activity for 60 days; re-enable it under **Actions** if that happens.
+
+For each release, [`scripts/set-release-version.mjs`](../scripts/set-release-version.mjs) sets the build number to the number of commits on `main`, and the version to the major and minor from `Info.plist` plus that build, like 2.6.44. Nothing is committed back. To start a new major or minor version, change `CFBundleShortVersionString` in `Info.plist`; don't edit `CFBundleVersion`, which only applies to local builds. Build numbers skip the merges that weren't released. If `main` is ever rewritten to fewer commits, or a release is requested with no new commits, the release stops rather than publishing a build that installed copies would ignore. Each release publishes a feed containing only the current build.
 
 ### One-time setup once the Apple Developer membership is active
 
@@ -75,7 +77,7 @@ Every merge to `main` is a release, including website-only changes. [`scripts/se
 | `SPARKLE_PRIVATE_KEY` | Secret | Contents of the exported Sparkle key |
 | `SPARKLE_PUBLIC_KEY` | Variable | Output of `generate_keys -p` |
 
-Then run **Actions → Rebuild and deploy site and app → Run workflow** on `main`. Download `https://whattheport.dev/WhatThePort.dmg` on another Mac and drag the app to Applications: it should open without a Gatekeeper warning and `spctl --assess --verbose=2 /Applications/WhatThePort.app` should report `source=Notarized Developer ID`.
+Then run **Actions → Deploy site and release app → Run workflow** on `main` with **Release a new app version now** checked. Download `https://whattheport.dev/WhatThePort.dmg` on another Mac and drag the app to Applications: it should open without a Gatekeeper warning and `spctl --assess --verbose=2 /Applications/WhatThePort.app` should report `source=Notarized Developer ID`.
 
 Keep the Sparkle key and Developer ID certificate stable. Installed copies only accept updates signed with the Sparkle key they shipped with, and changing both the Sparkle key and signing identity in one release breaks updates.
 
