@@ -31,7 +31,10 @@ final class ProjectResolver {
     func resolve(cwd: String?, command: String?) -> ProjectInfo {
         guard let cwd else { return ProjectInfo(name: "Unknown") }
 
-        if let cached = cache[cwd], Date().timeIntervalSince(cached.resolvedAt) < 15 {
+        // The command is part of the key: two servers in one folder can be
+        // Vite and Storybook, or Vite and Bazel.
+        let cacheKey = cwd + "\n" + (command ?? "")
+        if let cached = cache[cacheKey], Date().timeIntervalSince(cached.resolvedAt) < 15 {
             var info = cached.info
             // Branches change often; HEAD is cheap to re-read every scan.
             if let head = cached.gitHeadPath { info.branch = Self.branch(fromHead: head) }
@@ -41,6 +44,7 @@ final class ProjectResolver {
         var info = ProjectInfo(name: URL(fileURLWithPath: cwd).lastPathComponent)
         var gitHeadPath: String?
         var foundManifest = false
+        var ecosystem: Ecosystem?
         var directory = URL(fileURLWithPath: cwd)
 
         while directory.path != "/" && directory.path != home {
@@ -48,6 +52,7 @@ final class ProjectResolver {
             if !foundManifest, let manifest = Self.readManifest(in: path, command: command) {
                 info.name = manifest.name ?? directory.lastPathComponent
                 info.framework = manifest.framework
+                ecosystem = manifest.ecosystem
                 info.root = path
                 info.hasVercel = FileManager.default.fileExists(atPath: path + "/.vercel/project.json")
                 foundManifest = true
@@ -62,16 +67,25 @@ final class ProjectResolver {
             directory.deleteLastPathComponent()
         }
 
+        // A running command that names its tool beats a guess from the folder's
+        // manifest: Bazel's server in a repo whose package.json lists Vite is Bazel.
+        if let tool = Self.commandTool(command), tool.ecosystem == nil || tool.ecosystem != ecosystem {
+            info.framework = tool.label
+        }
+
         if let gitHeadPath { info.branch = Self.branch(fromHead: gitHeadPath) }
-        cache[cwd] = Cached(info: info, gitHeadPath: gitHeadPath, resolvedAt: Date())
+        cache[cacheKey] = Cached(info: info, gitHeadPath: gitHeadPath, resolvedAt: Date())
         return info
     }
 
     // MARK: - Manifests
 
+    private enum Ecosystem { case javaScript, python, rust, go, ruby }
+
     private struct Manifest {
         var name: String?
         var framework: String?
+        var ecosystem: Ecosystem
     }
 
     private static func readManifest(in directory: String, command: String?) -> Manifest? {
@@ -84,23 +98,47 @@ final class ProjectResolver {
             for key in ["dependencies", "devDependencies"] {
                 (json[key] as? [String: String])?.forEach { deps[$0.key] = $0.value }
             }
-            return Manifest(name: json["name"] as? String, framework: jsFramework(deps: deps, command: command))
+            return Manifest(name: json["name"] as? String, framework: jsFramework(deps: deps, command: command), ecosystem: .javaScript)
         }
         if let text = try? String(contentsOfFile: directory + "/pyproject.toml", encoding: .utf8) {
             return Manifest(name: tomlName(text, section: "project") ?? tomlName(text, section: "tool.poetry"),
-                            framework: pythonFramework(command: command, manifest: text))
+                            framework: pythonFramework(command: command, manifest: text), ecosystem: .python)
         }
         if let text = try? String(contentsOfFile: directory + "/Cargo.toml", encoding: .utf8) {
-            return Manifest(name: tomlName(text, section: "package"), framework: "Rust")
+            return Manifest(name: tomlName(text, section: "package"), framework: "Rust", ecosystem: .rust)
         }
         if let text = try? String(contentsOfFile: directory + "/go.mod", encoding: .utf8),
            let line = text.split(separator: "\n").first(where: { $0.hasPrefix("module ") }) {
             let module = line.dropFirst("module ".count).trimmingCharacters(in: .whitespaces)
-            return Manifest(name: module.split(separator: "/").last.map(String.init), framework: "Go")
+            return Manifest(name: module.split(separator: "/").last.map(String.init), framework: "Go", ecosystem: .go)
         }
         if fm.fileExists(atPath: directory + "/Gemfile") {
             let isRails = fm.fileExists(atPath: directory + "/config/application.rb")
-            return Manifest(name: nil, framework: isRails ? "Rails" : "Ruby")
+            return Manifest(name: nil, framework: isRails ? "Rails" : "Ruby", ecosystem: .ruby)
+        }
+        return nil
+    }
+
+    /// The tool a server's command names, like `java`, `bazel(my-repo)` or
+    /// `python3 manage.py runserver`. Runtimes that have a manifest carry its
+    /// ecosystem, so that manifest's own detection still wins, e.g. Django from
+    /// pyproject.toml. JavaScript runtimes return nil: `node server.js` gives
+    /// no better answer than package.json.
+    private static func commandTool(_ command: String?) -> (label: String, ecosystem: Ecosystem?)? {
+        guard let command, let word = command.split(separator: " ").first else { return nil }
+        // Bazel's server renames itself `bazel(<workspace>)`.
+        let executable = word.prefix { $0 != "(" }.lowercased()
+        let tools: [String: (String, Ecosystem?)] = [
+            "bazel": ("Bazel", nil), "java": ("Java", nil),
+            "gradle": ("Gradle", nil), "gradlew": ("Gradle", nil), "mvn": ("Maven", nil), "mvnw": ("Maven", nil),
+            "php": ("PHP", nil), "php-fpm": ("PHP", nil), "dotnet": (".NET", nil),
+            "beam.smp": ("Elixir", nil), "elixir": ("Elixir", nil), "mix": ("Elixir", nil),
+            "go": ("Go", .go), "air": ("Go", .go), "cargo": ("Rust", .rust),
+            "ruby": ("Ruby", .ruby), "rails": ("Rails", .ruby), "puma": ("Ruby", .ruby), "unicorn": ("Ruby", .ruby),
+        ]
+        if let (label, ecosystem) = tools[executable] { return (label, ecosystem) }
+        if ["python", "python3", "uv", "poetry", "pipenv", "uvicorn", "gunicorn", "flask"].contains(executable) || executable.hasPrefix("python3.") {
+            return (pythonFramework(command: command, manifest: "") ?? "Python", .python)
         }
         return nil
     }

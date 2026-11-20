@@ -205,7 +205,7 @@ private struct AlertsPane: View {
                     }
                 }
                 Toggle(isOn: $leakWarnings) {
-                    SettingLabel(L10n.text("Warn about leaks"), caption: L10n.text("Grows more than 500 MB in 10 minutes"))
+                    SettingLabel(L10n.text("Warn about leaks"), caption: L10n.text("Grows 500 MB in 10 minutes and stays up for 30 seconds"))
                 }
                 Picker(L10n.text("Snooze for"), selection: $snoozeMinutes) {
                     Text(L10n.text("15 minutes")).tag(15)

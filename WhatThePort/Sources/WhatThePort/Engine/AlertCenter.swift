@@ -87,12 +87,13 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
                 kinds.remove(.memory)
             }
 
-            // Fast growth. Re-arm once growth drops back under half the trigger.
+            // Fast growth that has held for 30 seconds, so a build step's spike
+            // doesn't count. Re-arm once growth drops back under half the trigger.
             if defaults.bool(forKey: Preferences.leakWarnings), server.isLeaking(), !kinds.contains(.leak) {
                 kinds.insert(.leak)
                 let window = server.history.first.map { L10n.duration(now.timeIntervalSince($0.time)) } ?? L10n.text("10 min")
                 post(server, kind: .leak,
-                     title: L10n.format(":%d %@ is leaking", server.port, server.project.name),
+                     title: L10n.format(":%d %@ is growing fast", server.port, server.project.name),
                      body: L10n.format("%@ grew %@ in %@ and is now using %@.", server.project.framework ?? L10n.text("It"), Format.bytesString(UInt64(max(server.memoryGrowth, 0))), window, Format.bytesString(server.memory)))
             } else if server.memoryGrowth < 250_000_000 {
                 kinds.remove(.leak)

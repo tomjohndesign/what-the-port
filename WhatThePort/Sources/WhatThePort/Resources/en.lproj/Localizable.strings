@@ -31,7 +31,7 @@
 "2 seconds" = "2 seconds";
 "4 hours" = "4 hours";
 "5 seconds" = "5 seconds";
-":%d %@ is leaking" = ":%d %@ is leaking";
+":%d %@ is growing fast" = ":%d %@ is growing fast";
 ":%d %@ is using %@" = ":%d %@ is using %@";
 ":%d %@ started" = ":%d %@ started";
 ":%d stopped" = ":%d stopped";
@@ -112,7 +112,7 @@
 "General" = "General";
 "Get started" = "Get started";
 "Global shortcut" = "Global shortcut";
-"Grows more than 500 MB in 10 minutes" = "Grows more than 500 MB in 10 minutes";
+"Grows 500 MB in 10 minutes and stays up for 30 seconds" = "Grows 500 MB in 10 minutes and stays up for 30 seconds";
 "Have been idle for" = "Have been idle for";
 "Have been running for" = "Have been running for";
 "Help shape WhatThePort" = "Help shape WhatThePort";
@@ -126,7 +126,7 @@
 "Language" = "Language";
 "Last checked %@" = "Last checked %@";
 "Launch at login" = "Launch at login";
-"Leaking · +%@" = "Leaking · +%@";
+"Growing · +%@" = "Growing · +%@";
 "Less" = "Less";
 "Leave a tip in the tip jar, or share it with friends." = "Leave a tip in the tip jar, or share it with friends.";
 "Link servers to Codex threads" = "Link servers to Codex threads";
