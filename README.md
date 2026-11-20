@@ -152,17 +152,23 @@ To package a local build as the download's disk image, run `./make-dmg.sh` after
 ## Automatic deployment
 
 Every push to `main`, including a merged pull request, runs
-[Rebuild and deploy site and app](.github/workflows/deploy.yml). It builds the
-Apple Silicon Mac app on macOS, verifies its ad-hoc signature, and packages it as
+[Deploy site and release app](.github/workflows/deploy.yml), which builds the
+Next.js site and deploys it to production on Vercel with the published app copied
+over from production. Installed copies have to restart to update, so the app
+releases at most once a day: a daily run at 10:00 UTC releases a new version only if
+the app's code changed since the last release
+([`scripts/plan-release.mjs`](scripts/plan-release.mjs)). To release one
+straight away, run the workflow with **Release a new app version now** checked.
+
+A release builds the Apple Silicon Mac app on macOS, verifies its signature, and packages it as
 `WhatThePort.dmg` ([`make-dmg.sh`](WhatThePort/make-dmg.sh)): the app beside an
 Applications shortcut, on a background designed in Paper
-([`WhatThePort/dmg/`](WhatThePort/dmg)). A Linux job then puts that artifact at `public/WhatThePort.dmg`,
-builds the Next.js site, and deploys both together to production on Vercel. A
-failed app or site build stops deployment.
+([`WhatThePort/dmg/`](WhatThePort/dmg)). A Linux job then puts that artifact at `public/WhatThePort.dmg`
+and deploys it with the site. A failed app or site build stops deployment.
 
 The download is never checked in, so the site always serves the latest release.
-Production builds fail unless `public/WhatThePort.dmg` is a disk image and any
-update feed is for this commit's build ([`scripts/check-download.mjs`](scripts/check-download.mjs)). Local dev
+Production builds fail unless `public/WhatThePort.dmg` is a disk image and
+`public/release.json` and any update feed are for the same build ([`scripts/check-download.mjs`](scripts/check-download.mjs)). Local dev
 and preview deployments don't have the file, so they redirect downloads to
 production.
 
@@ -189,11 +195,13 @@ and redirect to `https://whattheport.dev/thanks`. That page opens
 `whattheport://tipped`, which turns off the app's monthly tip reminder.
 
 `vercel.json` disables Vercel's automatic Git deployments for `main`, so only this
-workflow publishes production with the freshly built app. Other branches retain
+workflow publishes production, always with the latest app release. Other branches retain
 Vercel's normal preview deployments. To retry production,
-use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
+use **Actions → Deploy site and release app → Run workflow** with `main`
 selected. Production runs are serialized; GitHub may replace a pending run with
-a newer one when several merges arrive during an active deployment.
+a newer one when several merges arrive during an active deployment. If that
+replaces the daily release, the app waits for the next day's, unless you release it
+by hand.
 
 Until its signing secrets are configured, the workflow uses ad-hoc signing and
 builds without an update feed. Once they are, it signs with Developer ID,
