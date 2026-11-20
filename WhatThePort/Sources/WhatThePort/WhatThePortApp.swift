@@ -11,7 +11,10 @@ enum Main {
 
 struct WhatThePortApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
-    @StateObject private var monitor: ServerMonitor
+    /// Not observed here: each window observes it, and an observed monitor would
+    /// rebuild every scene, menu bar icon included, on every scan (issue #58).
+    /// SwiftUI creates the App once, so a plain reference keeps it alive.
+    private let monitor: ServerMonitor
 
     init() {
         FontLoader.registerBundledFonts()
@@ -19,7 +22,7 @@ struct WhatThePortApp: App {
         // Initialize AppKit for snapshot mode without overriding its appearance.
         _ = NSApplication.shared
         let monitor = ServerMonitor()
-        _monitor = StateObject(wrappedValue: monitor)
+        self.monitor = monitor
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-onboarding") {
             let directory = CommandLine.arguments.dropFirst(index + 1).first ?? FileManager.default.currentDirectoryPath
             SnapshotRenderer.runOnboarding(monitor: monitor, directory: directory)
@@ -41,7 +44,7 @@ struct WhatThePortApp: App {
         MenuBarExtra {
             LocalizedView { PopoverRoot(monitor: monitor) }
         } label: {
-            LocalizedView { MenuBarLabel(monitor: monitor) }
+            LocalizedView { MenuBarLabel(monitor: monitor, menuBar: monitor.menuBar) }
         }
         .menuBarExtraStyle(.window)
 
@@ -104,20 +107,24 @@ struct OnboardingContainer: View {
     }
 }
 
+/// Redraws only when the icon would change. Each redraw makes WindowServer
+/// log "_CGXPackagesSetWindowConstraints: Invalid window", so it mustn't
+/// follow the monitor, which publishes on every scan (issue #58).
 struct MenuBarLabel: View {
-    @ObservedObject var monitor: ServerMonitor
+    let monitor: ServerMonitor
+    @ObservedObject var menuBar: MenuBarIconState
     @AppStorage(Preferences.iconStyle) private var iconStyle = Preferences.IconStyle.colonCount.rawValue
     @AppStorage(Preferences.onboarded) private var onboarded = false
     @AppStorage(Preferences.usageAsked) private var usageAsked = false
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        let count = monitor.servers.count
+        let count = menuBar.count
         let style = Preferences.IconStyle(rawValue: iconStyle) ?? .colonCount
         let (glyph, label): (DotGlyph, Int?) = {
             // With nothing running every style rests on the colon, since an unlit grid draws nothing.
             if count == 0 { return (.colon, nil) }
-            if monitor.needsAttention { return (.alert, style == .colon ? nil : count) }
+            if menuBar.needsAttention { return (.alert, style == .colon ? nil : count) }
             switch style {
             case .colon: return (.colon, nil)
             case .colonCount: return (.colon, count)
