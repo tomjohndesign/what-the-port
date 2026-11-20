@@ -22,7 +22,7 @@ Servers launched by Claude Code, Codex, Conductor, or [Pane](https://runpane.com
 
 ### Notices before your fans do
 
-When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the server’s own process tree. Adjust thresholds and snooze alerts in Settings.
+When a server passes the default 2 GB memory threshold or grows more than 500 MB in ten minutes, WhatThePort turns its menu bar amber and sends a notification. Growth has to hold for 30 seconds, so a build step that spikes and exits doesn’t count. Port colors stay consistent, while amber memory readings flag servers needing attention. Ten minutes of memory and CPU history show what’s happening across the server’s own process tree. Adjust thresholds and snooze alerts in Settings.
 
 ![Marketing demo showing a rising memory chart and the amber alert threshold for a development server](docs/images/leaks.jpg)
 
@@ -30,7 +30,7 @@ When a server passes the default 2 GB memory threshold or grows more than 500 MB
 
 **Clean up** adds checkboxes to the server list and preselects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops each server’s own process tree. Database processes such as Postgres and Redis are protected by default.
 
-Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Leaking servers are never stopped automatically.
+Choose **Off**, **Ask**, or **Automatic** cleanup in Settings. Fast-growing servers are never stopped automatically.
 
 ![Marketing demo of Clean up with idle and deleted-worktree servers selected for removal](docs/images/clean-up.jpg)
 
@@ -53,8 +53,8 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
 - **Stop and restart** - Stops the server’s own process tree; restart reruns the original command in the same folder
 - **Containers** - Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers are grouped below native servers, one group per compose project, with each service’s icon, the compose folder’s branch and the container’s memory and CPU. Stop, restart and pause go to the container, never to the runtime
-- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
-- **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
+- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or grows fast
+- **Automatic clean up (optional)** - Off, Ask or Automatic; fast-growing servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
 - **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
 - **Global shortcut** - ⌥⌘P opens the popover

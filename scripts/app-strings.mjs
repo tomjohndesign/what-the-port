@@ -18,7 +18,7 @@ const KEYS = [
   'Sort servers', 'Usage', 'Recency', 'Name', 'Port',
   'Container', 'Image', 'Restart container', 'Stop all',
   'up %@', 'idle %@', 'Worktree deleted · idle %@', '+%@ in %@',
-  'Worktree deleted', 'Idle %@ · no connections', 'Leaking · +%@',
+  'Worktree deleted', 'Idle %@ · no connections', 'Growing · +%@',
   '<1m', '%dm', '%dh', '%dh %dm', '%dd',
   'Running for %@', 'Restart with the same command', 'Session', 'Branch', 'Folder', 'Framework', 'Command',
   'Started', 'Workspace', 'Session ID', '%d more', 'Less', 'Memory', '10 min', 'Processes',

@@ -31,7 +31,7 @@
 "2 seconds" = "2 секунди";
 "4 hours" = "4 години";
 "5 seconds" = "5 секунд";
-":%d %@ is leaking" = ":%d %@ має витік пам’яті";
+":%d %@ is growing fast" = ":%d %@ швидко росте";
 ":%d %@ is using %@" = ":%d %@ використовує %@";
 ":%d %@ started" = ":%d %@ запущено";
 ":%d stopped" = ":%d зупинено";
@@ -112,7 +112,7 @@
 "General" = "Загальні";
 "Get started" = "Почати";
 "Global shortcut" = "Глобальне сполучення клавіш";
-"Grows more than 500 MB in 10 minutes" = "Зростає більш ніж на 500 МБ за 10 хвилин";
+"Grows 500 MB in 10 minutes and stays up for 30 seconds" = "Зростає на 500 МБ за 10 хвилин і тримається 30 секунд";
 "Have been idle for" = "Неактивні протягом";
 "Have been running for" = "Працюють протягом";
 "Help shape WhatThePort" = "Допоможіть покращити WhatThePort";
@@ -126,7 +126,7 @@
 "Language" = "Мова";
 "Last checked %@" = "Остання перевірка %@";
 "Launch at login" = "Запускати під час входу";
-"Leaking · +%@" = "Витік пам’яті · +%@";
+"Growing · +%@" = "Зростає · +%@";
 "Less" = "Менше";
 "Leave a tip in the tip jar, or share it with friends." = "Залиште чайові або поділіться з друзями.";
 "Link servers to Codex threads" = "Пов’язувати сервери з розмовами Codex";

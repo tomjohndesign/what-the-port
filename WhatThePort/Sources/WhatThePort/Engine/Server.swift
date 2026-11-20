@@ -188,11 +188,21 @@ struct Server: Identifiable {
     var uptime: TimeInterval? { startedAt.map { Date().timeIntervalSince($0) } }
     var idleFor: TimeInterval { Date().timeIntervalSince(lastActive) }
 
-    /// Memory growth across the recorded history window (up to 10 minutes).
+    /// How long growth has to hold before it counts, matching the memory alert's delay.
+    static let growthHoldsFor: TimeInterval = 30
+
+    /// Memory growth across the recorded history window (up to 10 minutes) that
+    /// has held for `growthHoldsFor`: the lowest reading since then, against the
+    /// oldest. A compiler or linker child that spikes and exits doesn't count.
     var memoryGrowth: Int64 {
         guard let first = history.first, let last = history.last,
               last.time.timeIntervalSince(first.time) >= 120 else { return 0 }
-        return Int64(last.memory) - Int64(first.memory)
+        // Start at the last sample from before the hold began, so a rise in the
+        // last 30 seconds still has its pre-rise reading in range.
+        let holdStart = last.time.addingTimeInterval(-Self.growthHoldsFor)
+        let start = history.lastIndex { $0.time <= holdStart } ?? history.startIndex
+        let held = history[start...].map(\.memory).min() ?? last.memory
+        return Int64(held) - Int64(first.memory)
     }
 
     func isLeaking(threshold: UInt64 = 500 * 1_048_576) -> Bool {
