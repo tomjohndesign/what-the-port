@@ -190,7 +190,7 @@
 "Usage" = "שימוש";
 "Ports" = "פורטים";
 "Ports & processes" = "פורטים ותהליכים";
-"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "פורטים שקונטיינרים של Docker Desktop‏, OrbStack‏, Colima ו-Rancher Desktop מפרסמים. עצירה והפעלה מחדש פועלות על הקונטיינר, לא על סביבת ההרצה.";
+"Ports published by Docker Desktop, OrbStack, Colima, Rancher Desktop and Kiri containers. Stop and restart act on the container, not the runtime." = "פורטים שקונטיינרים של Docker Desktop‏, OrbStack‏, Colima‏, Rancher Desktop ו-Kiri מפרסמים. עצירה והפעלה מחדש פועלות על הקונטיינר, לא על סביבת ההרצה.";
 "Preview" = "תצוגה מקדימה";
 "Preview build failed · %@" = "בניית התצוגה המקדימה נכשלה · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "כפתור תצוגה מקדימה לכל ענף, מפריסות GitHub של Vercel";

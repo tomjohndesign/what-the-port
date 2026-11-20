@@ -376,7 +376,7 @@ private struct IntegrationsPane: View {
             }
             Section(L10n.text("Containers")) {
                 Toggle(isOn: $containers) {
-                    SettingLabel(L10n.text("Show containers"), caption: L10n.text("Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime."))
+                    SettingLabel(L10n.text("Show containers"), caption: L10n.text("Ports published by Docker Desktop, OrbStack, Colima, Rancher Desktop and Kiri containers. Stop and restart act on the container, not the runtime."))
                 }
             }
             Section {

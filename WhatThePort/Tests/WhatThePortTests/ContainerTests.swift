@@ -11,6 +11,11 @@ struct ContainerTests {
         #expect(runtime("/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper")
             == .orbStack(home: home))
         #expect(runtime("/Applications/Docker.app/Contents/MacOS/com.docker.backend")?.socketPath == "/Users/me/.docker/run/docker.sock")
+        // Kiri's daemon is the app's own binary, run as `kiri daemon`.
+        let kiri = runtime("/Applications/Kiri.app/Contents/MacOS/kiri", ["/Applications/Kiri.app/Contents/MacOS/kiri", "daemon"])
+        #expect(kiri == .kiri(home: home))
+        #expect(kiri?.socketPath == "/Users/me/.kiri/run/docker.sock")
+        #expect(kiri?.appBundle == "Kiri.app")
         // Colima forwards ports through Lima's shared ssh connection or its host agent.
         let colima = runtime("/usr/bin/ssh", ["ssh: /Users/me/.colima/_lima/colima/ssh.sock [mux]"])
         #expect(colima?.name == "Colima")
