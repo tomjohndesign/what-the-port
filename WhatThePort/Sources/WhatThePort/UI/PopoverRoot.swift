@@ -33,6 +33,7 @@ struct PopoverRoot: View {
             }
         }
         .frame(width: Theme.popoverWidth)
+        .background(Theme.popoverTint)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
         .background(PopoverWindowFitter(height: contentHeight))
         .onDisappear { monitor.isWatched = false }
