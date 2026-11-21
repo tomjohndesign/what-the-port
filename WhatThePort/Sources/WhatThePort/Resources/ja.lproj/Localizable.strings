@@ -190,7 +190,7 @@
 "Usage" = "使用量";
 "Ports" = "ポート";
 "Ports & processes" = "ポートとプロセス";
-"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "Docker Desktop、OrbStack、Colima、Rancher Desktop のコンテナが公開しているポート。停止と再起動はランタイムではなくコンテナに対して行われます。";
+"Ports published by Docker Desktop, OrbStack, Colima, Rancher Desktop and Kiri containers. Stop and restart act on the container, not the runtime." = "Docker Desktop、OrbStack、Colima、Rancher Desktop、Kiri のコンテナが公開しているポート。停止と再起動はランタイムではなくコンテナに対して行われます。";
 "Preview" = "プレビュー";
 "Preview build failed · %@" = "プレビューのビルドに失敗 · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "Vercel の GitHub デプロイから各ブランチのプレビューボタンを表示";

@@ -52,7 +52,7 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
 - **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
 - **Stop and restart** - Stops the server’s own process tree; restart reruns the original command in the same folder
-- **Containers** - Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers are grouped below native servers, one group per compose project, with each service’s icon, the compose folder’s branch and the container’s memory and CPU. Stop, restart and pause go to the container, never to the runtime
+- **Containers** - Ports published by Docker Desktop, OrbStack, Colima, Rancher Desktop and Kiri containers are grouped below native servers, one group per compose project, with each service’s icon, the compose folder’s branch and the container’s memory and CPU. Stop, restart and pause go to the container, never to the runtime
 - **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or grows fast
 - **Automatic clean up (optional)** - Off, Ask or Automatic; fast-growing servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to

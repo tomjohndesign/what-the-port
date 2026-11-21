@@ -6,7 +6,7 @@ import Foundation
 /// container owns each port. Stopping the helper would take every container
 /// down with it, so container rows never signal it.
 struct ContainerRuntime: Hashable {
-    /// Shown on container rows: OrbStack, Docker, Colima, Rancher Desktop.
+    /// Shown on container rows: OrbStack, Docker, Colima, Rancher Desktop, Kiri.
     let name: String
     let socketPath: String
     /// The app whose own memory already includes its containers' VM.
@@ -20,14 +20,20 @@ struct ContainerRuntime: Hashable {
         ContainerRuntime(name: "Docker", socketPath: home + "/.docker/run/docker.sock", appBundle: "Docker.app")
     }
 
-    /// Recognises a runtime's port helper. OrbStack and Docker Desktop are found
-    /// by executable, since the kernel truncates names like `com.docker.backend`.
+    static func kiri(home: String = Self.home) -> ContainerRuntime {
+        ContainerRuntime(name: "Kiri", socketPath: home + "/.kiri/run/docker.sock", appBundle: "Kiri.app")
+    }
+
+    /// Recognises a runtime's port helper. OrbStack, Docker Desktop and Kiri are
+    /// found by executable, since the kernel truncates names like `com.docker.backend`.
+    /// Kiri's `kiri daemon`, run from inside its app, listens for every published port.
     /// Colima and Rancher Desktop forward ports through Lima, with `ssh` or
     /// `limactl hostagent` processes whose arguments name the Lima instance;
     /// a plain `ssh` tunnel never matches.
     static func owning(executablePath path: String, arguments: [String], home: String = Self.home) -> ContainerRuntime? {
         if path.contains("/OrbStack.app/") { return .orbStack(home: home) }
         if path.contains("/Docker.app/") { return .dockerDesktop(home: home) }
+        if path.contains("/Kiri.app/") { return .kiri(home: home) }
         let tool = (path as NSString).lastPathComponent
         guard tool == "ssh" || tool == "limactl" else { return nil }
         let joined = arguments.joined(separator: " ")

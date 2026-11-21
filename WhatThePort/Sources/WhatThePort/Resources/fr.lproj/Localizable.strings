@@ -190,7 +190,7 @@
 "Usage" = "Utilisation";
 "Ports" = "Ports";
 "Ports & processes" = "Ports et processus";
-"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "Ports publiés par les conteneurs de Docker Desktop, OrbStack, Colima et Rancher Desktop. Arrêter et redémarrer agissent sur le conteneur, pas sur l’environnement d’exécution.";
+"Ports published by Docker Desktop, OrbStack, Colima, Rancher Desktop and Kiri containers. Stop and restart act on the container, not the runtime." = "Ports publiés par les conteneurs de Docker Desktop, OrbStack, Colima, Rancher Desktop et Kiri. Arrêter et redémarrer agissent sur le conteneur, pas sur l’environnement d’exécution.";
 "Preview" = "Aperçu";
 "Preview build failed · %@" = "Échec de compilation de l’aperçu · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "Bouton d’aperçu par branche, via les déploiements GitHub de Vercel";

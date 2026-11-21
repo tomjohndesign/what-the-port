@@ -190,7 +190,7 @@
 "Usage" = "用量";
 "Ports" = "端口";
 "Ports & processes" = "端口与进程";
-"Ports published by Docker Desktop, OrbStack, Colima and Rancher Desktop containers. Stop and restart act on the container, not the runtime." = "显示 Docker Desktop、OrbStack、Colima 和 Rancher Desktop 容器发布的端口。停止和重启只作用于容器，而不是运行环境。";
+"Ports published by Docker Desktop, OrbStack, Colima, Rancher Desktop and Kiri containers. Stop and restart act on the container, not the runtime." = "显示 Docker Desktop、OrbStack、Colima、Rancher Desktop 和 Kiri 容器发布的端口。停止和重启只作用于容器，而不是运行环境。";
 "Preview" = "预览";
 "Preview build failed · %@" = "预览构建失败 · %@";
 "Preview button for each branch, from Vercel's GitHub deployments" = "通过 Vercel 的 GitHub 部署为各分支提供预览按钮";
